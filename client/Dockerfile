@@ -1,20 +1,16 @@
-# Use the official Node.js LTS image
-FROM node:lts
+# Use the Debian-based Node 
+FROM node:18
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# 1) Create a new CRA app
+RUN npx create-react-app .
 
-# Install dependencies
-RUN npm install
+# 2) Install Tailwind + PostCSS
+RUN npm install --save-dev tailwindcss postcss autoprefixer
 
-# Copy the rest of the application code
-COPY . .
+# 3) Initialize Tailwind
+RUN npx tailwindcss init -p
 
-# Expose the port the app runs on
 EXPOSE 3000
-
-# Start the app
 CMD ["npm", "start"]
