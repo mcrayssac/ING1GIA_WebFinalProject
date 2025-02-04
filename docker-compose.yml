@@ -1,18 +1,17 @@
 services:
   frontend:
-    container_name: react-frontend
+    container_name: next-frontend
     build:
       context: ./client
       dockerfile: Dockerfile
     ports:
-      - "3001:3000"
+      - "3001:3000" 
     volumes:
-      - ./client:/app
-      - /app/node_modules
+      - ./client:/app           
+      - /app/node_modules       
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - FAST_REFRESH=false
-      - DISABLE_WEBPACK_DEV_SERVER_DEPRECATION_WARNINGS=true
+    command: npm run dev
     stdin_open: true
 
   backend:

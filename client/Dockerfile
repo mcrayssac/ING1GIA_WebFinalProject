@@ -1,16 +1,20 @@
-# Use the Debian-based Node 
-FROM node:18
+# client/Dockerfile
+FROM node:lts
 
+# Set the working directory
 WORKDIR /app
 
-# 1) Create a new CRA app
-RUN npx create-react-app .
+# Copy package manifests first for caching
+COPY package*.json ./
 
-# 2) Install Tailwind + PostCSS
-RUN npm install --save-dev tailwindcss postcss autoprefixer
+# Install dependencies
+RUN npm install
 
-# 3) Initialize Tailwind
-RUN npx tailwindcss init -p
+# Copy the rest of your Next.js code
+COPY . .
 
+# Expose Next.js dev port
 EXPOSE 3000
-CMD ["npm", "start"]
+
+# Run Next.js in dev mode
+CMD ["npm", "run", "dev"]
