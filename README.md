@@ -42,3 +42,36 @@ use spacey
 ```bash
 db.createCollection('Users')
 ```
+
+## Next.js + Schadcn/ui
+
+- Create a new Next.js project:
+```bash
+npx create-next-app@latest 
+/*
+✔ What is your project named? … my-app
+✔ Would you like to use TypeScript? … No
+✔ Would you like to use ESLint? … Yes
+✔ Would you like to use Tailwind CSS? … Yes
+✔ Would you like your code inside a `src/` directory? … No
+✔ Would you like to use App Router? (recommended) … Yes
+✔ Would you like to use Turbopack for `next dev`? … No
+✔ Would you like to customize the import alias (`@/*` by default)? … No
+*/
+```
+
+- Initialize Schadcn/ui:
+```bash
+cd <project-name>
+npx shadcn@latest init -d // Use --force
+```
+
+- Run the project:
+```bash
+npm run dev
+```
+
+- Add a new component:
+```bash
+npx shadcn@latest add <component-name> // Use --force
+```
