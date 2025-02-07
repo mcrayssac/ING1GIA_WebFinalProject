@@ -1,5 +1,6 @@
 const express = require('express');
 const chalk = require('chalk');
+const cors = require('cors');
 const mongoose = require('mongoose');
 
 // Load environment variables
@@ -17,6 +18,13 @@ const debug = chalk.bold.gray;
 const success = chalk.bold.green;
 const routes = chalk.bold.magenta;
 const datetime = chalk.bold.yellow;
+
+// CORS configuration
+app.use(cors({
+  origin: [
+    process.env.ORIGIN_LOCAL
+  ]
+}));
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
