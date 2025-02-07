@@ -13,7 +13,7 @@ export default function Home() {
         <p className="text-xl mb-8 text-white">
           Pioneering the future of space travel and exploration. We are the future.
         </p>
-        <Link href="/">
+        <Link href="/login">
           <Button>Explore our missions</Button>
         </Link>
       </div>
