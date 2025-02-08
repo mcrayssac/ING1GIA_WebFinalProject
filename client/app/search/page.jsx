@@ -75,7 +75,7 @@ export default function SearchPage() {
                             <h2 className={`card-title ${textHighlight}`}>{item.title}</h2>
                             <p>{item.description}</p>
                             <div className="card-actions justify-end">
-                                <Link href={item.route} className={`btn ${bgColor} ${textColor}`}>
+                                <Link href={item.route} className={`btn btn-outline ${textColor} hover:${bgColor} hover:${textHighlight} transform hover:scale-105`}>
                                 Read More
                                 </Link>
                             </div>
@@ -84,7 +84,11 @@ export default function SearchPage() {
                     ))}
                 </div>
             ) : (
+              <div className={`skeleton w-full h-96 ${bgColor}`}>
+                <div className="flex items-center justify-center h-full">
                 <p>No results found.</p>
+                </div>
+              </div>
             )}
         </div>
     </div>

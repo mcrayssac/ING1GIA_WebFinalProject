@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
+import { Rocket, Satellite } from "lucide-react"
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar()
@@ -60,6 +61,19 @@ export function SiteHeader() {
             ))}
           </BreadcrumbList>
         </Breadcrumb>
+
+        {/* Center title */}
+        <div className="flex-1 flex items-center justify-center">
+          <Rocket className="w-8 h-8 mr-2 text-rose-300" />
+          <h1 
+            className="text-2xl font-bold font-mono text-center text-transparent bg-clip-text bg-gradient-to-r from-rose-300 to-sky-400"
+            style={{ letterSpacing: "1em" }}
+          >
+            &nbsp;SpaceY
+          </h1>
+          <Satellite className="w-8 h-8 ml-2 text-sky-400" />
+        </div>
+
         <SearchForm className="w-full sm:ml-auto sm:w-auto" />
       </div>
     </header>

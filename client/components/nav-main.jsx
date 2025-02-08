@@ -20,13 +20,14 @@ import {
 } from "@/components/ui/sidebar"
 
 export function NavMain({
-  items
+  object
 }) {
+  console.log(object)
   return (
     (<SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>{object.title}</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {object.items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={item.title}>
