@@ -29,7 +29,7 @@ export default function Footer() {
                 </nav>
             </footer>
             <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl ${bgColor} ${textColor}`}>
-                <aside className="grid-flow-col items-center">
+                <aside className="grid-flow-col items-center font-mono">
                     <Orbit className="w-9 h-9 animate-spin" style={{ animationDuration: "10s" }} />
                     <p>
                     SpaceY Company
