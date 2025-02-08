@@ -37,25 +37,25 @@ export default function Countdown({ targetDate }) {
             </h1>
 
             <div className="grid grid-flow-col gap-5 text-centerfont-mono auto-cols-max">
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
                         <span style={{"--value":timeLeft.days}}></span>
                     </span>
                     days
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
                         <span style={{"--value":timeLeft.hours}}></span>
                     </span>
                     hours
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
                         <span style={{"--value":timeLeft.minutes}}></span>
                     </span>
                     min
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
                         <span style={{"--value":timeLeft.seconds}}></span>
                     </span>
@@ -63,10 +63,10 @@ export default function Countdown({ targetDate }) {
                 </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 link link-hover hover:no-underline transition-transform transform hover:scale-125">
                 <Rocket className="w-5 h-5 animate-spin" style={{ animationDuration: "10s" }} />
                 <span className="text-lg font-mono">Blast off!</span>
-                </div>  
+            </div>  
         </div>
     );
 };

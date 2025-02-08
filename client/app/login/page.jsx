@@ -20,7 +20,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
-  const color = "#545454";
 
   // On mount, check if there is a token and verify it.
   useEffect(() => {
