@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import Footer from "@/components/footer";
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }) {
             <SidebarInset>
               <div className="flex flex-1 flex-col gap-4 p-4">
                 {children}
+                <Footer />
               </div>
             </SidebarInset>
           </div>
