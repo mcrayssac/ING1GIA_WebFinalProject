@@ -127,8 +127,9 @@ export function NavSecondary({ items, ...props }) {
                               e.preventDefault();
                               handleThemeChange(theme.value);
                             }}
+                            className="text-primary"
                           >
-                            {Icon && <Icon className="mr-2" style={{ color: "oklch(var(--p))" }} />}
+                            {Icon && <Icon style={{ color: "oklch(var(--p))" }} />}
                             <span>{theme.name}</span>
                           </a>
                         </SidebarMenuSubButton>

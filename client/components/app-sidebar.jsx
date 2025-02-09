@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 
-import { BookOpen, Bot, Frame, LifeBuoy, Map, PieChart, Send, Settings2, Box } from "lucide-react"
+import { BookOpen, Bot, Frame, LifeBuoy, Map, PieChart, Send, Settings2, Box, House, Rocket, Cpu } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
@@ -15,6 +15,12 @@ const data = {
     title : "Guests",
     items : [
       {
+        title: "Home",
+        url: "/",
+        icon: House,
+        isActive: true,
+      },
+      {
         title: "Products",
         url: "/products",
         icon: Box,
@@ -23,10 +29,12 @@ const data = {
           {
             title: "Vehicles",
             url: "/products?categories=Vehicles",
+            icon: Rocket,
           },
           {
             title: "Technologies",
             url: "/products?categories=Technologies",
+            icon: Cpu,
           },
         ],
       },

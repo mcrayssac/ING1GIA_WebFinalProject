@@ -50,6 +50,7 @@ export function NavMain({
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
                             <a href={subItem.url}>
+                              {subItem.icon && <subItem.icon style={{ color: "oklch(var(--p))" }} />}
                               <span>{subItem.title}</span>
                             </a>
                           </SidebarMenuSubButton>

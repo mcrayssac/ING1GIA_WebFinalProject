@@ -11,7 +11,7 @@ const staticData = [
     description:
       "The Falcon 9 is a two-stage rocket designed and manufactured by SpaceX for reliable transport of satellites and Dragon spacecraft into orbit.",
     image:
-      "https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp", // placeholder image
+      "/pictures/falcon9.jpg",
     categories: ["Vehicles", "Rocket"],
     badges: ["Reusable", "Heavy-lift"],
     isNew: true,
@@ -22,40 +22,40 @@ const staticData = [
     description:
       "Starship is SpaceX's fully reusable transportation system designed to carry crew and cargo to Earth orbit, the Moon, Mars, and beyond.",
     image:
-      "https://img.daisyui.com/images/stock/photo-1567306226416-28f0efdc88ce.webp", // placeholder image
+      "/pictures/starship.jpg",
     categories: ["Vehicles", "Spaceship"],
     badges: ["Next-gen"],
     isNew: true,
   },
   {
     id: 3,
-    title: "Raptor Engine",
+    title: "Raptor engine",
     description:
       "The Raptor engine is a full-flow staged combustion rocket engine developed by SpaceX for its Starship vehicle.",
     image:
-      "https://img.daisyui.com/images/stock/photo-1556740749-887f6717d7e4.webp", // placeholder image
+      "/pictures/raptor_engine.jpg",
     categories: ["Technologies", "Engine"],
     badges: ["High Performance"],
     isNew: false,
   },
   {
     id: 4,
-    title: "Dragon Capsule",
+    title: "Dragon capsule",
     description:
       "The Dragon capsule is a spacecraft developed by SpaceX for transporting crew and cargo to the International Space Station.",
     image:
-      "https://img.daisyui.com/images/stock/photo-1551214012-84f95e060dee.webp", // placeholder image
+      "/pictures/dragon_capsule.jpg",
     categories: ["Vehicles", "Spaceship"],
     badges: ["Crewed"],
     isNew: false,
   },
   {
     id: 5,
-    title: "Heat Shield Technology",
+    title: "Heat shield technology",
     description:
       "Advanced heat shield materials and design ensure safe re-entry of SpaceX vehicles into Earth's atmosphere.",
     image:
-      "https://img.daisyui.com/images/stock/photo-1564869731257-0c108a6b9e3a.webp", // placeholder image
+      "/pictures/heat_shield_technology.jpg",
     categories: ["Technologies"],
     badges: ["Innovative"],
     isNew: false,
@@ -151,12 +151,12 @@ export default function Products() {
             {filteredData.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredData.map((item) => (
-                    <div key={item.id} className="card bg-base-100 w-96 shadow-xl">
+                    <div key={item.id} className="card shadow-xl bg-primary text-primary-content">
                     <figure>
-                        <img src={item.image} alt={item.title} />
+                        <img className="w-full h-96 object-cover" src={item.image} alt={item.title} />
                     </figure>
                     <div className="card-body">
-                        <h2 className="card-title">
+                        <h2 className="card-title text-accent-foreground">
                         {item.title}
                         {item.isNew && (
                             <div className="badge badge-secondary ml-2">NEW</div>
@@ -165,7 +165,7 @@ export default function Products() {
                         <p>{item.description}</p>
                         <div className="card-actions justify-end">
                         {item.badges.map((badge, index) => (
-                            <div key={index} className="badge badge-outline">
+                            <div key={index} className="badge badge-outline text-accent-foreground">
                             {badge}
                             </div>
                         ))}
