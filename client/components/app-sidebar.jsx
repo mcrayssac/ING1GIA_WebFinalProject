@@ -179,8 +179,8 @@ export function AppSidebar({...props}) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <img src="favicon.ico" alt="SpaceX" className="w-6 h-6" />
+                <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
+                  <img src="/pictures/spacey_logo.png" alt="SpaceX" className="rounded-lg" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">SpaceY</span>

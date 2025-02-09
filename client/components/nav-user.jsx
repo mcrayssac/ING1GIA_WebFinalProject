@@ -45,14 +45,16 @@ export function NavUser({
               align="end"
               sideOffset={4}
             >
-              <DropdownMenuItem
-                onClick={() => {
-                  window.location.href = "/login";
-                }}
+              <button
+                onClick={() => router.push("/login")}
+                type="button"
+                className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
+                focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 
+                [&>svg]:shrink-0 hover:bg-accent hover:text-accent-foreground"
               >
                 <LogIn />
                 Log in
-              </DropdownMenuItem>
+              </button>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
@@ -65,7 +67,7 @@ export function NavUser({
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-primary data-[state=open]:text-sidebar-primary-foreground">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-lg">SY</AvatarFallback>
@@ -117,10 +119,16 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <button
+              onClick={handleLogout}
+              type="button"
+              className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
+              focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 
+              [&>svg]:shrink-0 hover:bg-accent hover:text-accent-foreground"
+            >
               <LogOut />
               Log out
-            </DropdownMenuItem>
+            </button>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

@@ -18,8 +18,8 @@ export default {
   				foreground: 'oklch(var(--pc))'
   			},
   			popover: {
-  				DEFAULT: 'oklch(var(--p))',
-  				foreground: 'oklch(var(--pz))'
+  				DEFAULT: 'oklch(var(--pc))',
+  				foreground: 'oklch(var(--p))'
   			},
   			primary: {
   				DEFAULT: 'oklch(var(--p))',
