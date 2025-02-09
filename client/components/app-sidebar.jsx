@@ -12,7 +12,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 
 const data = {
   navMain: {
-    title : "Visitors",
+    title : "Guests",
     items : [
       {
         title: "Products",

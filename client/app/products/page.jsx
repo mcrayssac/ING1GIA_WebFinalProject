@@ -121,36 +121,25 @@ export default function Products() {
         return matchesQuery && matchesCategory;
     });
 
-    const textColor = "text-slate-500";
-    const textHighlight = "text-sky-800";
-    const bgColor = "bg-blue-50";
-
   return (
-    <div className={`container mt-8 mx-auto px-4 py-8 ${textColor}`}>
+    <div className={`container mt-8 mx-auto px-4 py-8`}>
         <div className="flex items-center space-x-4">
           <Box className="w-8 h-8" /> 
           <h1 className="text-4xl font-black font-mono text-start">Products</h1>
         </div>
         <div className="flex items-center justify-center mt-12 join">
-            <div>
-                <label className="input input-bordered join-item flex items-center gap-2">
-                    <input type="text" className="grow" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
-                    <Search className="w-6 h-6" />
-                </label>
-            </div>
+            <label className="input input-bordered input-primary flex items-center gap-2 join-item w-full max-w-xs">
+                <input type="text" className="grow placeholder-oklch-p" placeholder="Beam up your favorite gadget..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ color: "oklch(var(--p))" }} />
+                <Search className="w-6 h-6" style={{ color: "oklch(var(--p))" }} />
+            </label>
             <div className="dropdown dropdown-hover">
-                <div tabIndex={0} role="button" className="btn join-item">Categories</div>
+              <div tabIndex={0} role="button" className="btn btn-primary join-item">Categories</div>
                 <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
                     {allCategories.map((category) => (
                     <li key={category}>
-                        <label className="cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => toggleCategory(category)}
-                            className="checkbox"
-                        />
-                        <span className="ml-2">{category}</span>
+                        <label className="label cursor-pointer">
+                          <span className="label-text" style={{ color: "oklch(var(--p))" }}>{category}</span>
+                          <input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} className="checkbox checkbox-primary" />
                         </label>
                     </li>
                     ))}
@@ -186,9 +175,9 @@ export default function Products() {
                 ))}
                 </div>
             ) : (
-                <div className={`skeleton w-full h-96 ${bgColor}`}>
+                <div className={`skeleton w-full h-96`}>
                     <div className="flex items-center justify-center h-full">
-                    <p>No results found.</p>
+                    <h1 className="text-2xl font-black font-mono">No results found</h1>
                     </div>
                 </div>
             )}

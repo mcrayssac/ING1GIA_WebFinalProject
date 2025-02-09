@@ -22,7 +22,7 @@ import {
 export function NavMain({
   object
 }) {
-  console.log(object)
+
   return (
     (<SidebarGroup>
       <SidebarGroupLabel>{object.title}</SidebarGroupLabel>

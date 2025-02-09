@@ -1,12 +1,10 @@
 import { Orbit } from "lucide-react";
 
 export default function Footer() {
-    const bgColor = "bg-blue-50";
-    const textColor = "text-slate-500";
 
     return (
         <div>
-            <footer className={`footer text-base-content p-10 rounded-t-2xl ${bgColor} ${textColor}`}>
+            <footer className={`footer text-base-content p-10 rounded-t-2xl bg-primary text-primary-content`}>
                 <nav>
                     <h6 className="footer-title">Services</h6>
                     <a className="link link-hover">Branding</a>
@@ -28,13 +26,15 @@ export default function Footer() {
                     <a className="link link-hover">Cookie policy</a>
                 </nav>
             </footer>
-            <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl ${bgColor} ${textColor}`}>
+            <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl bg-primary text-primary-content`}>
                 <aside className="grid-flow-col items-center font-mono">
-                    <Orbit className="w-9 h-9 animate-spin" style={{ animationDuration: "10s" }} />
+                    <Orbit className="w-9 h-9 animate-spin mr-2" style={{ animationDuration: "10s" }} />
                     <p>
                     SpaceY Company
                     <br />
-                    Providing space exploration services since 2002 - Copyright © 2025 - All rights reserved by SpaceY
+                    Providing space exploration services since 2002
+                    <br />
+                    Copyright © 2025 - All rights reserved by SpaceY
                     </p>
                 </aside>
                 <nav className="md:place-self-center md:justify-self-end">

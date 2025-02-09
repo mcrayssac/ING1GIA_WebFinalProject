@@ -22,12 +22,10 @@ export function SearchForm({
   return (
     (<form onSubmit={handleSubmit} {...props}>
       <div className="relative">
-        <Label htmlFor="search" className="sr-only">
-          Search
-        </Label>
-        <SidebarInput id="search" placeholder="Type to search..." className="h-8 pl-7" value={query} onChange={(e) => setQuery(e.target.value)}/>
-        <Search
-          className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 select-none opacity-50" />
+        <label className="input input-bordered input-sm input-primary flex items-center gap-2 join-item w-full max-w-xs">
+            <input type="text" className="grow placeholder-oklch-p" placeholder="Search the cosmos..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ color: "oklch(var(--p))" }} />
+            <Search className="w-4 h-4" style={{ color: "oklch(var(--p))" }} />
+        </label>
       </div>
     </form>)
   );

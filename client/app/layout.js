@@ -17,9 +17,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Space Y",
-  description: "Space Y is a space exploration company.",
+  title: "SpaceY",
+  description: "SpaceY is a space exploration company.",
 };
+
 
 export default function RootLayout({ children }) {
   return (
