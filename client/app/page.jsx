@@ -9,7 +9,7 @@ export default function Home() {
 
   return (
     <div>
-      <div className="relative h-screen overflow-hidden rounded-2xl">
+      <div className="relative h-screen overflow-hidden rounded-2xl shadow-xl">
         <BackgroundVideo path="/videos/space_launches_4k.mp4" type="video/mp4" />
         <div className="relative z-10 flex flex-col items-center justify-center h-full bg-black bg-opacity-50">
           <Countdown targetDate={nextLaunchDate} />
@@ -22,7 +22,7 @@ export default function Home() {
           <h1 className="text-4xl font-black font-mono text-start">Our Stats</h1>
         </div>
         <div className="flex items-center justify-center">
-          <div className="stats stats-vertical lg:stats-horizontal shadow m-8 mx-auto bg-primary">
+          <div className="stats stats-vertical lg:stats-horizontal shadow-xl m-8 mx-auto bg-primary">
             {/* Total likes */}
             <div className="stat">
               <div className={`stat-figure text-accent-foreground`}>
