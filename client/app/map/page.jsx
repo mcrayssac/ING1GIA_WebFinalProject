@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import L from "leaflet";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Rocket, Home, Building2, Map, Search, MapPinned, MapPin, FlaskConical } from "lucide-react";
+
 import sites from "@/data/sites.js";
+const safeSites = Array.isArray(sites) && sites.length > 0 ? sites : [];
 
 // Marker icon mapping
 const markerMapping = {
@@ -56,8 +58,13 @@ const Polygon = dynamic(
 export default function MapPage() {
   const mapRef = useRef(null);
 
+  // Check if sites data is available
+  if (safeSites.length === 0) {
+    return <div className="p-4 text-center">No site data available.</div>;
+  } 
+
   // State for visible site ids and legend search query
-  const [visibleSiteIds, setVisibleSiteIds] = useState(sites.map((s) => s.id));
+  const [visibleSiteIds, setVisibleSiteIds] = useState(safeSites.map((s) => s.id));
   const [legendQuery, setLegendQuery] = useState("");
 
   // Filter sites based on legend search query
@@ -195,8 +202,8 @@ export default function MapPage() {
                   <div className="card-title flex">
                     <div className="tooltip tooltip-secondary tooltip-bottom" data-tip={site.name}>
                       <div className="flex items-center gap-2">
-                        <IconComponent className="w-6 h-6" style={{ color: mapping.color }} />
-                        <h2 className="text-lg font-bold font-mono text-accent-foreground line-clamp-1 text-left">{site.name}</h2>
+                        <IconComponent className="w-6 h-6 align-middle" style={{ color: mapping.color }} />
+                        <h2 className="text-lg font-bold font-mono text-accent-foreground line-clamp-1 text-left leading-none">{site.name}</h2>
                       </div>
                     </div>
                     <div className="flex items-center justify-center join ml-auto tooltip tooltip-secondary tooltip-left" data-tip="Toggle visibility or center map">

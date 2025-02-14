@@ -3,16 +3,18 @@ import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import Footer from "@/components/footer";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  weight: "300",
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceMono = Space_Mono({
+  weight: "700",
+  variable: "--font-space-mono",
   subsets: ["latin"],
 });
 
@@ -26,7 +28,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased [--header-height:calc(theme(spacing.14))]`}
+        className={`${spaceGrotesk.variable} ${spaceMono.variable} antialiased [--header-height:calc(theme(spacing.14))]`}
       >
         <SidebarProvider className="flex flex-col min-h-screen">
           <SiteHeader />
