@@ -12,7 +12,7 @@ function FooterHeader({ data }) {
         <nav>
             <h6 className="footer-title font-mono text-accent-foreground">{data.title}</h6>
             {data.items.map((link) => (
-                <div className="flex items-center gap-2">
+                <div key={link.title} className="flex items-center gap-2">
                     <link.icon className="w-4 h-4" />
                     <a
                         key={link.url}
@@ -33,11 +33,8 @@ export default function Footer() {
         <div>
             <footer className={`footer text-base-content p-10 rounded-t-2xl bg-primary text-primary-content shadow-xl`}>
                 <FooterHeader data={navMain} />
-
                 <FooterHeader data={navMain} />
-
                 <FooterHeader data={navMain} />
-
                 <FooterHeader data={navMain} />
             </footer>
             <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl bg-primary text-primary-content shadow-xl`}>

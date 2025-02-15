@@ -4,7 +4,7 @@
 
 Need to download Docker and Docker Compose.
 
-Then, run the following command in the root directory of the project:
+- Then, run the following command in the root directory of the project:
 
 ```bash
 docker-compose up --build -d # -d is for detached mode
@@ -24,6 +24,16 @@ docker-compose up --build backend # Will run only the backend
 or 
 docker compose up --build frontend # Will run only the frontend
 docker compose up --build backend # Will run only the backend
+```
+
+- To stop the project, run the following command in the root directory of the project:
+
+```bash
+docker-compose stop // Will stop the project without removing the containers
+docker-compose down // Will stop the project and remove the containers
+or
+docker compose stop // Will stop the project without removing the containers
+docker compose down // Will stop the project and remove the containers
 ```
 
 ## MongoDB

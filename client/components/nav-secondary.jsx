@@ -1,6 +1,6 @@
 import * as React from "react";
 import Cookies from "js-cookie";
-import { Sun, Moon, ChevronRight, Palette } from "lucide-react";
+import * as Icons from "lucide-react";
 import {
     SidebarGroup,
     SidebarGroupContent,
@@ -18,41 +18,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-// Available themes
-const themes = [
-    { name: "Light", value: "light", icon: Sun },
-    { name: "Dark", value: "dark", icon: Moon },
-    { name: "Cupcake", value: "cupcake" },
-    { name: "Bumblebee", value: "bumblebee" },
-    { name: "Emerald", value: "emerald" },
-    { name: "Corporate", value: "corporate" },
-    { name: "Synthwave", value: "synthwave" },
-    { name: "Retro", value: "retro" },
-    { name: "Cyberpunk", value: "cyberpunk" },
-    { name: "Valentine", value: "valentine" },
-    { name: "Halloween", value: "halloween" },
-    { name: "Garden", value: "garden" },
-    { name: "Forest", value: "forest" },
-    { name: "Aqua", value: "aqua" },
-    { name: "Lofi", value: "lofi" },
-    { name: "Pastel", value: "pastel" },
-    { name: "Fantasy", value: "fantasy" },
-    { name: "Wireframe", value: "wireframe" },
-    { name: "Black", value: "black" },
-    { name: "Luxury", value: "luxury" },
-    { name: "Dracula", value: "dracula" },
-    { name: "Cmyk", value: "cmyk" },
-    { name: "Autumn", value: "autumn" },
-    { name: "Business", value: "business" },
-    { name: "Acid", value: "acid" },
-    { name: "Lemonade", value: "lemonade" },
-    { name: "Night", value: "night" },
-    { name: "Coffee", value: "coffee" },
-    { name: "Winter", value: "winter" },
-    { name: "Dim", value: "dim" },
-    { name: "Nord", value: "nord" },
-    { name: "Sunset", value: "sunset" },
-];
+import { themes } from "@/data/data";
 
 export function NavSecondary({ items, ...props }) {
     // State for the current theme
@@ -73,21 +39,26 @@ export function NavSecondary({ items, ...props }) {
 
     // Read the theme from the cookie or default to light
     const currentThemeOption = themes.find((t) => t.value === currentTheme) || { name: currentTheme };
+    const CurrentThemeIcon = currentThemeOption.icon ? Icons[currentThemeOption.icon] : null;
 
     return (
         <SidebarGroup {...props}>
             <SidebarGroupContent>
                 <SidebarMenu>
-                    {items.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild size="sm">
-                                <a href={item.url}>
-                                    <item.icon />
-                                    <span>{item.title}</span>
-                                </a>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
+                    {items.map((item) => {
+                        const Icon = item.icon ? Icons[item.icon] : null;
+                        return (
+                            <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton asChild size="sm">
+                                    <a href={item.url}>
+                                        {Icon && <Icon />}
+                                        <span>{item.title}</span>
+                                    </a>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        )
+                    }
+                    )}
 
                     <Collapsible defaultOpen={false}>
                         <SidebarMenuItem>
@@ -98,11 +69,11 @@ export function NavSecondary({ items, ...props }) {
                                         e.preventDefault();
                                         handleThemeChange(currentTheme === "light" ? "dark" : "light");
                                     }}>
-                                    <Palette />
+                                    <Icons.Palette />
                                     <span>Themes</span>
                                     <span className="ml-auto flex items-center text-xs text-secondary">
-                                        {currentThemeOption.icon && (
-                                            <currentThemeOption.icon className="w-4 h-4 mr-1" />
+                                        {CurrentThemeIcon && (
+                                            <CurrentThemeIcon className="w-4 h-4 mr-1" />
                                         )}
                                         <span>{currentThemeOption.name}</span>
                                     </span>
@@ -110,14 +81,14 @@ export function NavSecondary({ items, ...props }) {
                             </SidebarMenuButton>
                             <CollapsibleTrigger asChild>
                                 <SidebarMenuAction className="data-[state=open]:rotate-90">
-                                    <ChevronRight />
+                                    <Icons.ChevronRight />
                                     <span className="sr-only">Toggle Themes</span>
                                 </SidebarMenuAction>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <SidebarMenuSub>
                                     {themes.map((theme) => {
-                                        const Icon = theme.icon;
+                                        const Icon = theme.icon ? Icons[theme.icon] : null;
                                         return (
                                             <SidebarMenuSubItem key={theme.value}>
                                                 <SidebarMenuSubButton asChild>

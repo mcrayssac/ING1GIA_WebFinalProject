@@ -1,95 +1,95 @@
 "use client";
 
-import { Frame, LifeBuoy, Map, PieChart, Send, Box, House, Rocket, Cpu } from "lucide-react"
+import { Frame, LifeBuoy, Map, PieChart, Send } from "lucide-react"
 
 const sites = [
     {
         id: 1,
-        name: "Cape Canaveral SLC-40",
-        coordinates: [28.561, -80.577],
+        name: "Celestial Launch Complex 40",
+        coordinates: [28.563, -80.580],
         description:
-            "Leased from the US Air Force, this launch complex is used for Falcon 9 missions. It was damaged in the AMOS-6 accident in September 2016 and fully repaired by December 2017.",
+            "Leased from the National Air Agency, this launch complex is used for Aurora 9 missions. It was damaged in the AEROS-6 incident in September 2016 and fully repaired by December 2017.",
         openHours: "24/7 Operational",
         geometry: [
-            [28.561, -80.577],
-            [28.562, -80.578],
-            [28.560, -80.576],
-            [28.560, -80.579],
+            [28.563, -80.580],
+            [28.564, -80.581],
+            [28.562, -80.579],
+            [28.562, -80.582],
         ],
         markerType: "launch",
     },
     {
         id: 2,
-        name: "Vandenberg SLC-4E",
-        coordinates: [34.6324, -120.6116],
+        name: "Orion West Complex",
+        coordinates: [34.6300, -120.6100],
         description:
-            "Located at Vandenberg Space Force Base, this complex supports polar and sun-synchronous orbit launches using Falcon 9 and Falcon Heavy vehicles.",
+            "Located at the Orion Space Base, this complex supports polar and sun-synchronous orbit launches using Aurora 9 and Aurora Heavy vehicles.",
         openHours: "24/7 Operational",
         geometry: [
-            [34.6324, -120.6116],
-            [34.6334, -120.6126],
-            [34.6314, -120.6106],
-            [34.6320, -120.6096],
+            [34.6300, -120.6100],
+            [34.6310, -120.6110],
+            [34.6290, -120.6090],
+            [34.6285, -120.6085],
         ],
         markerType: "launch",
     },
     {
         id: 3,
-        name: "Kennedy Space Center LC-39A",
-        coordinates: [28.6084, -80.6043],
+        name: "Heritage Launch Complex 39A",
+        coordinates: [28.6100, -80.6050],
         description:
-            "A historic launch complex leased from NASA, LC-39A is used for crewed missions and other high-profile launches. It features a large Horizontal Integration Facility for processing Falcon rockets.",
+            "A historic launch complex leased from the National Aeronautics Agency, 39A is used for crewed missions and other high-profile launches. It features a large Horizontal Integration Facility for processing Aurora rockets.",
         openHours: "24/7 Operational",
         geometry: [
-            [28.6084, -80.6043],
-            [28.6094, -80.6053],
-            [28.6074, -80.6033],
-            [28.6079, -80.6063],
+            [28.6100, -80.6050],
+            [28.6110, -80.6060],
+            [28.6090, -80.6040],
+            [28.6085, -80.6035],
         ],
         markerType: "launch",
     },
     {
         id: 4,
         name: "South Texas Launch Site (Starbase)",
-        coordinates: [25.9971, -97.1567],
+        coordinates: [25.996, -97.155],
         description:
-            "Located near Brownsville, Texas, Starbase serves as the primary testing and production facility for Starship. It embodies SpaceY's vision for the future of space exploration.",
+            "Located near Brownsville, Texas, Starbase serves as the primary testing and production facility for the Starship program. It embodies SpaceY's vision for the future of space exploration.",
         openHours: "24/7 Operational",
         geometry: [
-            [25.9971, -97.1567],
-            [25.9981, -97.1577],
-            [25.9961, -97.1557],
-            [25.9951, -97.1570],
+            [25.996, -97.155],
+            [25.997, -97.156],
+            [25.995, -97.154],
+            [25.994, -97.157],
         ],
         markerType: "launch",
     },
     {
         id: 5,
-        name: "Rocket Development & Test Facility – McGregor, Texas",
-        coordinates: [30.4093, -97.6847],
+        name: "Engine Test & Integration Facility – McGregor, Texas",
+        coordinates: [30.410, -97.685],
         description:
             "A critical engine test facility where every rocket engine is rigorously evaluated before flight. It is also used for post-flight processing and refurbishment.",
         openHours: "24/7 Operational",
         geometry: [
-            [30.4093, -97.6847],
-            [30.4103, -97.6857],
-            [30.4083, -97.6837],
-            [30.4073, -97.6840],
+            [30.410, -97.685],
+            [30.411, -97.686],
+            [30.409, -97.684],
+            [30.408, -97.683],
         ],
         markerType: "test",
     },
     {
         id: 6,
-        name: "High-Altitude Test Facility – Spaceport America, New Mexico",
-        coordinates: [32.9903, -106.9750],
+        name: "High-Altitude Testing Site – New Mexico",
+        coordinates: [32.990, -106.975],
         description:
             "Formerly used for vertical takeoff and landing demonstrations, this facility supported early reusable launch system tests during SpaceY's development phase.",
         openHours: "Operational during test campaigns",
         geometry: [
-            [32.9903, -106.9750],
-            [32.9913, -106.9760],
-            [32.9893, -106.9740],
-            [32.9883, -106.9750],
+            [32.990, -106.975],
+            [32.991, -106.976],
+            [32.989, -106.974],
+            [32.988, -106.975],
         ],
         markerType: "test",
     },
@@ -98,7 +98,7 @@ const sites = [
         name: "SpaceY Brownsville Office",
         coordinates: [25.9975, -97.1545],
         description:
-            "Situated on Boca Chica Blvd, this office is integral to SpaceY's launch activities, particularly for the Starship program.",
+            "Situated on Celestial Blvd, this office is integral to SpaceY's launch activities, particularly for the Starship program.",
         openHours: "Mon-Fri: 9AM - 5PM",
         geometry: [
             [25.9975, -97.1545],
@@ -110,16 +110,16 @@ const sites = [
     },
     {
         id: 8,
-        name: "SpaceY Cape Canaveral Office",
-        coordinates: [28.4720, -80.5700],
+        name: "SpaceY Atlantic Office",
+        coordinates: [28.4730, -80.5710],
         description:
-            "Located on Rocket Road, this office is pivotal for launch operations, serving as a primary site for many of SpaceY's missions.",
+            "Located on Launch Lane, this office is pivotal for launch operations, serving as a primary site for many of SpaceY's missions.",
         openHours: "Mon-Fri: 9AM - 5PM",
         geometry: [
+            [28.4730, -80.5710],
+            [28.4735, -80.5715],
             [28.4720, -80.5700],
-            [28.4725, -80.5705],
             [28.4715, -80.5695],
-            [28.4710, -80.5690],
         ],
         markerType: "office",
     },
@@ -143,7 +143,7 @@ const sites = [
         name: "SpaceY Redmond Office",
         coordinates: [47.6740, -122.1210],
         description:
-            "Located at 22908 NE Alder Crest Dr, this office focuses on the development of SpaceY's Starlink satellite constellation, aiming to provide global internet coverage.",
+            "Located at 22908 NE Alder Crest Dr, this office focuses on the development of SpaceY's satellite constellation, aiming to provide global connectivity.",
         openHours: "Mon-Fri: 9AM - 5PM",
         geometry: [
             [47.6740, -122.1210],
@@ -215,10 +215,10 @@ const sites = [
     },
     {
         id: 15,
-        name: "SpaceY Vandenberg Office",
+        name: "SpaceY Pacific Office",
         coordinates: [34.6444, -120.8043],
         description:
-            "Located in California near Vandenberg, this office supports regional operations and strategic planning for launch activities.",
+            "Located in California near the Pacific coast, this office supports regional operations and strategic planning for launch activities.",
         openHours: "Mon-Fri: 9AM - 5PM",
         geometry: [
             [34.6444, -120.8043],
@@ -248,55 +248,50 @@ const sites = [
 const products = [
     {
         id: 1,
-        title: "Falcon 9",
+        title: "Aurora 9",
         description:
-            "The Falcon 9 is a two-stage rocket designed and manufactured by SpaceX for reliable transport of satellites and Dragon spacecraft into orbit.",
-        image:
-            "/pictures/falcon9.jpg",
+            "The Aurora 9 is a two-stage rocket designed and manufactured by SpaceY for reliable transport of satellites and the Celestial spacecraft into orbit.",
+        image: "/pictures/aurora9.jpg",
         categories: ["Vehicles", "Rocket"],
         badges: ["Reusable", "Heavy-lift"],
         isNew: true,
     },
     {
         id: 2,
-        title: "Starship",
+        title: "NovaShip",
         description:
-            "Starship is SpaceX's fully reusable transportation system designed to carry crew and cargo to Earth orbit, the Moon, Mars, and beyond.",
-        image:
-            "/pictures/starship.jpg",
+            "NovaShip is SpaceY's fully reusable transportation system designed to carry crew and cargo to Earth orbit, the Moon, Mars, and beyond.",
+        image: "/pictures/novaship.jpg",
         categories: ["Vehicles", "Spaceship"],
         badges: ["Next-gen"],
         isNew: true,
     },
     {
         id: 3,
-        title: "Raptor engine",
+        title: "Nova Engine",
         description:
-            "The Raptor engine is a full-flow staged combustion rocket engine developed by SpaceX for its Starship vehicle.",
-        image:
-            "/pictures/raptor_engine.jpg",
+            "The Nova Engine is a full-flow staged combustion rocket engine developed by SpaceY for its NovaShip vehicle.",
+        image: "/pictures/nova_engine.jpg",
         categories: ["Technologies", "Engine"],
         badges: ["High Performance"],
         isNew: false,
     },
     {
         id: 4,
-        title: "Dragon capsule",
+        title: "Celestial Capsule",
         description:
-            "The Dragon capsule is a spacecraft developed by SpaceX for transporting crew and cargo to the International Space Station.",
-        image:
-            "/pictures/dragon_capsule.jpg",
+            "The Celestial Capsule is a spacecraft developed by SpaceY for transporting crew and cargo to orbital platforms and space stations.",
+        image: "/pictures/celestial_capsule.jpg",
         categories: ["Vehicles", "Spaceship"],
         badges: ["Crewed"],
         isNew: false,
     },
     {
         id: 5,
-        title: "Heat shield technology",
+        title: "ThermoShield Technology",
         description:
-            "Advanced heat shield materials and design ensure safe re-entry of SpaceX vehicles into Earth's atmosphere.",
-        image:
-            "/pictures/heat_shield_technology.jpg",
+            "Advanced thermo shield materials and design ensure safe re-entry of SpaceY vehicles into Earth's atmosphere.",
+        image: "/pictures/thermo_shield_technology.jpg",
         categories: ["Technologies"],
         badges: ["Innovative"],
         isNew: false,
@@ -453,30 +448,30 @@ const navMain = {
         {
             title: "Home",
             url: "/",
-            icon: House,
+            icon: "House",
         },
         {
             title: "Products",
             url: "/products",
-            icon: Box,
+            icon: "Box",
             isActive: false,
             items: [
                 {
                     title: "Vehicles",
                     url: "/products?categories=Vehicles",
-                    icon: Rocket,
+                    icon: "Rocket",
                 },
                 {
                     title: "Technologies",
                     url: "/products?categories=Technologies",
-                    icon: Cpu,
+                    icon: "Cpu",
                 },
             ],
         },
         {
             title: "Sites Map",
             url: "/map",
-            icon: Map,
+            icon: "Map",
         },
     ],
 };
@@ -485,12 +480,12 @@ const navSecondary = [
     {
         title: "Support",
         url: "#",
-        icon: LifeBuoy,
+        icon: "LifeBuoy",
     },
     {
         title: "Feedback",
         url: "#",
-        icon: Send,
+        icon: "Send",
     },
 ];
 
@@ -498,19 +493,54 @@ const projects = [
     {
         name: "Design Engineering",
         url: "#",
-        icon: Frame,
+        icon: "Frame",
     },
     {
         name: "Sales & Marketing",
         url: "#",
-        icon: PieChart,
+        icon: "PieChart",
     },
     {
         name: "Travel",
         url: "#",
-        icon: Map,
+        icon: "Map",
     },
 ]
 
+const themes = [
+    { name: "Light", value: "light", icon: "Sun" },
+    { name: "Dark", value: "dark", icon: "Moon" },
+    { name: "Cupcake", value: "cupcake" },
+    { name: "Bumblebee", value: "bumblebee" },
+    { name: "Emerald", value: "emerald" },
+    { name: "Corporate", value: "corporate" },
+    { name: "Synthwave", value: "synthwave" },
+    { name: "Retro", value: "retro" },
+    { name: "Cyberpunk", value: "cyberpunk" },
+    { name: "Valentine", value: "valentine" },
+    { name: "Halloween", value: "halloween" },
+    { name: "Garden", value: "garden" },
+    { name: "Forest", value: "forest" },
+    { name: "Aqua", value: "aqua" },
+    { name: "Lofi", value: "lofi" },
+    { name: "Pastel", value: "pastel" },
+    { name: "Fantasy", value: "fantasy" },
+    { name: "Wireframe", value: "wireframe" },
+    { name: "Black", value: "black" },
+    { name: "Luxury", value: "luxury" },
+    { name: "Dracula", value: "dracula" },
+    { name: "Cmyk", value: "cmyk" },
+    { name: "Autumn", value: "autumn" },
+    { name: "Business", value: "business" },
+    { name: "Acid", value: "acid" },
+    { name: "Lemonade", value: "lemonade" },
+    { name: "Night", value: "night" },
+    { name: "Coffee", value: "coffee" },
+    { name: "Winter", value: "winter" },
+    { name: "Dim", value: "dim" },
+    { name: "Nord", value: "nord" },
+    { name: "Sunset", value: "sunset" },
+];
 
-export { sites, products, stats, historyEvents, nextTarget, navMain, navSecondary, projects };
+
+export { sites, products, stats, historyEvents, nextTarget, navMain, navSecondary, projects, themes };

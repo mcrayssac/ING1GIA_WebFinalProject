@@ -108,7 +108,9 @@ export default function Products() {
                                             <div className="badge badge-secondary ml-2">NEW</div>
                                         )}
                                     </h2>
-                                    <p>{item.description}</p>
+                                    <div className="tooltip tooltip-bottom tooltip-secondary text-start" data-tip={item.description}>
+                                        <p className="line-clamp-3">{item.description}</p>
+                                    </div>
                                     <div className="card-actions justify-end">
                                         {item.badges.map((badge, index) => (
                                             <div key={index} className="badge badge-outline text-accent-foreground">
