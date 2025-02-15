@@ -3,141 +3,77 @@
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 
-import { BookOpen, Frame, LifeBuoy, Map, PieChart, Send, Settings2, Box, House, Rocket, Cpu } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 
-const data = {
-  navMain: {
-    title : "Guests",
-    items : [
-      {
-        title: "Home",
-        url: "/",
-        icon: House,
-      },
-      {
-        title: "Products",
-        url: "/products",
-        icon: Box,
-        isActive: false,
-        items: [
-          {
-            title: "Vehicles",
-            url: "/products?categories=Vehicles",
-            icon: Rocket,
-          },
-          {
-            title: "Technologies",
-            url: "/products?categories=Technologies",
-            icon: Cpu,
-          },
-        ],
-      },
-      {
-        title: "Sites Map",
-        url: "/map",
-        icon: Map,
-      },
-    ],
-  },
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: Send,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
-}
+import { navMain, navSecondary, projects } from "@/data/data";
 
-export function AppSidebar({...props}) {
-  // Local state for the user object
-  const [user, setUser] = useState(null);
+export function AppSidebar({ ...props }) {
+    // Local state for the user object
+    const [user, setUser] = useState(null);
 
-  // Fetch the user info on mount
-  useEffect(() => {
-    // Get the token from cookies
-    const token = Cookies.get("token");
-    if (token) {
-      fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error("Failed to fetch user info");
-          return response.json();
-        })
-        .then((data) => {
-          // Construct the user object with fetched data
-          setUser({
-            name: data.username,
-            avatar: "favicon.ico",
-            admin: data.admin,
-          });
-        })
-        .catch((err) => {
-          console.error("Error fetching user info:", err);
-          setUser(null);
-        });
-    }
-  }, []);
+    // Fetch the user info on mount
+    useEffect(() => {
+        // Get the token from cookies
+        const token = Cookies.get("token");
+        if (token) {
+            fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+            })
+                .then((response) => {
+                    if (!response.ok) throw new Error("Failed to fetch user info");
+                    return response.json();
+                })
+                .then((data) => {
+                    // Construct the user object with fetched data
+                    setUser({
+                        name: data.username,
+                        avatar: "favicon.ico",
+                        admin: data.admin,
+                    });
+                })
+                .catch((err) => {
+                    console.error("Error fetching user info:", err);
+                    setUser(null);
+                });
+        }
+    }, []);
 
-  return (
-    (<Sidebar
-      className="top-[--header-height] !h-[calc(100svh-var(--header-height))]"
-      {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a>
-                <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
-                  <img src="/pictures/spacey_logo.png" alt="SpaceX" className="rounded-lg" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">SpaceY</span>
-                  <span className="truncate text-xs">Exploration company</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain object={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
-    </Sidebar>)
-  );
+    return (
+        (<Sidebar
+            className="top-[--header-height] !h-[calc(100svh-var(--header-height))]"
+            {...props}>
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild>
+                            <a>
+                                <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
+                                    <img src="/pictures/spacey_logo.png" alt="SpaceX" className="rounded-lg" />
+                                </div>
+                                <div className="grid flex-1 text-left text-sm leading-tight">
+                                    <span className="truncate font-semibold">SpaceY</span>
+                                    <span className="truncate text-xs">Exploration company</span>
+                                </div>
+                            </a>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent>
+                <NavMain object={navMain} />
+                <NavProjects projects={projects} />
+                <NavSecondary items={navSecondary} className="mt-auto" />
+            </SidebarContent>
+            <SidebarFooter>
+                <NavUser user={user} />
+            </SidebarFooter>
+        </Sidebar>)
+    );
 }

@@ -11,7 +11,7 @@ export default function Countdown({ targetDate }) {
         const now = new Date();
         const diff = date.getTime() - now.getTime();
         if (diff <= 0) {
-        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+            return { days: 0, hours: 0, minutes: 0, seconds: 0 };
         }
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -24,7 +24,7 @@ export default function Countdown({ targetDate }) {
 
     useEffect(() => {
         const timer = setInterval(() => {
-        setTimeLeft(getTimeLeft(targetDate));
+            setTimeLeft(getTimeLeft(targetDate));
         }, 1000);
 
         return () => clearInterval(timer);
@@ -39,25 +39,25 @@ export default function Countdown({ targetDate }) {
             <div className="grid grid-flow-col gap-5 text-centerfont-mono auto-cols-max">
                 <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
-                        <span style={{"--value":timeLeft.days}}></span>
+                        <span style={{ "--value": timeLeft.days }}></span>
                     </span>
                     days
                 </div>
                 <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
-                        <span style={{"--value":timeLeft.hours}}></span>
+                        <span style={{ "--value": timeLeft.hours }}></span>
                     </span>
                     hours
                 </div>
                 <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
-                        <span style={{"--value":timeLeft.minutes}}></span>
+                        <span style={{ "--value": timeLeft.minutes }}></span>
                     </span>
                     min
                 </div>
                 <div className="flex flex-col items-center">
                     <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
-                        <span style={{"--value":timeLeft.seconds}}></span>
+                        <span style={{ "--value": timeLeft.seconds }}></span>
                     </span>
                     sec
                 </div>
@@ -66,7 +66,7 @@ export default function Countdown({ targetDate }) {
             <div className="flex items-center space-x-2 link link-hover hover:no-underline transition-transform transform hover:scale-125">
                 <Rocket className="w-5 h-5 animate-spin" style={{ animationDuration: "10s" }} />
                 <span className="text-lg font-mono">Blast off!</span>
-            </div>  
+            </div>
         </div>
     );
 };
