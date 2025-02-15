@@ -1,7 +1,3 @@
-"use client";
-
-import { Frame, LifeBuoy, Map, PieChart, Send } from "lucide-react"
-
 const sites = [
     {
         id: 1,

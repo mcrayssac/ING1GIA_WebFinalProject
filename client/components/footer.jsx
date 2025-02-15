@@ -1,6 +1,6 @@
 "use client";
 
-import { Orbit } from "lucide-react";
+import * as Icons from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { navMain } from "@/data/data";
@@ -11,18 +11,22 @@ function FooterHeader({ data }) {
     return (
         <nav>
             <h6 className="footer-title font-mono text-accent-foreground">{data.title}</h6>
-            {data.items.map((link) => (
-                <div key={link.title} className="flex items-center gap-2">
-                    <link.icon className="w-4 h-4" />
-                    <a
-                        key={link.url}
-                        onClick={() => router.push(link.url)}
-                        className="link link-hover"
-                    >
-                        {link.title}
-                    </a>
-                </div>
-            ))}
+            {data.items.map((link) => {
+                const Icon = link.icon ? Icons[link.icon] : null;
+                return (
+                    <div key={link.title} className="flex items-center gap-2">
+                        {Icon && <Icon className="w-4 h-4" />}
+                        <a
+                            key={link.url}
+                            onClick={() => router.push(link.url)}
+                            className="link link-hover"
+                        >
+                            {link.title}
+                        </a>
+                    </div>
+                )
+            }
+            )}
         </nav>
     );
 }
@@ -39,7 +43,7 @@ export default function Footer() {
             </footer>
             <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl bg-primary text-primary-content shadow-xl`}>
                 <aside className="grid-flow-col items-center font-mono">
-                    <Orbit className="w-9 h-9 animate-spin mr-2" style={{ animationDuration: "10s" }} />
+                    <Icons.Orbit className="w-9 h-9 animate-spin mr-2" style={{ animationDuration: "10s" }} />
                     <p>
                         SpaceY Company
                         <br />
