@@ -99,7 +99,12 @@ export default function Products() {
                         {filteredData.map((item) => (
                             <div key={item.id} className="card shadow-xl bg-primary text-primary-content">
                                 <figure>
-                                    <img className="w-full h-96 object-cover" src={item.image} alt={item.title} />
+                                    {item.image && (
+                                        <img className="w-full h-96 object-cover" src={item.image} alt={item.title} />
+                                    )}
+                                    {!item.image && (
+                                        <img className="w-full h-96 object-cover" src="/pictures/spacey_logo.png" alt={item.title} />
+                                    )}
                                 </figure>
                                 <div className="card-body">
                                     <h2 className="card-title text-accent-foreground">

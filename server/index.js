@@ -21,40 +21,38 @@ const datetime = chalk.bold.yellow;
 
 // CORS configuration
 app.use(cors({
-  origin: [
-    process.env.ORIGIN_LOCAL
-  ]
+    origin: [
+        process.env.ORIGIN_LOCAL
+    ]
 }));
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
-  .then(() => console.log(success('Connected to MongoDB')))
-  .catch(err => console.error(error('Error connecting to MongoDB:', err)));
-
-// Load middlewares
-const { isAdmin, verifyToken } = require('./middlewares/authMiddlewares');
+    .then(() => console.log(success('Connected to MongoDB')))
+    .catch(err => console.error(error('Error connecting to MongoDB:', err)));
 
 // Load models
 require('./models/User');
+require('./models/Site');
 
 // Track all incoming requests
 app.use((req, res, next) => {
     // Request infos
     console.log("")
-    console.log(datetime('DateTime:', new Date().toLocaleString())); 
+    console.log(datetime('DateTime:', new Date().toLocaleString()));
     console.log(routes(`[${req.method}] ${req.url}`));
     console.log(info(`ip: ${req.ip}, origin: ${req.headers.origin}`));
 
-    if (process.env.DEBUG === 'true'){
-      console.log("");
-      console.log(debug(`Params: ${JSON.stringify(req.params)}`)); 
-      console.log(debug(`Query: ${JSON.stringify(req.query)}`));
-      console.log(debug(`Body: ${JSON.stringify(req.body)}`));
-      console.log(debug(`Headers: ${JSON.stringify(req.headers)}`));
-      console.log("");
+    if (process.env.DEBUG === 'true') {
+        console.log("");
+        console.log(debug(`Params: ${JSON.stringify(req.params)}`));
+        console.log(debug(`Query: ${JSON.stringify(req.query)}`));
+        console.log(debug(`Body: ${JSON.stringify(req.body)}`));
+        console.log(debug(`Headers: ${JSON.stringify(req.headers)}`));
+        console.log("");
     }
 
-  next();
+    next();
 });
 
 app.get('/', (req, res) => {
@@ -64,6 +62,10 @@ app.get('/', (req, res) => {
 // Load routes
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+const siteRoutes = require('./routes/siteRoutes');
+app.use('/api/sites', siteRoutes);
+const seedRoutes = require('./routes/seedRoutes');
+app.use('/api/seed', seedRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

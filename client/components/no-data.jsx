@@ -1,4 +1,4 @@
-export default function NoData( { message } ) {
+export default function NoData({ message }) {
     return (
         <div className={`skeleton w-full h-96`}>
             <div className="flex items-center justify-center h-full">

@@ -20,9 +20,9 @@ const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authM
  * @returns {JSON} { token: "JWT token string" }
  */
 router.post('/login', authenticateUser, (req, res) => {
-  // The authenticateUser middleware validate the credentials and attach the user to req.user
-  const token = jwt.sign({ _id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  res.json({ token });
+    // The authenticateUser middleware validate the credentials and attach the user to req.user
+    const token = jwt.sign({ _id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
 });
 
 /**
@@ -39,24 +39,24 @@ router.post('/login', authenticateUser, (req, res) => {
  * @returns {JSON} { token: "JWT token string" }
  */
 router.post('/register', async (req, res) => {
-  try {
-    const user = new User(req.body);
+    try {
+        const user = new User(req.body);
 
-    // Set admin to false
-    user.admin = false;
+        // Set admin to false
+        user.admin = false;
 
-    // Verify if user already exists
-    const existing = await User.findOne({ username: user.username });
-    if (existing) return res.status(409).send('User already exists');
+        // Verify if user already exists
+        const existing = await User.findOne({ username: user.username });
+        if (existing) return res.status(409).send('User already exists');
 
-    await user.save();
+        await user.save();
 
-    // Do login and return JWT and send 210 user created with token
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(201).json({ token });
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+        // Do login and return JWT and send 201 user created with token
+        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.status(201).json({ token });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
 });
 
 /**
@@ -72,12 +72,12 @@ router.post('/register', async (req, res) => {
  * @returns {JSON} { username: "user", admin: false }
  */
 router.get('/infos', verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    res.json({ username: user.username, admin: user.admin });
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+    try {
+        const user = await User.findById(req.user._id);
+        res.json({ username: user.username, admin: user.admin });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
 });
 
 /**
@@ -102,26 +102,26 @@ router.get('/infos', verifyToken, async (req, res) => {
  * }
  */
 router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
-  const { userId } = req.body;
+    const { userId } = req.body;
 
-  try {
-    const user = await User.findById(userId);
+    try {
+        const user = await User.findById(userId);
 
-    if (!user) {
-      return res.status(404).send('User not found');
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        // Generate a random password
+        const randomPassword = Math.random().toString(36).slice(-8);
+
+        // Update the user's password
+        user.password = randomPassword;
+        await user.save();
+
+        res.status(200).json({ message: 'Password reset successfully', user, newPassword: randomPassword });
+    } catch (error) {
+        res.status(500).send(error.message);
     }
-
-    // Generate a random password
-    const randomPassword = Math.random().toString(36).slice(-8);
-
-    // Update the user's password
-    user.password = randomPassword;
-    await user.save();
-
-    res.status(200).json({ message: 'Password reset successfully', user, newPassword: randomPassword });
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
 });
 
 /**
@@ -137,16 +137,16 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
  * @returns {JSON} { admin: true } or { admin: false }
  */
 router.get('/verify', verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (user.admin) {
-      res.status(200).json({ admin: true });
-    } else {
-      res.status(200).json({ admin: false });
+    try {
+        const user = await User.findById(req.user._id);
+        if (user.admin) {
+            res.status(200).json({ admin: true });
+        } else {
+            res.status(200).json({ admin: false });
+        }
+    } catch (error) {
+        res.status(500).send(error.message);
     }
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
 });
 
 /**
@@ -164,10 +164,10 @@ router.get('/verify', verifyToken, async (req, res) => {
  */
 router.get('/', verifyToken, isAdmin, async (req, res) => {
     try {
-      const users = await User.find();
-      res.json(users);
+        const users = await User.find();
+        res.json(users);
     } catch (error) {
-      res.status(500).send(error.message);
+        res.status(500).send(error.message);
     }
 });
 
