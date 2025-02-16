@@ -3,19 +3,20 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const Site = require('../models/Site');
+const Product = require('../models/Product');
+const Statistic = require('../models/Statistic');
+const HistoryEvent = require('../models/HistoryEvent');
 
-const { sites } = require('../data/data');
+const { sites, products, statistics, historyEvents } = require('../data/data');
 
 
 /**
  * @route GET /.../seed
  * @desc Seeds the database with static data
- * @access Private (requires a valid JWT token in the Authorization header)
+ * @access Public
  *
  * @usage Example request:
  * GET /.../seed
- * Headers:
- *   Authorization: Bearer <JWT token>
  *
  * @returns {JSON} { success: true, message: "Data seeded successfully" }
  */
@@ -24,6 +25,9 @@ router.get('/', async (req, res) => {
         // Define the static data mappings 
         const mappedData = [
             { key: 'Sites', data: sites, model: Site },
+            { key: 'Products', data: products, model: Product },
+            { key: 'Statistics', data: statistics, model: Statistic },
+            { key: 'HistoryEvents', data: historyEvents, model: HistoryEvent },
         ];
 
         // Loop over each mapping and seed the data

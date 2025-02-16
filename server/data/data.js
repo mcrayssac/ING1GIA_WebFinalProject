@@ -227,7 +227,6 @@ const sites = [
 
 const products = [
     {
-        id: 1,
         title: "Aurora 9",
         description:
             "The Aurora 9 is a two-stage rocket designed and manufactured by SpaceY for reliable transport of satellites and the Celestial spacecraft into orbit.",
@@ -237,7 +236,6 @@ const products = [
         isNew: true,
     },
     {
-        id: 2,
         title: "NovaShip",
         description:
             "NovaShip is SpaceY's fully reusable transportation system designed to carry crew and cargo to Earth orbit, the Moon, Mars, and beyond.",
@@ -247,7 +245,6 @@ const products = [
         isNew: true,
     },
     {
-        id: 3,
         title: "Nova Engine",
         description:
             "The Nova Engine is a full-flow staged combustion rocket engine developed by SpaceY for its NovaShip vehicle.",
@@ -257,7 +254,6 @@ const products = [
         isNew: false,
     },
     {
-        id: 4,
         title: "Celestial Capsule",
         description:
             "The Celestial Capsule is a spacecraft developed by SpaceY for transporting crew and cargo to orbital platforms and space stations.",
@@ -267,7 +263,6 @@ const products = [
         isNew: false,
     },
     {
-        id: 5,
         title: "ThermoShield Technology",
         description:
             "Advanced thermo shield materials and design ensure safe re-entry of SpaceY vehicles into Earth's atmosphere.",
@@ -278,9 +273,8 @@ const products = [
     },
 ];
 
-const stats = [
+const statistics = [
     {
-        id: 1,
         icon: "Heart",
         title: "Total likes",
         value: "25.6K",
@@ -288,7 +282,6 @@ const stats = [
         desc: "21% to last month",
     },
     {
-        id: 2,
         icon: "View",
         title: "Page views",
         value: "1.2M",
@@ -296,7 +289,6 @@ const stats = [
         desc: "15% to last month",
     },
     {
-        id: 3,
         icon: "ClipboardCheck",
         title: "Mission success rate",
         value: "98%",
@@ -304,7 +296,6 @@ const stats = [
         desc: "Operational efficiency",
     },
     {
-        id: 4,
         icon: "Rocket",
         title: "Total launches",
         value: "448",
@@ -312,7 +303,6 @@ const stats = [
         desc: "405 successful missions",
     },
     {
-        id: 5,
         icon: "Satellite",
         title: "Satellites deployed",
         value: "2.3K",
@@ -323,7 +313,6 @@ const stats = [
 
 const historyEvents = [
     {
-        id: 1,
         date: "March 15, 2002",
         title: "Foundation of Celestial Innovations",
         description:
@@ -331,7 +320,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 2,
         date: "June 27, 2004",
         title: "Mercury Mk-I: The First Suborbital Test Flight",
         description:
@@ -339,7 +327,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 3,
         date: "September 12, 2008",
         title: "Orion Launch Vehicle: Reaching Orbit",
         description:
@@ -347,7 +334,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 4,
         date: "November 3, 2010",
         title: "Phoenix Booster: The Reusability Breakthrough",
         description:
@@ -355,7 +341,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 5,
         date: "April 18, 2012",
         title: "First Commercial Satellite Launch",
         description:
@@ -363,7 +348,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 6,
         date: "July 22, 2015",
         title: "Pegasus-1: The Inaugural Manned Mission",
         description:
@@ -371,7 +355,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 7,
         date: "March 3, 2018",
         title: "Artemis Pathfinder: Pioneering Mars Exploration",
         description:
@@ -379,7 +362,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 8,
         date: "August 14, 2021",
         title: "Celestia Orbital Habitat: A New Era in Space Living",
         description:
@@ -387,7 +369,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 9,
         date: "December 2, 2023",
         title: "Odyssey: The Reusable Interplanetary Transport System",
         description:
@@ -395,7 +376,6 @@ const historyEvents = [
         icon: "CircleCheckBig",
     },
     {
-        id: 10,
         date: "Scheduled for Q3 2027",
         title: "Nova Station: The Orbital Commercial Hub",
         description:
@@ -403,7 +383,6 @@ const historyEvents = [
         icon: "CircleEllipsis",
     },
     {
-        id: 11,
         date: "Targeted for 2029",
         title: "Lunar Gateway 2.0: Next-Generation Lunar Base",
         description:
@@ -411,7 +390,6 @@ const historyEvents = [
         icon: "CircleEllipsis",
     },
     {
-        id: 12,
         date: "Planned for 2035",
         title: "Mars Colony Initiative: Red Frontier",
         description:
@@ -456,37 +434,6 @@ const navMain = {
     ],
 };
 
-const navSecondary = [
-    {
-        title: "Support",
-        url: "#",
-        icon: "LifeBuoy",
-    },
-    {
-        title: "Feedback",
-        url: "#",
-        icon: "Send",
-    },
-];
-
-const projects = [
-    {
-        name: "Design Engineering",
-        url: "#",
-        icon: "Frame",
-    },
-    {
-        name: "Sales & Marketing",
-        url: "#",
-        icon: "PieChart",
-    },
-    {
-        name: "Travel",
-        url: "#",
-        icon: "Map",
-    },
-]
-
 const themes = [
     { name: "Light", value: "light", icon: "Sun" },
     { name: "Dark", value: "dark", icon: "Moon" },
@@ -523,4 +470,4 @@ const themes = [
 ];
 
 
-export { sites, products, stats, historyEvents, nextTarget, navMain, navSecondary, projects, themes };
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes };

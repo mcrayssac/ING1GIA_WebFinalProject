@@ -32,40 +32,43 @@ export default function Countdown({ targetDate }) {
 
     return (
         <div className={`flex flex-col items-center space-y-4 ${textColor}`}>
-            <h1 className="text-6xl font-mono leading-none animate-bounce" style={{ animationDuration: "5s" }}>
+            <h1 className="font-mono leading-none animate-bounce lg:text-6xl md:text-4xl sm:text-2xl text-xl line-clamp-1" style={{ animationDuration: "5s" }}>
                 Our next adventure begins in
             </h1>
 
             <div className="grid grid-flow-col gap-5 text-centerfont-mono auto-cols-max">
                 <div className="flex flex-col items-center">
-                    <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
+                    <span className="countdown font-mono transition-transform transform hover:scale-125 lg:text-8xl md:text-6xl sm:text-4xl text-2xl">
                         <span style={{ "--value": timeLeft.days }}></span>
                     </span>
                     days
                 </div>
                 <div className="flex flex-col items-center">
-                    <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
+                    <span className="countdown font-mono transition-transform transform hover:scale-125 lg:text-8xl md:text-6xl sm:text-4xl text-2xl">
                         <span style={{ "--value": timeLeft.hours }}></span>
                     </span>
                     hours
                 </div>
                 <div className="flex flex-col items-center">
-                    <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
+                    <span className="countdown font-mono transition-transform transform hover:scale-125 lg:text-8xl md:text-6xl sm:text-4xl text-2xl">
                         <span style={{ "--value": timeLeft.minutes }}></span>
                     </span>
                     min
                 </div>
                 <div className="flex flex-col items-center">
-                    <span className="countdown text-8xl font-mono transition-transform transform hover:scale-125">
+                    <span className="countdown font-mono transition-transform transform hover:scale-125 lg:text-8xl md:text-6xl sm:text-4xl text-2xl">
                         <span style={{ "--value": timeLeft.seconds }}></span>
                     </span>
                     sec
                 </div>
             </div>
 
-            <div className="flex items-center space-x-2 link link-hover hover:no-underline transition-transform transform hover:scale-125">
-                <Rocket className="w-5 h-5 animate-spin" style={{ animationDuration: "10s" }} />
-                <span className="text-lg font-mono">Blast off!</span>
+            <div className="flex items-center link link-hover hover:no-underline transition-transform transform hover:scale-125 lg:space-x-4 md:space-x-3 space-x-2">
+                <Rocket className="animate-spin lg:w-6 lg:h-6 md:w-5 md:h-5 sm:w-4 sm:h-4 w-3 h-3"
+                    style={{ animationDuration: "10s" }} />
+                <span className="font-mono lg:text-2xl md:text-xl sm:text-lg text-sm">
+                    Blast off!
+                </span>
             </div>
         </div>
     );

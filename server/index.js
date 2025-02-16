@@ -34,6 +34,9 @@ mongoose.connect(MONGO_URI)
 // Load models
 require('./models/User');
 require('./models/Site');
+require('./models/Product');
+require('./models/Statistic');
+require('./models/HistoryEvent');
 
 // Track all incoming requests
 app.use((req, res, next) => {
@@ -64,6 +67,12 @@ const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
 const siteRoutes = require('./routes/siteRoutes');
 app.use('/api/sites', siteRoutes);
+const productRoutes = require('./routes/productRoutes');
+app.use('/api/products', productRoutes);
+const statisticRoutes = require('./routes/statisticRoutes');
+app.use('/api/statistics', statisticRoutes);
+const historyEventRoutes = require('./routes/historyEventRoutes');
+app.use('/api/history-events', historyEventRoutes);
 const seedRoutes = require('./routes/seedRoutes');
 app.use('/api/seed', seedRoutes);
 

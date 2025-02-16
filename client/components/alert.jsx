@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { CircleX, CircleCheck, Info, TriangleAlert } from "lucide-react";
 
-export default function Alert({ type = "error", message, autoClose = 5000, onClose }) {
+export default function Alert({ type = "error", message, autoClose = 5000, onClose, className }) {
     const initialCountdown = autoClose / 1000;
     const [countdown, setCountdown] = useState(initialCountdown);
 
@@ -60,7 +60,7 @@ export default function Alert({ type = "error", message, autoClose = 5000, onClo
     const progressValue = (countdown / initialCountdown) * 100;
 
     return (
-        <div role="alert" className={alertClass}>
+        <div role="alert" className={alertClass + " " + className}>
             <span className="mr-2">{alertIcon}</span>
             <span>{message}</span>
             <div className="radial-progress text-primary ml-auto" style={{ "--value": progressValue, "--size": "2em" }} role="progressbar" />

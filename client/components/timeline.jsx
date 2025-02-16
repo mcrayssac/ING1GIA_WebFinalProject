@@ -23,9 +23,9 @@ function TimelineItem({ event, align }) {
 
 export default function TimelinePage({ historyEvents }) {
     return (
-        <ul className="timeline timeline-snap-icon max-md:timeline-compact timeline-vertical">
+        <ul className="timeline timeline-snap-icon max-md:timeline-compact timeline-vertical mt-12">
             {historyEvents.map((event, index) => (
-                <TimelineItem key={event.id} event={event} align={index % 2 === 0 ? "start" : "end"} />
+                <TimelineItem key={event._id} event={event} align={index % 2 === 0 ? "start" : "end"} />
             ))}
         </ul>
     );

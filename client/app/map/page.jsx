@@ -102,12 +102,17 @@ export default function MapPage() {
     });
     const [legendQuery, setLegendQuery] = useState("");
 
-    // Set visible site ids to all site ids when safeSites change
     useEffect(() => {
-        if (safeSites.length > 0 && visibleSiteIds.length === 0) {
-            setVisibleSiteIds(safeSites.map((s) => s._id));
+        if (safeSites.length > 0) {
+            // Check if at least one fetched site id is present in visibleSiteIds.
+            const hasAny =
+                safeSites.some((site) => visibleSiteIds.includes(site._id));
+            if (!hasAny) {
+                setVisibleSiteIds(safeSites.map((s) => s._id));
+            }
         }
     }, [safeSites, visibleSiteIds]);
+
 
     // Save visibleSiteIds to localStorage whenever they change.
     useEffect(() => {
@@ -164,28 +169,28 @@ export default function MapPage() {
 
     return (
         <>
-            {loading && <Loading />}
             {error && <Alert type="error" message={error} onClose={() => setError("")} />}
-            {!loading && safeSites.length === 0 && <NoData message="No sites data available" />}
-            {!loading && safeSites.length > 0 && (
-                <>
-                    <div className={`container mt-8 mx-auto px-4 py-8`}>
+            <div className={`container mt-8 mx-auto px-4 py-8`}>
 
-                        <div className="flex items-center space-x-4">
-                            <Map className="w-8 h-8" />
-                            <h1 className="text-4xl font-black font-mono text-start">Sites Map</h1>
-                        </div>
-                        <div className="flex items-center justify-center mt-12 join">
-                            <label className="input input-bordered input-primary flex items-center gap-2 join-item w-full max-w-xs">
-                                <input type="text" className="grow placeholder-oklch-p" placeholder="Discover hidden space stations..." value={legendQuery} onChange={(e) => setLegendQuery(e.target.value)} style={{ color: "oklch(var(--p))" }} />
-                                <Search className="w-6 h-6" style={{ color: "oklch(var(--p))" }} />
-                            </label>
-                            <button className="btn btn-primary join-item" onClick={fitMapToMarkers}>
-                                <MapPinned className="w-6 h-6" />
-                                Center map
-                            </button>
-                        </div>
-                        <div className="flex h-screen mt-12 space-x-4">
+                <div className="flex items-center space-x-4">
+                    <Map className="w-8 h-8" />
+                    <h1 className="text-4xl font-black font-mono text-start">Sites Map</h1>
+                </div>
+                <div className="flex items-center justify-center mt-12 join">
+                    <label className="input input-bordered input-primary flex items-center gap-2 join-item w-full max-w-xs">
+                        <input type="text" className="grow placeholder-oklch-p" placeholder="Discover hidden space stations..." value={legendQuery} onChange={(e) => setLegendQuery(e.target.value)} style={{ color: "oklch(var(--p))" }} />
+                        <Search className="w-6 h-6" style={{ color: "oklch(var(--p))" }} />
+                    </label>
+                    <button className="btn btn-primary join-item" onClick={fitMapToMarkers}>
+                        <MapPinned className="w-6 h-6" />
+                        Center map
+                    </button>
+                </div>
+                <div className="flex h-screen mt-12 space-x-4">
+                    {loading && <Loading />}
+                    {!loading && safeSites.length === 0 && <NoData message="No sites data available" />}
+                    {!loading && safeSites.length > 0 && (
+                        <>
                             <div className="relative rounded-2xl overflow-hidden shadow-xl" style={{ width: "60%", zIndex: 0 }}>
                                 <MapContainer
                                     center={[initialCenter.lat, initialCenter.lng]}
@@ -283,10 +288,10 @@ export default function MapPage() {
 
                                 {filteredLegendSites.length === 0 && (<NoData message="No search results found" />)}
                             </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                        </>
+                    )}
+                </div>
+            </div>
         </>
     );
 }

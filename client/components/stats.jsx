@@ -29,7 +29,7 @@ export default function StatsPage({ statsData }) {
         <div className="flex items-center justify-center">
             <div className="stats stats-vertical lg:stats-horizontal shadow-xl m-8 mx-auto bg-primary">
                 {statsData.map((stat) => (
-                    <StatItem key={stat.id} {...stat} />
+                    <StatItem key={stat._id} {...stat} />
                 ))}
             </div>
         </div>

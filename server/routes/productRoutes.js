@@ -1,22 +1,22 @@
 const express = require('express');
 const router = express.Router();
 
-const Site = require('../models/Site');
+const Product = require('../models/Product');
 
 /**
- * @route GET /.../sites
- * @desc Returns all sites from the database
+ * @route GET /.../products
+ * @desc Returns all products from the database
  * @access Public
  * 
  * @usage Example request:
- * GET /.../sites
+ * GET /.../products
  * 
- * @returns {JSON} Array of site objects
+ * @returns {JSON} Array of product objects
  */
 router.get('/', async (req, res) => {
     try {
-        const sites = await Site.find();
-        res.json(sites);
+        const products = await Product.find();
+        res.json(products);
     } catch (error) {
         res.status(500).send(error.message);
     }
