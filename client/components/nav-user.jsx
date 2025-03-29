@@ -104,20 +104,16 @@ export function NavUser({
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <BadgeCheck />
-                                Account
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <CreditCard />
-                                Billing
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Bell />
-                                Notifications
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
+                        <button
+                            onClick={() => router.push("/account")}
+                            type="button"
+                            className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
+              focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 
+              [&>svg]:shrink-0 hover:bg-accent hover:text-accent-foreground"
+                        >
+                            <BadgeCheck />
+                            Account
+                        </button>
                         <DropdownMenuSeparator />
                         <button
                             onClick={handleLogout}
