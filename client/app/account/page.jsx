@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Loader2, CalendarIcon, UserPen } from "lucide-react";
 // Removed date-fns dependency
 
-import Alert from "@/components/alert";
+import Alert from "@/components/user-alert";
 import { Button } from "@/components/ui/button";
 import {
     Card,

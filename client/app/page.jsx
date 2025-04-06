@@ -10,7 +10,7 @@ import TimelinePage from '@/components/timeline';
 
 import { nextTarget } from '@/data/data';
 
-import Alert from "@/components/alert";
+import Alert from "@/components/user-alert";
 import NoData from "@/components/no-data";
 import Loading from "@/components/loading";
 
