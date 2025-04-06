@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 
 // Load environment variables
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 const PORT = process.env.PORT;
 const MONGO_URI = process.env.MONGO_URI;
 //console.log('Mongo URI:', MONGO_URI);
