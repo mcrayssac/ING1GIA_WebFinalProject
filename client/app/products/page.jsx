@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Box, Search } from "lucide-react";
 
 import NoData from "@/components/no-data";
-import Alert from "@/components/alert";
+import Alert from "@/components/user-alert";
 import Loading from "@/components/loading";
 
 export default function Products() {

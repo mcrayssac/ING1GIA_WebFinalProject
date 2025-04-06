@@ -73,8 +73,8 @@ const statisticRoutes = require('./routes/statisticRoutes');
 app.use('/api/statistics', statisticRoutes);
 const historyEventRoutes = require('./routes/historyEventRoutes');
 app.use('/api/history-events', historyEventRoutes);
-const seedRoutes = require('./routes/seedRoutes');
-app.use('/api/seed', seedRoutes);
+const satellitesRoutes = require('./routes/satellitesRoutes');
+app.use('/api/satellites', satellitesRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

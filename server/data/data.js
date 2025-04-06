@@ -431,6 +431,11 @@ const navMain = {
             url: "/map",
             icon: "Map",
         },
+        {
+            title: "Satellites",
+            url: "/satellites",
+            icon: "Orbit",
+        },
     ],
 };
 

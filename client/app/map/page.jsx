@@ -40,8 +40,9 @@ import {
     SidebarMenuItem,
     SidebarProvider,
 } from "@/components/ui/sidebar"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
-import Alert from "@/components/alert";
+import Alert from "@/components/user-alert";
 import NoData from "@/components/no-data";
 import Loading from "@/components/loading";
 
@@ -468,8 +469,8 @@ export default function MapPage() {
                                             </div>
                                         </SidebarHeader>
 
-                                        <SidebarContent className="p-0 w-full">
-                                            <SidebarGroup className="w-full">
+                                        <SidebarContent className="p-0 w-full flex flex-col">
+                                            <SidebarGroup className="w-full flex-none">
                                                 <SidebarGroupContent className="w-full">
                                                     <SidebarMenu className="w-full">
                                                         {filteredLegendSites.length === 0 ? (
@@ -484,7 +485,7 @@ export default function MapPage() {
                                                                 </Button>
                                                             </div>
                                                         ) : (
-                                                            <div className="divide-y w-full">
+                                                            <div className="divide-y w-full overflow-y-auto h-[calc(100vh-230px)]">
                                                                 {filteredLegendSites.map((site) => {
                                                                     const mapping = markerMapping[site.markerType] || { icon: Rocket, color: "gray" }
                                                                     const IconComponent = mapping.icon
