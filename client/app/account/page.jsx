@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { Loader2, CalendarIcon, UserPen } from "lucide-react";
-// Removed date-fns dependency
 
 import Alert from "@/components/user-alert";
 import { Button } from "@/components/ui/button";
@@ -24,25 +24,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const defaultValues = {
-    username: "johndoe",
-    email: "john.doe@example.com",
-    bio: "I'm a software developer based in New York. I love building web applications and exploring new technologies.",
-    urls: {
-        website: "https://johndoe.com",
-        twitter: "johndoe",
-        linkedin: "johndoe",
-    },
-    dob: new Date("1990-01-01"),
-    location: "New York, USA",
-};
-
 export default function AccountPage() {
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isImageUploading, setIsImageUploading] = useState(false);
-    const [avatarSrc, setAvatarSrc] = useState("/placeholder.svg?height=100&width=100");
+    const [avatarSrc, setAvatarSrc] = useState("");
 
+    // React Hook Form setup
+    // Registering form fields and handling validation
+    // Using react-hook-form for form management
     const {
         register,
         handleSubmit,
@@ -50,33 +40,87 @@ export default function AccountPage() {
         setValue,
         formState: { errors },
     } = useForm({
-        defaultValues,
         mode: "onChange",
     });
 
+    // Fetch user info on mount
+    useEffect(() => {
+        const token = Cookies.get("token");
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error("Failed to fetch user info");
+                return response.json();
+            })
+            .then((data) => {
+                // Set the fetched data to the form
+                setValue("_id", data._id);
+                setValue("username", data.username);
+                setValue("email", data.email || "");
+                setValue("bio", data.bio || "");
+                setValue("urls.x", data.urls.x || "");
+                setValue("urls.linkedin", data.urls.linkedin || "");
+                setValue("dob", new Date(data.dob) || "");
+                setValue("location", data.location || "");
+                setIsImageUploading(true);
+                setAvatarSrc(data.photo || "");
+                setIsImageUploading(false);
+            })
+            .catch((err) => {
+                console.error("Error fetching user info:", err);
+                window.location.href = "/login";
+            });
+    }, []);
+
+    // Updated onSubmit: sends data to the API route
     function onSubmit(data) {
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            console.log(data);
-            setIsLoading(false);
-        }, 1000);
+        data.photo = avatarSrc;
+        console.log("Submitting data:", data);
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/${data._id}`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${Cookies.get("token")}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to update user");
+                return res.json();
+            })
+            .then((result) => {
+                setIsLoading(false);
+            })
+            .catch((err) => {
+                console.error("Error updating user:", err);
+                setError(err.message);
+                setIsLoading(false);
+            });
     }
 
+    // Handle image upload
     function handleImageUpload(event) {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
 
+        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+        if (file.size > maxSize) {
+            alert("File is too large. Maximum allowed size is 2MB.");
+            return;
+        }
+
         setIsImageUploading(true);
-        // Simulate image upload
-        setTimeout(() => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setAvatarSrc(e.target.result);
-                setIsImageUploading(false);
-            };
-            reader.readAsDataURL(file);
-        }, 1000);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setAvatarSrc(e.target.result);
+            setIsImageUploading(false);
+        };
+        reader.readAsDataURL(file);
     }
 
     // Date formatting using built-in toLocaleDateString
@@ -93,7 +137,6 @@ export default function AccountPage() {
         <>
             {error && <Alert type="error" message={error} onClose={() => setError("")} />}
             <div className="container mt-8 mx-auto px-4 py-8">
-
                 <div className="flex items-center space-x-4">
                     <UserPen className="w-8 h-8" />
                     <h1 className="text-4xl font-black font-mono text-start">Account</h1>
@@ -101,14 +144,18 @@ export default function AccountPage() {
                 <div className="flex flex-col md:flex-row gap-4 md:gap-8  mt-12">
                     <Card className="w-full md:w-1/3 shadow-xl text-primary-content">
                         <CardHeader>
-                            <CardTitle className="text-accent-foreground">Votre photo</CardTitle>
-                            <CardDescription>Cette photo sera affichée sur votre profil.</CardDescription>
+                            <CardTitle className="text-accent-foreground">Your avatar</CardTitle>
+                            <CardDescription>This is your profile picture.</CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col items-center gap-4">
+                        <CardContent className="flex flex-col items-center gap-4 justify-center">
                             <div className="relative">
-                                <Avatar className="h-24 w-24">
+                                <Avatar className="h-full w-full max-w-[200px]">
                                     <AvatarImage src={avatarSrc} alt="Profile" />
-                                    <AvatarFallback className="bg-secondary">JD</AvatarFallback>
+                                    <AvatarFallback className="bg-secondary min-h-[100px] min-w-[100px] text-lg font-bold">
+                                        {
+                                            (watch("username") || "").split(" ").map((name) => name.charAt(0).toUpperCase()).join("")
+                                        }
+                                    </AvatarFallback>
                                 </Avatar>
                                 {isImageUploading && (
                                     <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
@@ -116,10 +163,20 @@ export default function AccountPage() {
                                     </div>
                                 )}
                             </div>
-                            <div className="flex gap-2">
-                                <Label  
+                            <div className="flex flex-col gap-2">
+                                <p className="text-sm text-muted-foreground">
+                                    Recommended size: 200x200px
+                                </p>
+                                <Separator className="my-2" />
+                                <p className="text-sm text-muted-foreground">
+                                    Supported formats: JPG, PNG, GIF
+                                </p>
+                                <p className="text-sm text-muted-foreground">Max size: 2MB</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 justify-center w-full">
+                                <Label
                                     htmlFor="avatar-upload"
-                                    className="cursor-pointer rounded-md bg-accent-foreground px-3 py-2 text-sm font-medium text-primary font-bold shadow hover:bg-accent"
+                                    className="cursor-pointer rounded-md bg-accent-foreground px-3 py-2 text-sm font-medium text-primary font-bold shadow hover:bg-accent items-center flex justify-center min-w-[100px]"
                                 >
                                     Change
                                 </Label>
@@ -130,7 +187,15 @@ export default function AccountPage() {
                                     className="hidden"
                                     onChange={handleImageUpload}
                                 />
-                                <Button variant="secondary" className="hover:bg-accent hover:text-secondary font-bold">
+                                <Button
+                                    variant="secondary"
+                                    className="hover:bg-accent hover:text-secondary font-bold min-w-[100px]"
+                                    onClick={() => {
+                                        setAvatarSrc("");
+                                    }
+                                    }
+                                    disabled={isLoading}
+                                >
                                     Remove
                                 </Button>
                             </div>
@@ -140,13 +205,15 @@ export default function AccountPage() {
                     <Card className="flex-1">
                         <form onSubmit={handleSubmit(onSubmit)}>
                             <CardHeader>
-                                <CardTitle className="text-accent-foreground">Informations du profil</CardTitle>
-                                <CardDescription>Mettez à jour vos informations de profil.</CardDescription>
+                                <CardTitle className="text-accent-foreground">Profile informations</CardTitle>
+                                <CardDescription>Update your profile informations.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                {/* Username part */}
+                                {/* Username */}
                                 <div className="grid gap-3">
-                                    <Label htmlFor="username" className="font-bold">Username</Label>
+                                    <Label htmlFor="username" className="font-bold">
+                                        Username
+                                    </Label>
                                     <Input
                                         id="username"
                                         placeholder="Username"
@@ -164,22 +231,22 @@ export default function AccountPage() {
                                         })}
                                     />
                                     {errors.username && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.username.message}
-                                        </p>
+                                        <p className="text-sm text-destructive">{errors.username.message}</p>
                                     )}
                                 </div>
 
-                                {/* Email part */}
+                                {/* Email */}
                                 <div className="grid gap-3">
-                                    <Label htmlFor="email" className="font-bold">Email</Label>
+                                    <Label htmlFor="email" className="font-bold">
+                                        Email
+                                    </Label>
                                     <Input
                                         id="email"
                                         type="email"
                                         placeholder="Email"
                                         className="border-2"
                                         {...register("email", {
-                                            required: "Email is required",
+                                            // required: "Email is required",
                                             pattern: {
                                                 value: /^\S+@\S+\.\S+$/,
                                                 message: "This is not a valid email",
@@ -187,15 +254,15 @@ export default function AccountPage() {
                                         })}
                                     />
                                     {errors.email && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.email.message}
-                                        </p>
+                                        <p className="text-sm text-destructive">{errors.email.message}</p>
                                     )}
                                 </div>
 
-                                {/* Bio part */}
+                                {/* Bio */}
                                 <div className="grid gap-3">
-                                    <Label htmlFor="bio" className="font-bold">Bio</Label>
+                                    <Label htmlFor="bio" className="font-bold">
+                                        Bio
+                                    </Label>
                                     <Textarea
                                         id="bio"
                                         placeholder="Tell us about yourself"
@@ -211,15 +278,15 @@ export default function AccountPage() {
                                         {(watch("bio") ? watch("bio").length : 0)}/160 characters
                                     </p>
                                     {errors.bio && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.bio.message}
-                                        </p>
+                                        <p className="text-sm text-destructive">{errors.bio.message}</p>
                                     )}
                                 </div>
 
-                                {/* Date of Birth part */}
+                                {/* Date of Birth */}
                                 <div className="grid gap-3">
-                                    <Label htmlFor="dob" className="font-bold">Date of Birth</Label>
+                                    <Label htmlFor="dob" className="font-bold">
+                                        Date of Birth
+                                    </Label>
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button
@@ -246,9 +313,11 @@ export default function AccountPage() {
                                     </Popover>
                                 </div>
 
-                                {/* Location part */}
+                                {/* Location */}
                                 <div className="grid gap-3">
-                                    <Label htmlFor="location" className="font-bold">Location</Label>
+                                    <Label htmlFor="location" className="font-bold">
+                                        Location
+                                    </Label>
                                     <Input
                                         id="location"
                                         placeholder="Location"
@@ -257,46 +326,29 @@ export default function AccountPage() {
                                     />
                                 </div>
 
-                                {/* URLs part */}
-                                <div className="grid gap-3">
-                                    <Label htmlFor="website" className="font-bold">Website</Label>
-                                    <Input
-                                        id="website"
-                                        placeholder="https://example.com"
-                                        className="border-2"
-                                        {...register("urls.website", {
-                                            validate: (value) =>
-                                                !value ||
-                                                /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(value) ||
-                                                "Please enter a valid URL.",
-                                        })}
-                                    />
-                                    {errors.urls && errors.urls.website && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.urls.website.message}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Twitter and LinkedIn part */}
+                                {/* X and LinkedIn */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-3">
-                                        <Label htmlFor="twitter" className="font-bold">Twitter</Label>
+                                        <Label htmlFor="x" className="font-bold">
+                                            X
+                                        </Label>
                                         <div className="flex">
                                             <span className="flex items-center rounded-l-md border border-2 border-r-0 bg-muted px-3 text-muted-foreground font-bold">
                                                 @
                                             </span>
                                             <Input
-                                                id="twitter"
-                                                placeholder="twitter"
+                                                id="x"
+                                                placeholder="x"
                                                 className="rounded-l-none border-2"
-                                                {...register("urls.twitter")}
+                                                {...register("urls.x")}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid gap-3">
-                                        <Label htmlFor="linkedin" className="font-bold">LinkedIn</Label>
+                                        <Label htmlFor="linkedin" className="font-bold">
+                                            LinkedIn
+                                        </Label>
                                         <div className="flex">
                                             <span className="flex items-center rounded-l-md border border-2 border-r-0 bg-muted px-3 text-muted-foreground font-bold">
                                                 in/
@@ -312,7 +364,12 @@ export default function AccountPage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end">
-                                <Button type="submit" disabled={isLoading} variant="secondary" className="hover:bg-accent hover:text-secondary font-bold">
+                                <Button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    variant="secondary"
+                                    className="hover:bg-accent hover:text-secondary font-bold"
+                                >
                                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save Changes
                                 </Button>

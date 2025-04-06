@@ -34,7 +34,7 @@ export function AppSidebar({ ...props }) {
                     // Construct the user object with fetched data
                     setUser({
                         name: data.username,
-                        avatar: "favicon.ico",
+                        avatar: data.photo,
                         admin: data.admin,
                     });
                 })

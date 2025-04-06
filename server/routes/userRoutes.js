@@ -4,6 +4,15 @@ const User = require('../models/User');
 const router = express.Router();
 const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
 
+// Helper to convert data URL to Buffer and extract content type
+function dataURLToBuffer(dataURL) {
+    const matches = dataURL.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return null;
+    const contentType = matches[1];
+    const buffer = Buffer.from(matches[2], "base64");
+    return { buffer, contentType };
+}
+
 /**
  * @route POST /.../users/login
  * @desc Authenticates a user using their credentials and returns a JWT token.
@@ -73,8 +82,25 @@ router.post('/register', async (req, res) => {
  */
 router.get('/infos', verifyToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        res.json({ username: user.username, admin: user.admin });
+        let user = await User.findById(req.user._id).select('-password -__v');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Convert Mongoose document to plain object
+        user = user.toObject();
+
+        // Convert the Map to a plain object
+        if (user.urls && user.urls instanceof Map) {
+            user.urls = Object.fromEntries(user.urls);
+        }
+
+        // If a photo exists, convert the Buffer to a base64 string with the proper data URL prefix
+        if (user.photo && user.photo.data && user.photo.contentType) {
+            user.photo = `data:${user.photo.contentType};base64,${user.photo.data.toString('base64')}`;
+        }
+
+        res.json(user);
     } catch (error) {
         res.status(500).send(error.message);
     }
@@ -168,6 +194,54 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
         res.json(users);
     } catch (error) {
         res.status(500).send(error.message);
+    }
+});
+
+/**
+ * @route PUT /.../users/:id
+ * @desc Updates the specified user's information.
+ *       This endpoint is restricted to admin users or the user themselves.
+ * @access Private (user or admin; requires a valid JWT token)
+ * 
+ * @usage Example request:
+ * PUT /.../users/:id
+ * Headers:
+ *   Authorization: Bearer <JWT token>
+ * 
+ * @returns {JSON} Updated user object
+ */
+router.put("/:id", verifyToken, async (req, res) => {
+    // Check if the user is an admin or the user themselves
+    if (req.user._id.toString() !== req.params.id && !req.user.admin) {
+        return res.status(403).json({ error: "Forbidden" });
+    }
+
+    // Proceed with the update
+    try {
+        const { username, email, bio, urls, dob, location, photo } = req.body;
+
+        const updateData = { username, email, bio, urls, dob, location };
+
+        if (photo) {
+            const photoData = dataURLToBuffer(photo);
+            if (photoData) {
+                updateData.photo = {
+                    data: photoData.buffer,
+                    contentType: photoData.contentType,
+                };
+            }
+        } else {
+            updateData.photo = null;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json(updatedUser);
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 
