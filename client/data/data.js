@@ -41,6 +41,11 @@ const navMain = {
             url: "/users",
             icon: "Users",
         },
+        {
+            title: "Progress",
+            url: "/progress",
+            icon: "Trophy",
+        },
     ],
 };
 
