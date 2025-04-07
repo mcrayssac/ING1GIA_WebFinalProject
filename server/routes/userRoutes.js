@@ -14,6 +14,11 @@ function dataURLToBuffer(dataURL) {
     return { buffer, contentType };
 }
 
+// Helper to convert Buffer to data URL
+function bufferToDataURL(buffer, contentType) {
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
+}
+
 /**
  * @route POST /.../users/login
  * @desc Authenticates a user using their credentials and returns a JWT token.
@@ -98,7 +103,7 @@ router.get('/infos', verifyToken, async (req, res) => {
 
         // If a photo exists, convert the Buffer to a base64 string with the proper data URL prefix
         if (user.photo && user.photo.data && user.photo.contentType) {
-            user.photo = `data:${user.photo.contentType};base64,${user.photo.data.toString('base64')}`;
+            user.photo = bufferToDataURL(user.photo.data, user.photo.contentType);
         }
 
         res.json(user);
@@ -189,10 +194,29 @@ router.get('/verify', verifyToken, async (req, res) => {
  *
  * @returns {JSON} Array of user objects
  */
-router.get('/', verifyToken, isAdmin, async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
-        const users = await User.find();
-        res.json(users);
+        const users = await User.find().select('-password -__v');
+
+        if (!users) {
+            return res.status(404).json({ error: 'No users found' });
+        }
+
+        // Convert Mongoose documents to plain objects
+        const usersData = users.map(user => user.toObject());
+
+        // Convert the Map to a plain object for each user
+        usersData.forEach(user => {
+            if (user.urls && user.urls instanceof Map) {
+                user.urls = Object.fromEntries(user.urls);
+            }
+            // If a photo exists, convert the Buffer to a base64 string with the proper data URL prefix
+            if (user.photo && user.photo.data && user.photo.contentType) {
+                user.photo = bufferToDataURL(user.photo.data, user.photo.contentType);
+            }
+        });
+
+        res.json(usersData);
     } catch (error) {
         res.status(500).send(error.message);
     }
