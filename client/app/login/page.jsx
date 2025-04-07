@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import { IdCard, RectangleEllipsis, Orbit, Satellite, Rocket } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
-import Alert from "@/components/Alert";
+import Alert from "@/components/alert";
 
 const imageUrl = "https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://media.easy-peasy.ai/642363ad-20f9-434b-a6de-27c7f1d7cb9d/dc2a524f-f617-4f0f-b07e-a627df8b8781.png";
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;

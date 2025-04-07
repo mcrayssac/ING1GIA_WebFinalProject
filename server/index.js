@@ -1,14 +1,17 @@
+require('dotenv').config(); // 
 const express = require('express');
 const chalk = require('chalk');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
+
 
 // Load environment variables
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT;
 const MONGO_URI = process.env.MONGO_URI;
-//console.log('Mongo URI:', MONGO_URI);
+console.log('Mongo URI:', MONGO_URI);
 
 // Chalk colors
 const error = chalk.bold.red;
@@ -32,6 +35,7 @@ mongoose.connect(MONGO_URI)
     .catch(err => console.error(error('Error connecting to MongoDB:', err)));
 
 // Load models
+require('./models/Employee');
 require('./models/User');
 require('./models/Site');
 require('./models/Product');
@@ -63,6 +67,11 @@ app.get('/', (req, res) => {
 });
 
 // Load routes
+const emailRoutes = require('./routes/emailRoutes');
+app.use('/api/send-email', emailRoutes);
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes); 
+
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
 const siteRoutes = require('./routes/siteRoutes');
