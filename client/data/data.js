@@ -36,6 +36,11 @@ const navMain = {
             url: "/satellites",
             icon: "Orbit",
         },
+        {
+            title: "Users",
+            url: "/users",
+            icon: "Users",
+        },
     ],
 };
 
