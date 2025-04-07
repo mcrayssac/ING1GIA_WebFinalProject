@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const router = express.Router();
 const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
@@ -86,7 +87,7 @@ router.get('/infos', verifyToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
+
         // Convert Mongoose document to plain object
         user = user.toObject();
 
@@ -210,7 +211,7 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
  * 
  * @returns {JSON} Updated user object
  */
-router.put("/:id", verifyToken, async (req, res) => {
+router.put("/infos/:id", verifyToken, async (req, res) => {
     // Check if the user is an admin or the user themselves
     if (req.user._id.toString() !== req.params.id && !req.user.admin) {
         return res.status(403).json({ error: "Forbidden" });
@@ -241,6 +242,51 @@ router.put("/:id", verifyToken, async (req, res) => {
         res.json(updatedUser);
     } catch (error) {
         console.error("Error updating user:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * @route PUT /.../users/update-password
+ * @desc Updates the authenticated user's password.
+ * @access Private (requires a valid JWT token)
+ *
+ * @usage Example request:
+ * PUT /.../users/update-password
+ * Headers:
+ *   Authorization: Bearer <JWT token>
+ * Content-Type: application/json
+ * {
+ *   "oldPassword": "oldpassword",
+ *   "newPassword": "newpassword"
+ * }
+ *
+ * @returns {JSON} { message: "Password updated successfully" }
+ */
+router.put("/password", verifyToken, async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Both old and new passwords are required" });
+    }
+
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        // Compare old password with the hashed password in DB
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: "Old password is incorrect" });
+        }
+        // Set new password – pre-save hook will hash it automatically
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error("Error updating password:", error);
         res.status(500).json({ error: error.message });
     }
 });

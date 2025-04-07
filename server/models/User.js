@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     admin: { type: Boolean, required: false, default: false },
     photo: { data: Buffer, contentType: String },
+    points: { type: Number, default: 0 },
 });
 
 userSchema.pre('save', async function (next) {
