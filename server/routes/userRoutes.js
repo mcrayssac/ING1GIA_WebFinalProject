@@ -35,9 +35,44 @@ function bufferToDataURL(buffer, contentType) {
  * @returns {JSON} { token: "JWT token string" }
  */
 router.post('/login', authenticateUser, (req, res) => {
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
+    console.log("REFRESH_SECRET:", process.env.REFRESH_SECRET);
+
     // The authenticateUser middleware validate the credentials and attach the user to req.user
-    const token = jwt.sign({ _id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    const accessToken = jwt.sign({ _id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ _id: req.user._id }, process.env.REFRESH_SECRET, { expiresIn: '7d' });
+
+    res.cookie('token', accessToken, {
+        httpOnly: true,
+        sameSite: 'Lax',
+        secure: false,
+        maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        sameSite: 'Lax',
+        secure: false,
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({ success: true });
+});
+
+/**
+ * @route POST /.../users/logout
+ * @desc Logs out the user by clearing the JWT token and refresh token cookies.
+ * @access Public
+ *
+ * @usage Example request:
+ * POST /.../users/logout
+ *
+ * @returns {JSON} { message: "Logged out" }
+ */
+router.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.clearCookie('refreshToken');
+    res.send('Logged out');
 });
 
 /**

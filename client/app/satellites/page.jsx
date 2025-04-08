@@ -37,6 +37,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
+import { useToastAlert } from "@/contexts/ToastContext"
 
 // Helper: Load an SVG from a URL, override fill, width, and height, and return a data URL
 async function loadAndColorIcon(url, color, targetWidth, targetHeight) {
@@ -57,6 +58,7 @@ async function loadAndColorIcon(url, color, targetWidth, targetHeight) {
 }
 
 export default function SatellitesPage() {
+    const { toastError } = useToastAlert()
     const [tleData, setTleData] = useState(null)
     const [issIcon, setIssIcon] = useState(null)
     const [starlinkIcon, setStarlinkIcon] = useState(null)
@@ -151,6 +153,7 @@ export default function SatellitesPage() {
             })
             .catch((err) => {
                 console.error("Failed to load TLE data:", err)
+                toastError("Failed to load TLE data", { description: err.message })
                 setLoading(false)
             })
     }, [])

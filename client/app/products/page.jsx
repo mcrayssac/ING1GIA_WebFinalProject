@@ -5,14 +5,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Box, Search } from "lucide-react";
 
 import NoData from "@/components/no-data";
-import Alert from "@/components/user-alert";
 import Loading from "@/components/loading";
+import { useToastAlert } from "@/contexts/ToastContext";
 
 export default function Products() {
+    const { toastError } = useToastAlert();
     const searchParams = useSearchParams();
     const router = useRouter();
     const [productsData, setProductsData] = useState([]);
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
 
     // Fetch sites data
@@ -21,9 +21,6 @@ export default function Products() {
             method: "GET",
         })
             .then((res) => {
-                if (!res.ok) {
-                    throw new Error("Failed to fetch products");
-                }
                 return res.json();
             })
             .then((data) => {
@@ -31,7 +28,7 @@ export default function Products() {
                 setLoading(false);
             })
             .catch((err) => {
-                setError(err.message);
+                toastError("Error fetching products data", { description: err.message });
                 setLoading(false);
             });
     }, []);
@@ -93,7 +90,6 @@ export default function Products() {
 
     return (
         <>
-            {error && <Alert type="error" message={error} onClose={() => setError("")} />}
             <div className={`container mt-8 mx-auto px-4 py-8`}>
                 <div className="flex items-center space-x-4">
                     <Box className="w-8 h-8" />

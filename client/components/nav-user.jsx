@@ -1,6 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
-import Cookies from "js-cookie"
+import { useUser } from "@/contexts/UserContext"
+import { useToastAlert } from "@/contexts/ToastContext"
 
 import { BadgeCheck, ChevronsUpDown, LogOut, LogIn, Telescope, Sparkles } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -16,14 +17,30 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import MiniTierProgress from "./mini-tier-progress"
 
-export function NavUser({ user }) {
-    const { isMobile } = useSidebar()
-    const router = useRouter()
+export function NavUser() {
+    const { fetchUser, user } = useUser();
+    const { toastSuccess, toastError } = useToastAlert();
+    const { isMobile } = useSidebar();
+    const router = useRouter();
 
     // Logout function to remove the token and redirect to login
     const handleLogout = () => {
-        Cookies.remove("token")
-        window.location.href = "/login"
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/logout`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => {
+                fetchUser()
+                router.push("/login")
+                toastSuccess("You have been logged out.")
+            })
+            .catch((err) => {
+                console.error("Error logging out:", err)
+                toastError("Error logging out.", { description: err.message })
+            })
     }
 
     // If user is not available, render a login button

@@ -40,11 +40,11 @@ import {
     SidebarMenuItem,
     SidebarProvider,
 } from "@/components/ui/sidebar"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
-import Alert from "@/components/user-alert";
 import NoData from "@/components/no-data";
 import Loading from "@/components/loading";
+import { useToastAlert } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 // Base marker mapping (for marker icon components)
 const markerMapping = {
@@ -58,8 +58,8 @@ const containerStyle = { width: "100%", height: "100%" };
 const defaultCenter = { lat: 40.7128, lng: -74.0060 };
 
 export default function MapPage() {
+    const { toastSuccess, toastError } = useToastAlert()
     const [sites, setSites] = useState([])
-    const [error, setError] = useState("")
     const [loading, setLoading] = useState(true)
     const [legendQuery, setLegendQuery] = useState("")
     const [activeFilters, setActiveFilters] = useState([])
@@ -70,6 +70,7 @@ export default function MapPage() {
                 try {
                     return JSON.parse(stored)
                 } catch (err) {
+                    toastError("Error parsing visibleSiteIds from localStorage.")
                     console.error("Error parsing visibleSiteIds:", err)
                 }
             }
@@ -107,7 +108,6 @@ export default function MapPage() {
     useEffect(() => {
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`)
             .then((res) => {
-                if (!res.ok) throw new Error("Failed to fetch sites")
                 return res.json()
             })
             .then((data) => {
@@ -121,7 +121,8 @@ export default function MapPage() {
                 setLoading(false)
             })
             .catch((err) => {
-                setError(err.message)
+                toast.error("Error fetching sites data", { description: err.message })
+                console.error(err)
                 setLoading(false)
             })
     }, [])
@@ -266,7 +267,6 @@ export default function MapPage() {
 
     return (
         <>
-            {error && <Alert type="error" message={error} onClose={() => setError("")} />}
             <div className="container mt-8 mx-auto px-4 py-8">
 
 
