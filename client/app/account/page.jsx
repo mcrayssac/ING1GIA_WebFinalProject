@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Cookies from "js-cookie"
 import { useForm } from "react-hook-form"
 import { Loader2, CalendarIcon, PenIcon as UserPen, KeyRound, UserRoundPen, CircleUser } from "lucide-react"
+import { useUser } from "@/contexts/UserContext"
+import { useRouter } from "next/navigation"
 
-import Alert from "@/components/user-alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,14 +16,17 @@ import { Separator } from "@/components/ui/separator"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { useToastAlert } from "@/contexts/ToastContext"
 
 export default function AccountPage() {
-    const [error, setError] = useState("")
-    const [success, setSuccess] = useState("")
+    const { fetchUser } = useUser()
+    const { toastSuccess, toastError } = useToastAlert();
+
     const [isLoading, setIsLoading] = useState(false)
     const [isPasswordLoading, setIsPasswordLoading] = useState(false)
     const [isImageUploading, setIsImageUploading] = useState(false)
     const [avatarSrc, setAvatarSrc] = useState("")
+    const router = useRouter();
 
     // React Hook Form setup
     // Registering form fields and handling validation
@@ -51,12 +54,9 @@ export default function AccountPage() {
 
     // Fetch user info on mount
     useEffect(() => {
-        const token = Cookies.get("token")
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos`, {
             method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
+            credentials: "include",
         })
             .then((response) => {
                 if (!response.ok) throw new Error("Failed to fetch user info")
@@ -78,21 +78,20 @@ export default function AccountPage() {
             })
             .catch((err) => {
                 console.error("Error fetching user info:", err)
-                window.location.href = "/login"
+                toastError("Failed to fetch user info", { description: err.message })
+                router.push("/login")
             })
     }, [])
 
     // Updated onSubmit: sends data to the API route
     function onSubmit(data) {
         setIsLoading(true)
-        setError("")
-        setSuccess("")
         data.photo = avatarSrc
         console.log("Submitting data:", data)
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos/${data._id}`, {
             method: "PUT",
+            credentials: "include",
             headers: {
-                Authorization: `Bearer ${Cookies.get("token")}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(data),
@@ -103,12 +102,12 @@ export default function AccountPage() {
             })
             .then((result) => {
                 setIsLoading(false)
-                setSuccess("Profile updated successfully")
-                setTimeout(() => setSuccess(""), 3000)
+                toastSuccess("User updated", { description: result.message })
+                fetchUser()
             })
             .catch((err) => {
                 console.error("Error updating user:", err)
-                setError(err.message)
+                toastError("Failed to update user", { description: err.message })
                 setIsLoading(false)
             })
     }
@@ -116,19 +115,17 @@ export default function AccountPage() {
     // Handle password update
     function onPasswordSubmit(data) {
         setIsPasswordLoading(true)
-        setError("")
-        setSuccess("")
 
         if (data.newPassword !== data.confirmPassword) {
-            setError("New passwords don't match")
+            toastError("Passwords do not match")
             setIsPasswordLoading(false)
             return
         }
 
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/password`, {
             method: "PUT",
+            credentials: "include",
             headers: {
-                Authorization: `Bearer ${Cookies.get("token")}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -142,13 +139,12 @@ export default function AccountPage() {
             })
             .then((result) => {
                 setIsPasswordLoading(false)
-                setSuccess("Password updated successfully")
+                toastSuccess("Password updated", { description: result.message })
                 resetPassword()
-                setTimeout(() => setSuccess(""), 3000)
             })
             .catch((err) => {
                 console.error("Error updating password:", err)
-                setError(err.message || "Current password is incorrect")
+                toastError("Failed to update password", { description: err.message })
                 setIsPasswordLoading(false)
             })
     }
@@ -185,8 +181,6 @@ export default function AccountPage() {
 
     return (
         <>
-            {error && <Alert type="error" message={error} onClose={() => setError("")} />}
-            {success && <Alert type="success" message={success} onClose={() => setSuccess("")} />}
             <div className="container mt-8 mx-auto px-4 py-8">
                 <div className="flex items-center space-x-4">
                     <UserPen className="w-8 h-8" />

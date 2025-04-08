@@ -2,6 +2,7 @@ const express = require('express');
 const chalk = require('chalk');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser')
 
 // Load environment variables
 const app = express();
@@ -23,8 +24,12 @@ const datetime = chalk.bold.yellow;
 app.use(cors({
     origin: [
         process.env.ORIGIN_LOCAL
-    ]
+    ],
+    credentials: true,
 }));
+
+// Middleware to parse cookies
+app.use(cookieParser());
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

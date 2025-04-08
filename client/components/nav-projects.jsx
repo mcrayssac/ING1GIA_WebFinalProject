@@ -18,11 +18,13 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
 
 export function NavProjects({
     projects
 }) {
     const { isMobile } = useSidebar()
+    const router = useRouter();
 
     return (
         (<SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -33,10 +35,10 @@ export function NavProjects({
                     return (
                         <SidebarMenuItem key={item.name}>
                             <SidebarMenuButton asChild>
-                                <a href={item.url}>
+                                <button onClick={() => router.push(item.link)}>
                                     {Icon && <Icon />}
                                     <span>{item.name}</span>
-                                </a>
+                                </button>
                             </SidebarMenuButton>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

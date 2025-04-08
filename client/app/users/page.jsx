@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Cookies from "js-cookie"
 import { useForm } from "react-hook-form"
 import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2 } from "lucide-react"
 
@@ -13,16 +12,15 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import Alert from "@/components/user-alert"
+import { useToastAlert } from "@/contexts/ToastContext"
 
 export default function UserSearchPage() {
+    const { toastError } = useToastAlert();
     const [users, setUsers] = useState([])
     const [filteredUsers, setFilteredUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState(null)
     const [isDrawerOpen, setIsDrawerOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState("")
     const [sortOption, setSortOption] = useState("username")
     const [filterRole, setFilterRole] = useState("all")
 
@@ -85,24 +83,18 @@ export default function UserSearchPage() {
     const fetchUsers = async () => {
         setIsLoading(true)
         try {
-            const token = Cookies.get("token")
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users`, {
                 method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                credentials: "include",
             })
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch users")
-            }
 
             const data = await response.json()
             setUsers(data)
             setFilteredUsers(data)
         } catch (err) {
             console.error("Error fetching users:", err)
-            window.location.href = "/login"
+            toastError("Error fetching users. Please try again.")
+            route.push("/login")
         } finally {
             setIsLoading(false)
         }
@@ -139,8 +131,6 @@ export default function UserSearchPage() {
 
     return (
         <>
-            {error && <Alert type="error" message={error} onClose={() => setError("")} />}
-
             <div className="container mt-8 mx-auto px-4 py-8">
                 <div className="flex items-center space-x-4">
                     <Users className="w-8 h-8" />

@@ -17,10 +17,13 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useRouter } from "next/navigation"
 
 import { themes } from "@/data/data";
 
 export function NavSecondary({ items, ...props }) {
+    const router = useRouter();
+
     // State for the current theme
     const currentDate = new Date();
     const themeFromCookie = Cookies.get("theme") || (currentDate.getHours() >= 18 || currentDate.getHours() < 8 ? "dark" : "light");
@@ -50,10 +53,10 @@ export function NavSecondary({ items, ...props }) {
                         return (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild size="sm">
-                                    <a href={item.url}>
+                                    <button onClick={() => { router.push(item.href) }}>
                                         {Icon && <Icon />}
                                         <span>{item.title}</span>
-                                    </a>
+                                    </button>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         )
