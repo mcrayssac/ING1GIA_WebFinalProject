@@ -3,12 +3,11 @@ const chalk = require('chalk');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
-// Load environment variables
+// Load environment variables and create Express app
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT;
 const MONGO_URI = process.env.MONGO_URI;
-//console.log('Mongo URI:', MONGO_URI);
 
 // Chalk colors
 const error = chalk.bold.red;
@@ -37,11 +36,11 @@ require('./models/Site');
 require('./models/Product');
 require('./models/Statistic');
 require('./models/HistoryEvent');
+require('./models/Machine');  // Ajout du modèle des machines
 
-// Track all incoming requests
+// Middleware pour tracer toutes les requêtes entrantes
 app.use((req, res, next) => {
-    // Request infos
-    console.log("")
+    console.log("");
     console.log(datetime('DateTime:', new Date().toLocaleString()));
     console.log(routes(`[${req.method}] ${req.url}`));
     console.log(info(`ip: ${req.ip}, origin: ${req.headers.origin}`));
@@ -65,16 +64,24 @@ app.get('/', (req, res) => {
 // Load routes
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+
 const siteRoutes = require('./routes/siteRoutes');
 app.use('/api/sites', siteRoutes);
+
 const productRoutes = require('./routes/productRoutes');
 app.use('/api/products', productRoutes);
+
 const statisticRoutes = require('./routes/statisticRoutes');
 app.use('/api/statistics', statisticRoutes);
+
 const historyEventRoutes = require('./routes/historyEventRoutes');
 app.use('/api/history-events', historyEventRoutes);
+
 const seedRoutes = require('./routes/seedRoutes');
 app.use('/api/seed', seedRoutes);
+
+const machineRoutes = require('./routes/machineRoutes');
+app.use('/api/machines', machineRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

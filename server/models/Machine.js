@@ -1,12 +1,17 @@
 const mongoose = require('mongoose');
 
-// Schéma pour un relevé de capteur individuel
+// Schéma pour un relevé de capteur individuel, incluant l'ID de l'utilisateur
 const sensorReadingSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
-  value: { type: Number, required: true }
+  value: { type: Number, required: true },
+  user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: process.env.MONGO_Collection_User,
+    required: true 
+  }
 }, { _id: false });
 
-// Schéma pour une période d'utilisation (ici, par exemple, d'1h)
+// Schéma pour une période d'utilisation (exemple : d'1h)
 const usagePeriodSchema = new mongoose.Schema({
   user: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -28,7 +33,7 @@ const dailyUsageSchema = new mongoose.Schema({
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
   },
-  // Un Map où la clé est le nom du capteur et la valeur est un tableau de relevés
+  // Un Map où la clé est le nom du capteur et la valeur est un tableau de relevés (chaque relevé contient le timestamp, la valeur et l'ID de l'utilisateur)
   sensorData: {
     type: Map,
     of: [ sensorReadingSchema ],
@@ -41,25 +46,36 @@ const dailyUsageSchema = new mongoose.Schema({
 // Schéma principal de la machine
 const machineSchema = new mongoose.Schema({
   // Pôle et Sous-pôle d'affectation de la machine
-  mainPole: { type: String, required: true },         // Ex: "Bas de la fusée", "Structure", "Haut de la fusée"
-  subPole: { type: String, required: true },           // Ex: "Moteur", "Injection carburant"
+  mainPole: { type: String, required: true },
+  subPole: { type: String, required: true },
   
   // Informations générales sur la machine
-  name: { type: String, required: true },              // Ex: "Fraiseuse CNC Haute Précision"
+  name: { type: String, required: true },
   pointsPerCycle: { type: Number, required: true },
   maxUsers: { type: Number, required: true },
   requiredGrade: { type: String, required: true },
   
   // Capteurs disponibles avec accès conditionnel selon le grade
   availableSensors: [{
-    sensorName: { type: String, required: true },      // Ex: "Température", "Vibration"
-    requiredGrade: { type: String, required: true }      // Ex: "Technicien confirmé", "Ingénieur"
+    sensorName: { type: String, required: true },
+    requiredGrade: { type: String, required: true }
   }],
   
   // Référence aux sites où la machine est physiquement installée
   sites: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: process.env.MONGO_Collection_Site
+  }],
+
+  //gestion en temps réel
+  status: { 
+    type: String, 
+    enum: ['available', 'in-use', 'blocked'], 
+    default: 'available' 
+  },
+  currentUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_User
   }],
 
   // Statistiques d'utilisation, organisées par jour
@@ -70,14 +86,16 @@ const machineSchema = new mongoose.Schema({
 
 /**
  * Méthode pour ajouter un relevé de capteur à la journée en cours.
- * Vérifie que le capteur existe dans availableSensors avant d'ajouter le relevé.
+ * Cette méthode vérifie que le capteur existe dans availableSensors et y ajoute le relevé
+ * en incluant l'ID de l'utilisateur qui l'envoie.
  *
  * @param {String} sensorName - Nom du capteur.
  * @param {Number} value - La valeur mesurée.
+ * @param {String} userId - L'ID de l'utilisateur qui envoie la lecture.
  * @param {Date} [timestamp=new Date()] - L'heure du relevé.
  * @returns {Promise} - Promesse résolue après sauvegarde.
  */
-machineSchema.methods.addSensorReading = async function(sensorName, value, timestamp = new Date()) {
+machineSchema.methods.addSensorReading = async function(sensorName, value, userId, timestamp = new Date()) {
   // Vérifier que le capteur est déclaré dans la machine
   const sensorExists = this.availableSensors.some(s => s.sensorName === sensorName);
   if (!sensorExists) {
@@ -104,8 +122,8 @@ machineSchema.methods.addSensorReading = async function(sensorName, value, times
     dailyRecord.sensorData.set(sensorName, []);
   }
 
-  // Créer le relevé
-  const reading = { timestamp, value };
+  // Créer le relevé en incluant l'ID de l'utilisateur
+  const reading = { timestamp, value, user: userId };
 
   // Ajouter le relevé au tableau correspondant au capteur
   dailyRecord.sensorData.get(sensorName).push(reading);

@@ -225,6 +225,52 @@ const sites = [
     },
 ];
 
+const machines = [
+    {
+      mainPole: "Bas de la fusée",
+      subPole: "Injection carburant",
+      name: "Injecteur Cryogénique A1",
+      pointsPerCycle: 20,
+      maxUsers: 2,
+      requiredGrade: "Technicien confirmé",
+      availableSensors: [
+        { sensorName: "Pression", requiredGrade: "Technicien confirmé" },
+        { sensorName: "Flux", requiredGrade: "Technicien confirmé" },
+        { sensorName: "Température", requiredGrade: "Technicien" }
+      ],
+      sites: [],
+      // Pré-remplissage de usageStats avec un exemple pour une journée donnée
+      usageStats: [
+        {
+          // Date du jour : ici le 8 avril 2025 (tronqué à minuit)
+          day: new Date("2025-04-08T00:00:00Z"),
+          // sensorData : objet avec des relevés pour chaque capteur
+          sensorData: {
+            "Pression": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 101, user: "607f1f77bcf86cd799439011" },
+              { timestamp: new Date("2025-04-08T08:05:00Z"), value: 102, user: "607f1f77bcf86cd799439011" }
+            ],
+            "Flux": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 5.5, user: "607f1f77bcf86cd799439011" }
+            ],
+            "Température": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 20, user: "607f1f77bcf86cd799439011" }
+            ]
+          },
+          // usagePeriods : exemple d'une période d'utilisation d'une heure
+          usagePeriods: [
+            { 
+              user: "607f1f77bcf86cd799439011", 
+              startTime: new Date("2025-04-08T07:00:00Z"), 
+              endTime: new Date("2025-04-08T08:00:00Z") 
+            }
+          ]
+        }
+      ]
+    }
+  ];
+  
+
 const products = [
     {
         title: "Aurora 9",
@@ -470,4 +516,4 @@ const themes = [
 ];
 
 
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes };
+module.exports = { sites, machines, products, statistics, historyEvents, nextTarget, navMain, themes };
