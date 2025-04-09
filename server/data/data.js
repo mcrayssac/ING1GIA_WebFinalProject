@@ -88,6 +88,7 @@ const sites = [
         { sensorName: "Température", requiredGrade: "Technicien" }
       ],
       sites: [],
+      currentUsers: [],
       // Pré-remplissage de usageStats avec un exemple pour le 8 avril 2025
       usageStats: [
         {
@@ -115,7 +116,7 @@ const sites = [
       ]
     },
     // Vous pouvez ajouter d'autres machines ici
-  ];
+  ];  
   
   const products = [
     {
