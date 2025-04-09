@@ -1,7 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "leaflet/dist/leaflet.css";
+
+@import "cesium/Build/Cesium/Widgets/widgets.css";
 
 body {
   font-family: var(--font-space-grotesk), sans-serif;

@@ -431,6 +431,11 @@ const navMain = {
             url: "/map",
             icon: "Map",
         },
+        {
+            title: "Satellites",
+            url: "/satellites",
+            icon: "Orbit",
+        },
     ],
 };
 
@@ -469,5 +474,32 @@ const themes = [
     { name: "Sunset", value: "sunset" },
 ];
 
+const employees = [
+    {
+        employeeId: 'EMP001',
+        email: 'alice.smith@example.com',
+        department: 'Engineering',
+        position: 'Software Engineer'
+    },
+    {
+        employeeId: 'EMP002',
+        email: 'bob.johnson@example.com',
+        department: 'Human Resources',
+        position: 'HR Manager'
+    },
+    {
+        employeeId: 'EMP003',
+        email: 'charlie.brown@example.com',
+        department: 'Marketing',
+        position: 'Content Strategist'
+    },
+    {
+        employeeId: 'EMP004',
+        email: 'forest.beryl8045@eagereverest.com',
+        department: 'Engineering',
+        position: 'Junior Data Scientist'
+    },
+];
 
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes };
+
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, employees };

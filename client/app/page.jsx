@@ -10,12 +10,12 @@ import TimelinePage from '@/components/timeline';
 
 import { nextTarget } from '@/data/data';
 
-import Alert from "@/components/alert";
+import { useToastAlert } from "@/contexts/ToastContext";
 import NoData from "@/components/no-data";
 import Loading from "@/components/loading";
 
 export default function Home() {
-    const [error, setError] = useState("");
+    const { toastError } = useToastAlert();
     const [statistics, setStatistics] = useState([]);
     const [statsLoading, setStatsLoading] = useState(true);
     const [timelineEvents, setTimelineEvents] = useState([]);
@@ -27,9 +27,6 @@ export default function Home() {
             method: "GET",
         })
             .then((res) => {
-                if (!res.ok) {
-                    throw new Error("Failed to fetch statistics");
-                }
                 return res.json();
             })
             .then((data) => {
@@ -37,7 +34,7 @@ export default function Home() {
                 setStatsLoading(false);
             })
             .catch((err) => {
-                setError(err.message);
+                toastError("Failed to fetch statistics", { description: err.message });
                 setStatsLoading(false);
             });
     }, []);
@@ -48,9 +45,6 @@ export default function Home() {
             method: "GET",
         })
             .then((res) => {
-                if (!res.ok) {
-                    throw new Error("Failed to fetch history events");
-                }
                 return res.json();
             })
             .then((data) => {
@@ -58,14 +52,13 @@ export default function Home() {
                 setTimelineLoading(false);
             })
             .catch((err) => {
-                setError(err.message);
+                toastError("Failed to fetch timeline", { description: err.message });
                 setTimelineLoading(false);
             });
     }, []);
 
     return (
         <div>
-            {error && <Alert type="error" message={error} onClose={() => setError("")} className="mb-4" />}
             <div className="relative h-screen overflow-hidden rounded-2xl shadow-xl">
                 <BackgroundVideo path="/videos/space_launches_4k.mp4" type="video/mp4" />
                 <div className="relative z-10 flex flex-col items-center justify-center h-full bg-black bg-opacity-50">

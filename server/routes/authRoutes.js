@@ -1,114 +1,167 @@
 const express = require("express");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 require('dotenv').config();
 const nodemailer = require("nodemailer");
 
 const router = express.Router();
-const verificationTokens = new Map(); // Stock temporaire des tokens
 
-//  Vérifier l'ID employé et envoyer l'email
+// Token storage for verification
+const verificationTokens = new Map();
+
+/**
+ * @route POST /.../auth/request-signup
+ * @desc Request signup token for an employee
+ * @access Public
+ *
+ * @usage Example request:
+ * POST /.../auth/request-signup
+ * Body:
+ * {
+ *   employeeId: "12345",
+ *   email: "example@example.com"
+ * }
+ * Content-Type: application/json
+ * 
+ * @returns {JSON} Message indicating success or failure
+ */
 router.post("/request-signup", async (req, res) => {
-  console.log("🔹 Requête reçue:", req.body);
+    try {
+        const { employeeId, email } = req.body;
 
-  try {
-    const { employeeId, email } = req.body;
+        const employee = await Employee.findOne({ employeeId, email });
+        if (!employee) {
+            return res.status(400).json({ message: "Invalid Employee ID or email" });
+        }
 
-    // Log : recherche dans la base
-    console.log(`🔍 Recherche employé avec ID: ${employeeId}, Email: ${email}`);
+        // Generate a random verification token
+        const token = crypto.randomBytes(32).toString("hex");
+        verificationTokens.set(token, email);
+        const verificationLink = `${process.env.ORIGIN_LOCAL}/verify-signup?token=${token}`;
 
-    const employee = await Employee.findOne({ employeeId, email });
+        // NodeMailer configuration
+        const transporter = nodemailer.createTransport({
+            service: "Gmail",
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASSWORD,
+            }
+        });
 
-    if (!employee) {
-      console.log("Aucun employé trouvé !");
-      return res.status(400).json({ message: "Invalid Employee ID or email" });
+        // Send email
+        await transporter.sendMail({
+            from: `"SPACE Y" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Confirm Your Registration",
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #2c3e50;">Welcome to Space Y web site</h2>
+                    <p>Hi there,</p>
+                    <p>Thank you for registering. To complete your registration, please confirm your email address by clicking the button below:</p>
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="${verificationLink}" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                            Confirm Email
+                        </a>
+                    </p>
+                    <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all;">${verificationLink}</p>
+                    <p>Thanks,<br/>The Team</p>
+                </div>
+            `
+        });
+
+        res.json({ message: "Verification email sent" });
+    } catch (error) {
+        console.error("Error sending verification email: ", error);
+        res.status(500).json({ message: error.message });
     }
-
-    console.log("Employé trouvé :", employee);
-
-    const token = crypto.randomBytes(32).toString("hex");
-    verificationTokens.set(token, email);
-    const verificationLink = `${process.env.ORIGIN_LOCAL}/verify-signup?token=${token}`;
-
-    console.log("🔗 Lien de vérification généré :", verificationLink);
-
-    // Configurer nodemailer
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      }
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Confirm your registration",
-      html: `<p>Click <a href="${verificationLink}">here</a> to complete your registration.</p>`
-    });
-
-    console.log(" Email envoyé à", email);
-
-    res.json({ message: "Verification email sent" });
-  } catch (error) {
-    console.error(" Erreur serveur :", error);
-    res.status(500).json({ message: error.message });
-  }
 });
 
-//  Vérifier le token et rediriger
+/**
+ * @route GET /.../auth/verify-token
+ * @desc Verify the signup token
+ * @access Public
+ *
+ * @usage Example request:
+ * GET /.../auth/verify-token?token=abc123
+ *
+ * @returns {JSON} Message indicating success or failure
+ */
 router.get("/verify-token", (req, res) => {
-  const { token } = req.query;
-  if (!verificationTokens.has(token)) {
-    return res.status(400).json({ success: false, message: "Invalid token" });
-  }
+    try {
+        const { token } = req.query;
+        if (!verificationTokens.has(token)) {
+            return res.status(400).json({ success: false, message: "Invalid token" });
+        }
 
-  const email = verificationTokens.get(token);
-  verificationTokens.delete(token);
-  res.json({ success: true, email });
+        const email = verificationTokens.get(token);
+        verificationTokens.delete(token);
+        res.json({ success: true, email });
+    } catch (error) {
+        console.error("Error verifying token: ", error);
+        res.status(500).json({ message: error.message });
+    }
 });
 
-//  Créer un compte utilisateur
+/**
+ * @route POST /.../auth/create-user
+ * @desc Create a new user
+ * @access Public
+ *
+ * @usage Example request:
+ * POST /.../auth/create-user
+ * Body:
+ * {
+ *   username: "newuser",
+ *   password: "password123",
+ *   email: "newuser@example.com"
+ * }
+ * Content-Type: application/json
+ *
+ * @returns {JSON} Message indicating success or failure
+ */
 router.post("/create-user", async (req, res) => {
-  try {
-    const { username, password, email } = req.body;
-    console.log("📥 Données reçues :", { username, email });
+    try {
+        const { username, password, email } = req.body;
 
-    // Vérifie si l'utilisateur existe déjà
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ message: "Username already taken" });
+        // Validate input
+        if (!username || !password || !email) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+        
+        // Already existing user check
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ message: "Username already taken" });
+        }
+
+        // Check if the email is already linked to an employee
+        const employee = await Employee.findOne({ email });
+        if (!employee) {
+            return res.status(400).json({ message: "Employee not found for this email" });
+        }
+
+        // New user creation
+        const newUser = new User({
+            username,
+            email,
+            password,
+            employee: employee._id
+        });
+        await newUser.save();
+
+        res.status(201).json({ message: "Account created successfully! You can now log in." });
+
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Email already exists" });
+        }
+
+        // Handle other errors
+        console.error("Error creating user: ", error);
+        res.status(500).json({ message: error.message });
     }
-
-    // Vérifie si l'email correspond à un employé
-    const employee = await Employee.findOne({ email });
-    if (!employee) {
-      return res.status(400).json({ message: "Employee not found for this email" });
-    }
-
-    // Hash du mot de passe
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Création du User avec lien vers l'employé
-    const newUser = new User({
-      username,
-      password: hashedPassword,
-      employee: employee._id
-    });
-
-    await newUser.save();
-    console.log("✅ Utilisateur créé avec succès !");
-    res.status(201).json({ message: "Account created successfully! You can now log in." });
-
-  } catch (error) {
-    console.error(" Erreur lors de la création du compte :", error);
-    res.status(500).json({ message: error.message });
-  }
 });
-
 
 module.exports = router;

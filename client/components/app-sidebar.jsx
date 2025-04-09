@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
-import Cookies from "js-cookie";
+import React from "react";
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -12,38 +11,6 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { navMain, navSecondary, projects } from "@/data/data";
 
 export function AppSidebar({ ...props }) {
-    // Local state for the user object
-    const [user, setUser] = useState(null);
-
-    // Fetch the user info on mount
-    useEffect(() => {
-        // Get the token from cookies
-        const token = Cookies.get("token");
-        if (token) {
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                },
-            })
-                .then((response) => {
-                    if (!response.ok) throw new Error("Failed to fetch user info");
-                    return response.json();
-                })
-                .then((data) => {
-                    // Construct the user object with fetched data
-                    setUser({
-                        name: data.username,
-                        avatar: "favicon.ico",
-                        admin: data.admin,
-                    });
-                })
-                .catch((err) => {
-                    console.error("Error fetching user info:", err);
-                    setUser(null);
-                });
-        }
-    }, []);
 
     return (
         (<Sidebar
@@ -72,7 +39,7 @@ export function AppSidebar({ ...props }) {
                 <NavSecondary items={navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={user} />
+                <NavUser />
             </SidebarFooter>
         </Sidebar>)
     );

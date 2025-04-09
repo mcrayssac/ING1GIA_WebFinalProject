@@ -31,6 +31,21 @@ const navMain = {
             url: "/map",
             icon: "Map",
         },
+        {
+            title: "Satellites",
+            url: "/satellites",
+            icon: "Orbit",
+        },
+        {
+            title: "Users",
+            url: "/users",
+            icon: "Users",
+        },
+        {
+            title: "Progress",
+            url: "/progress",
+            icon: "Trophy",
+        },
     ],
 };
 
