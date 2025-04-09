@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -16,6 +17,11 @@ const userSchema = new mongoose.Schema({
     admin: { type: Boolean, required: false, default: false },
     photo: { data: Buffer, contentType: String },
     points: { type: Number, default: 0 },
+    employee: {                        
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true
+    }
 });
 
 userSchema.pre('save', async function (next) {

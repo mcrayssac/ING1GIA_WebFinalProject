@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { useToastAlert } from "@/contexts/ToastContext"
 
-import { BadgeCheck, ChevronsUpDown, LogOut, LogIn, Telescope, Sparkles } from "lucide-react"
+import { BadgeCheck, ChevronsUpDown, LogOut, LogIn, Telescope, Sparkles, UserPlus } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
     DropdownMenu,
@@ -70,6 +70,17 @@ export function NavUser() {
                             align="end"
                             sideOffset={4}
                         >
+                            <button
+                                onClick={() => router.push("/signup")}
+                                type="button"
+                                className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
+                focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 
+                [&>svg]:shrink-0 hover:bg-accent hover:text-accent-foreground"
+                            >
+                                <UserPlus />
+                                Sign up
+                            </button>
+
                             <button
                                 onClick={() => router.push("/login")}
                                 type="button"

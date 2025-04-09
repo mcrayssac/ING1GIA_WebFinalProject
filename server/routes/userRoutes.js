@@ -35,8 +35,8 @@ function bufferToDataURL(buffer, contentType) {
  * @returns {JSON} { token: "JWT token string" }
  */
 router.post('/login', authenticateUser, (req, res) => {
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
-    console.log("REFRESH_SECRET:", process.env.REFRESH_SECRET);
+    // console.log("JWT_SECRET:", process.env.JWT_SECRET);
+    // console.log("REFRESH_SECRET:", process.env.REFRESH_SECRET);
 
     // The authenticateUser middleware validate the credentials and attach the user to req.user
     const accessToken = jwt.sign({ _id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
