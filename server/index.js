@@ -37,6 +37,7 @@ require('./models/Site');
 require('./models/Product');
 require('./models/Statistic');
 require('./models/HistoryEvent');
+require('./models/News');
 
 // Track all incoming requests
 app.use((req, res, next) => {
@@ -75,6 +76,8 @@ const historyEventRoutes = require('./routes/historyEventRoutes');
 app.use('/api/history-events', historyEventRoutes);
 const seedRoutes = require('./routes/seedRoutes');
 app.use('/api/seed', seedRoutes);
+const newsRoutes = require('./routes/newsRoutes');
+app.use('/api/news', newsRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

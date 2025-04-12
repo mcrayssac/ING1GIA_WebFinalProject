@@ -9,6 +9,11 @@ const navMain = {
             icon: "House",
         },
         {
+            title: "News",
+            url: "/news",
+            icon: "Newspaper",
+        },
+        {
             title: "Products",
             url: "/products",
             icon: "Box",

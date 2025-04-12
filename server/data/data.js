@@ -409,6 +409,11 @@ const navMain = {
             icon: "House",
         },
         {
+            title: "News",
+            url: "/news",
+            icon: "Newspaper",
+        },
+        {
             title: "Products",
             url: "/products",
             icon: "Box",
@@ -469,5 +474,71 @@ const themes = [
     { name: "Sunset", value: "sunset" },
 ];
 
-
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes };
+const news = [
+    {
+      title: "New Rocket Successfully Tested",
+      content: "The Aurora 10 rocket was successfully tested at the launch site, marking a major milestone in the SpaceY program.",
+      date: new Date("2025-04-01"),
+      imageUrl: "/pictures/aurora10.jpg",
+      category: "Launch",
+      location: "USA"
+    },
+    {
+      title: "SpaceY Wins Major Contract",
+      content: "SpaceY signed a new partnership agreement with the European Space Agency to supply propulsion systems for future missions.",
+      date: new Date("2025-03-20"),
+      imageUrl: "/pictures/contract.jpg",
+      category: "Partnership",
+      location: "France"
+    },
+    {
+      title: "First Crewed Mission to Mars in Preparation",
+      content: "The Mars One project is entering its final phase with astronaut selection underway for the first interplanetary journey.",
+      date: new Date("2025-02-28"),
+      imageUrl: "/pictures/mars_mission.jpg",
+      category: "Mission",
+      location: "USA"
+    },
+    {
+      title: "Launch of IoT Control Platform",
+      content: "SpaceY unveiled its new IoT platform for centralized control of production equipment across its manufacturing sites.",
+      date: new Date("2025-03-05"),
+      imageUrl: "/pictures/iot_platform.jpg",
+      category: "Technology",
+      location: "Germany"
+    },
+    {
+      title: "New Engine Production Center in Toulouse",
+      content: "A new engine production site was inaugurated in Toulouse, boosting SpaceY’s European manufacturing capabilities.",
+      date: new Date("2025-01-15"),
+      imageUrl: "/pictures/factory.jpg",
+      category: "Infrastructure",
+      location: "France"
+    },
+    {
+      title: "Partnership with Tokyo University",
+      content: "SpaceY is partnering with the University of Tokyo to develop next-gen embedded sensors for spacecraft.",
+      date: new Date("2025-02-10"),
+      imageUrl: "/pictures/tokyo_univ.jpg",
+      category: "Partnership",
+      location: "Japan"
+    },
+    {
+      title: "Update on Onboard Power Systems",
+      content: "The Nova rocket’s power modules have been upgraded for better efficiency and lower energy consumption.",
+      date: new Date("2025-03-12"),
+      imageUrl: "/pictures/power_system.jpg",
+      category: "Technology",
+      location: "USA"
+    },
+    {
+      title: "2024 in Review: A Record Year",
+      content: "SpaceY celebrates an outstanding 2024 with 18 successful launches and 3 new technology patents granted.",
+      date: new Date("2025-01-01"),
+      imageUrl: "/pictures/retrospective.jpg",
+      category: "Review",
+      location: "USA"
+    }
+  ];
+  
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news };

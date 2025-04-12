@@ -6,8 +6,8 @@ const Site = require('../models/Site');
 const Product = require('../models/Product');
 const Statistic = require('../models/Statistic');
 const HistoryEvent = require('../models/HistoryEvent');
-
-const { sites, products, statistics, historyEvents } = require('../data/data');
+const News = require('../models/News');
+const { sites, products, statistics, historyEvents, news } = require('../data/data');
 
 
 /**
@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
             { key: 'Products', data: products, model: Product },
             { key: 'Statistics', data: statistics, model: Statistic },
             { key: 'HistoryEvents', data: historyEvents, model: HistoryEvent },
+            { key: 'News', data: news, model: News },
         ];
 
         // Loop over each mapping and seed the data
