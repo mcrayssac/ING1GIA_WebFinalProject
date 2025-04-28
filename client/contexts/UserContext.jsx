@@ -21,6 +21,13 @@ export const UserProvider = ({ children }) => {
                 name: data.username,
                 avatar: data.photo,
                 admin: data.admin,
+                points: data.points,
+                grade: data.grade ? {
+                    name: data.grade.name,
+                    icon: data.grade.icon,
+                    color: data.grade.color,
+                    cap: data.grade.cap
+                } : null
             })
         } catch (err) {
             console.error("Error fetching user info:", err)

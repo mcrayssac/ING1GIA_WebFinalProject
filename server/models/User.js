@@ -19,9 +19,10 @@ const userSchema = new mongoose.Schema({
     points: { type: Number, default: 0 },
     employee: {                        
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
+        ref: process.env.MONGO_Collection_Employee,
         required: true
-    }
+    },
+    grade: { type: mongoose.Schema.Types.ObjectId, ref: process.env.MONGO_Collection_Grade, required: false }
 });
 
 userSchema.pre('save', async function (next) {

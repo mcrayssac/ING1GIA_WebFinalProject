@@ -149,15 +149,12 @@ export function NavUser() {
                         <DropdownMenuSeparator />
 
                         {/* Mini Progress Bar */}
-                        <MiniTierProgress currentPoints={user.points || 150} />
-
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <Sparkles />
-                                Upgrade to Pro
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
+                        <MiniTierProgress 
+                            currentPoints={user.points || 0} 
+                            currentGrade={user.grade || null}
+                        />
                         <DropdownMenuSeparator />
+
                         <button
                             onClick={() => router.push("/account")}
                             type="button"
@@ -185,4 +182,3 @@ export function NavUser() {
         </SidebarMenu>
     )
 }
-
