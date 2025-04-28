@@ -115,5 +115,4 @@ const themes = [
     { name: "Sunset", value: "sunset" },
 ];
 
-
 export { nextTarget, navMain, navSecondary, projects, themes };

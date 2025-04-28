@@ -123,7 +123,7 @@ router.post('/register', async (req, res) => {
  */
 router.get('/infos', verifyToken, async (req, res) => {
     try {
-        let user = await User.findById(req.user._id).select('-password -__v');
+        let user = await User.findById(req.user._id).populate('grade').select('-password -__v');
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }

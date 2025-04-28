@@ -6,8 +6,9 @@ const Statistic = require('../models/Statistic');
 const HistoryEvent = require('../models/HistoryEvent');
 const Satellite = require('../models/Satellite');
 const Employee = require('../models/Employee');
+const Grade = require('../models/Grade');
 
-const { sites, products, statistics, historyEvents, employees } = require('../data/data');
+const { sites, products, statistics, historyEvents, employees, grades } = require('../data/data');
 const satellites = require('./satellites');
 
 const MONGO_URI = process.env.MONGO_URI;
@@ -39,6 +40,7 @@ async function seedDatabase() {
             { key: 'Statistics', data: statistics, model: Statistic },
             { key: 'HistoryEvents', data: historyEvents, model: HistoryEvent },
             { key: 'Employees', data: employees, model: Employee },
+            { key: 'Grades', data: grades, model: Grade },
         ];
 
         // Loop over each mapping and seed the data

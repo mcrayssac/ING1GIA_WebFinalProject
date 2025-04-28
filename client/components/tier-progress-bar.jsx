@@ -1,25 +1,76 @@
 "use client"
-import { Trophy, Star, Award, Crown } from "lucide-react";
+import { Trophy, Star, Award, Crown, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
-const TierProgressBar = ({
-    currentPoints = 0,
-    tiers = [
-        { name: "Bronze", threshold: 0, icon: Trophy, color: "#CD7F32" },
-        { name: "Silver", threshold: 100, icon: Star, color: "#C0C0C0" },
-        { name: "Gold", threshold: 300, icon: Award, color: "#FFD700" },
-        { name: "Platinum", threshold: 600, icon: Crown, color: "#E5E4E2" },
-    ],
-}) => {
-    // Find the current tier and next tier
-    const currentTierIndex = tiers.reduce((highestIndex, tier, index) => {
-        return currentPoints >= tier.threshold ? index : highestIndex
-    }, 0)
+const TierProgressBar = ({ currentPoints = 0, currentGrade = null }) => {
+    const [tiers, setTiers] = useState([]);
+    const iconMapping = {
+        Trophy: Trophy,
+        Star: Star,
+        Award: Award,
+        Crown: Crown,
+    };
 
-    const currentTier = tiers[currentTierIndex]
-    const nextTier = tiers[currentTierIndex + 1]
+    // Calculate the width of the filled progress bar
+    const calculateProgressWidth = (currentPoints, tiers) => {
+        if (tiers.length === 0) return 0;
+        const maxPoints = tiers[tiers.length - 1].threshold;
+        return Math.min(100, (currentPoints / maxPoints) * 100);
+    };
+
+    const progressWidth = useMemo(
+        () => calculateProgressWidth(currentPoints, tiers),
+        [currentPoints, tiers]
+    );
+
+    useEffect(() => {
+        const fetchGrades = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`, {
+                    method: "GET",
+                    credentials: "include",
+                });
+                if (!res.ok) throw new Error("Failed to fetch grades");
+                const data = await res.json();
+                const fetchedTiers = data.map((grade) => ({
+                    name: grade.name,
+                    threshold: grade.cap,
+                    icon: iconMapping[grade.icon] || Trophy,
+                    color: grade.color,
+                }));
+                setTiers(fetchedTiers);
+            } catch (error) {
+                console.error("Error fetching grades:", error);
+            }
+        };
+        fetchGrades();
+    }, []);
+
+    if (tiers.length === 0) {
+        return (
+            <Card className="w-full shadow-lg">
+                <CardContent className="p-6">
+                    <div className="text-center">Loading tier data...</div>
+                </CardContent>
+            </Card>
+        );
+    }
+    // Find the next tier after current grade
+    const findNextTier = () => {
+        if (!currentGrade || !tiers.length) return null;
+        const currentIndex = tiers.findIndex(tier => tier.name === currentGrade.name);
+        return currentIndex >= 0 && currentIndex < tiers.length - 1 ? tiers[currentIndex + 1] : null;
+    }
+
+    const currentTier = currentGrade ? {
+        name: currentGrade.name,
+        threshold: currentGrade.cap,
+        icon: iconMapping[currentGrade.icon] || Trophy,
+        color: currentGrade.color
+    } : tiers[0];
+    const nextTier = findNextTier();
 
     // Calculate progress percentage
     const calculateProgress = () => {
@@ -44,15 +95,6 @@ const TierProgressBar = ({
         return (tiers[tierIndex].threshold / maxPoints) * 100
     }
 
-    // Calculate the width of the filled progress bar
-    const calculateProgressWidth = () => {
-        const maxPoints = tiers[tiers.length - 1].threshold
-        return Math.min(100, (currentPoints / maxPoints) * 100)
-    }
-
-    // Force the progress width to be recalculated when points change
-    const progressWidth = React.useMemo(() => calculateProgressWidth(), [currentPoints, tiers])
-
     return (
         <Card className="w-full shadow-lg">
             <CardHeader className="pb-3">
@@ -61,7 +103,9 @@ const TierProgressBar = ({
                         <CardTitle className="text-xl">Your Progress</CardTitle>
                         <CardDescription>
                             {nextTier
-                                ? `${nextTier.threshold - currentPoints} points until ${nextTier.name} tier`
+                                ? currentPoints >= nextTier.threshold
+                                    ? `Ready to upgrade to ${nextTier.name} tier`
+                                    : `${nextTier.threshold - currentPoints} points until ${nextTier.name} tier`
                                 : "You've reached the highest tier!"}
                         </CardDescription>
                     </div>
@@ -160,19 +204,34 @@ const TierProgressBar = ({
                     ))}
                 </div>
 
-                {/* Next Tier Info */}
+                {/* Next Tier Info and Upgrade Button */}
                 {nextTier && (
-                    <div className="mt-6 p-3 bg-muted-foreground rounded-lg flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <nextTier.icon className="h-5 w-5" style={{ color: nextTier.color }} />
-                            <span>
-                                Next: <strong>{nextTier.name} Tier</strong>
-                            </span>
+                    <>
+                        <div className="mt-6 p-3 bg-muted-foreground rounded-lg flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <nextTier.icon className="h-5 w-5" style={{ color: nextTier.color }} />
+                                <span>
+                                    Next: <strong>{nextTier.name} Tier</strong>
+                                </span>
+                            </div>
+                            <div className="text-sm">
+                                {currentPoints >= nextTier.threshold
+                                    ? <span className="font-bold">Ready to upgrade!</span>
+                                    : <span><span className="font-bold">{nextTier.threshold - currentPoints}</span> points needed</span>
+                                }
+                            </div>
                         </div>
-                        <div className="text-sm">
-                            <span className="font-bold">{nextTier.threshold - currentPoints}</span> points needed
-                        </div>
-                    </div>
+
+                        {currentPoints >= nextTier.threshold && (
+                            <button
+                                onClick={() => window.alert("Upgrade request to " + nextTier.name + " has been sent. Waiting for admin approval.")}
+                                className="mt-4 w-full p-3 bg-muted-foreground rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-muted-foreground/90 transition-colors"
+                            >
+                                <Sparkles className="h-5 w-5" style={{ color: nextTier.color }} />
+                                <span>Request Upgrade to <strong>{nextTier.name}</strong></span>
+                            </button>
+                        )}
+                    </>
                 )}
             </CardContent>
         </Card>
@@ -180,4 +239,3 @@ const TierProgressBar = ({
 }
 
 export default TierProgressBar
-
