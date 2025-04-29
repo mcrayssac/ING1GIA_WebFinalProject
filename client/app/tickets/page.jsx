@@ -239,7 +239,7 @@ export default function TicketsPage() {
     const rejectedCount = tickets.filter((ticket) => ticket.status === "REJECTED").length
 
     return (
-        <div className="container p-4 space-y-6">
+        <div className="p-4 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Ticket Management</h1>
