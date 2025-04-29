@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+// const sensorSchema = require('./Sensors');
+// const sensorDataSchema = require('./sensorData');
+
+
 
 
 // Schéma pour une période d'utilisation (exemple : d'1h)
@@ -24,12 +28,7 @@ const dailyUsageSchema = new mongoose.Schema({
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
   },
-  // Un Map où la clé est le nom du capteur et la valeur est un tableau de relevés (chaque relevé contient le timestamp, la valeur et l'ID de l'utilisateur)
-  sensorData: {
-    type: Map,
-    of: [ sensorReadingSchema ],
-    default: {}
-  },
+  
   // Périodes d'utilisation durant la journée
   usagePeriods: { type: [ usagePeriodSchema ], default: [] }
 }, { _id: false });

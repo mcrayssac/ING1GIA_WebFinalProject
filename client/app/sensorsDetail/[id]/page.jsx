@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation"; // Only used for navigation
-import { useParams } from 'next/navigation'; // To get dynamic params
-import Link from "next/link";  
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function SensorDetailPage() {
   const [sensor, setSensor] = useState(null);
@@ -17,8 +16,7 @@ export default function SensorDetailPage() {
     supplier: "",
   });
 
-  // Access the dynamic route parameters using useParams hook
-  const { id } = useParams();  // id from dynamic route
+  const { id } = useParams();
 
   useEffect(() => {
     if (!id) return;
@@ -58,7 +56,9 @@ export default function SensorDetailPage() {
         },
         body: JSON.stringify(formData),
       });
-      if (!response.ok) throw new Error("Failed to update sensor details");
+      if (!response.ok) {
+        throw new Error("Failed to update sensor details");
+      }
       const updatedSensor = await response.json();
       setSensor(updatedSensor);
       setIsEditing(false);
@@ -68,66 +68,83 @@ export default function SensorDetailPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-6 py-12">
       {loading ? (
-        <div>Loading...</div>
+        <div className="text-center text-lg font-semibold">Loading...</div>
       ) : error ? (
-        <div>Error: {error}</div>
+        <div className="text-center text-red-500 font-semibold">Error: {error}</div>
       ) : (
-        <div>
-          <h1 className="text-3xl font-bold mb-6">{sensor?.designation} Details</h1>
+        <div className="bg-white shadow-md rounded-lg p-8 space-y-6">
+          <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">
+            {sensor?.designation} Details
+          </h1>
           {isEditing ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block font-bold">Designation:</label>
+                <label className="block font-semibold text-gray-700 mb-2">Designation:</label>
                 <input
                   type="text"
                   name="designation"
                   value={formData.designation}
                   onChange={handleInputChange}
-                  className="border rounded px-2 py-1 w-full"
+                  className="border rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block font-bold">Required Grade:</label>
+                <label className="block font-semibold text-gray-700 mb-2">Required Grade:</label>
                 <input
                   type="text"
                   name="requiredGrade"
                   value={formData.requiredGrade}
                   onChange={handleInputChange}
-                  className="border rounded px-2 py-1 w-full"
+                  className="border rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block font-bold">Supplier:</label>
+                <label className="block font-semibold text-gray-700 mb-2">Supplier:</label>
                 <input
                   type="text"
                   name="supplier"
                   value={formData.supplier}
                   onChange={handleInputChange}
-                  className="border rounded px-2 py-1 w-full"
+                  className="border rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <Button onClick={handleSave}>Save</Button>
-              <Button variant="secondary" onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
+              <div className="flex space-x-4">
+                <Button onClick={handleSave} className="w-full">
+                  Save
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsEditing(false)}
+                  className="w-full"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <p>
-                <strong>Required Grade:</strong> {sensor?.requiredGrade}
+            <div className="space-y-6">
+              <p className="text-lg">
+                <strong className="font-semibold text-gray-700">Required Grade:</strong>{" "}
+                {sensor?.requiredGrade}
               </p>
-              <p>
-                <strong>Supplier:</strong> {sensor?.supplier || "N/A"}
+              <p className="text-lg">
+                <strong className="font-semibold text-gray-700">Supplier:</strong>{" "}
+                {sensor?.supplier || "N/A"}
               </p>
-              <p>
-                <strong>Created At:</strong> {new Date(sensor?.CreatedAt).toLocaleDateString()}
+              <p className="text-lg">
+                <strong className="font-semibold text-gray-700">Created At:</strong>{" "}
+                {new Date(sensor?.CreatedAt).toLocaleDateString()}
               </p>
-              <Button onClick={() => setIsEditing(true)}>Edit</Button>
-              <Link href="/sensors">
-                <Button>Back to List</Button>
-              </Link>
+              <div className="flex space-x-4">
+                <Button onClick={() => setIsEditing(true)} className="w-full">
+                  Edit
+                </Button>
+                <Link href="/sensors">
+                  <Button className="w-full">Back to List</Button>
+                </Link>
+              </div>
             </div>
           )}
         </div>

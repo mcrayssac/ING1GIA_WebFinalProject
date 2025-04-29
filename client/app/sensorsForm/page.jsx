@@ -93,7 +93,7 @@ export default function AddSensorPage() {
         </div>
 
         <div className="mt-4">
-          <Button type="submit" variant="primary">
+          <Button type="submit" >
             Add Sensor
           </Button>
         </div>

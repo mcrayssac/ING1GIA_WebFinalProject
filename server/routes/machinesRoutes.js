@@ -26,6 +26,36 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Delete a machine by ID
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedMachine = await Machine.findByIdAndDelete(id);
+    if (!deletedMachine) {
+      return res.status(404).json({ error: "Machine not found" });
+    }
+    res.json({ message: "Machine deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update a machine by ID
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedMachine = await Machine.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true
+    });
+    if (!updatedMachine) {
+      return res.status(404).json({ error: "Machine not found" });
+    }
+    res.json(updatedMachine);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 module.exports = router;
