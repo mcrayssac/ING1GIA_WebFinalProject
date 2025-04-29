@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";  
-
+import { useRouter } from "next/navigation"; 
 import React, { useEffect, useState, useMemo } from "react";
 import { Search } from "lucide-react";
 import {
@@ -32,6 +32,7 @@ import Alert from "@/components/alert";
 import NoData from "@/components/no-data";
 
 export default function MachinesPage() {
+  const router = useRouter(); // 🧠
   const [machinesData, setMachinesData] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -96,8 +97,8 @@ export default function MachinesPage() {
       header: "Sensors",
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
-          {row.getValue("availableSensors").map((sensor) => (
-            <span 
+          {row.getValue("availableSensors")?.map((sensor) => (
+            <span
               key={sensor.designation}
               className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs"
             >
@@ -111,8 +112,8 @@ export default function MachinesPage() {
       accessorKey: "currentUsers",
       header: "Active Users",
       cell: ({ row }) => (
-        <span className={row.getValue("currentUsers").length > 0 ? "text-green-600" : "text-gray-400"}>
-          {row.getValue("currentUsers").length}/{row.original.maxUsers}
+        <span className={row.getValue("currentUsers")?.length > 0 ? "text-green-600" : "text-gray-400"}>
+          {row.getValue("currentUsers")?.length}/{row.original.maxUsers}
         </span>
       ),
     },
@@ -144,7 +145,7 @@ export default function MachinesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {error && <Alert type="error" message={error} onClose={() => setError("")} />}
-      
+
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
           <div className="w-8 h-8 bg-blue-500 rounded" />
@@ -162,7 +163,7 @@ export default function MachinesPage() {
             className="pl-10"
           />
         </div>
-        
+
         <Select
           onValueChange={(value) => {
             table.getColumn("requiredGrade")?.setFilterValue(value === "all" ? undefined : value);
@@ -178,21 +179,22 @@ export default function MachinesPage() {
             <SelectItem value="Ingénieur">Ingénieur</SelectItem>
           </SelectContent>
         </Select>
-            <Select
-      onValueChange={(value) => {
-        table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
-      }}
-    >
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Filter by status" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All status</SelectItem>
-        <SelectItem value="available">Available</SelectItem>
-        <SelectItem value="in-use">In Use</SelectItem>
-        <SelectItem value="blocked">Blocked</SelectItem>
-      </SelectContent>
-    </Select>
+
+        <Select
+          onValueChange={(value) => {
+            table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All status</SelectItem>
+            <SelectItem value="available">Available</SelectItem>
+            <SelectItem value="in-use">In Use</SelectItem>
+            <SelectItem value="blocked">Blocked</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -223,6 +225,8 @@ export default function MachinesPage() {
                     <TableRow
                       key={row.id}
                       data-state={row.getIsSelected() && "selected"}
+                      className="cursor-pointer hover:bg-gray-100" // 🧠 petit effet hover
+                      onClick={() => router.push(`/machines/${row.original._id}`)} // 👈
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -268,9 +272,9 @@ export default function MachinesPage() {
           </div>
 
           <div className="flex justify-end mt-4">
-          <Link href="/machinesForm">
-            <Button variant="primary">Add a New Machine</Button>
-          </Link>
+            <Link href="/machinesForm">
+              <Button variant="primary">Add a New Machine</Button>
+            </Link>
           </div>
         </>
       )}

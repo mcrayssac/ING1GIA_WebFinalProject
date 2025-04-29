@@ -26,6 +26,17 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Get a single machine by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const machine = await Machine.findById(req.params.id);
+    if (!machine) return res.status(404).json({ error: "Machine not found" });
+    res.json(machine);
+  } catch (err) {
+    res.status(500).json({ error: "Invalid ID or server error" });
+  }
+});
+
 
 
 module.exports = router;

@@ -1,6 +1,17 @@
 const mongoose = require('mongoose');
 
+// Schéma pour un relevé de capteur (sensor reading)
+const sensorReadingSchema = new mongoose.Schema({
+  timestamp: { type: Date, required: true },
+  value: { type: Number, required: true },
+  user: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_User,
+    required: true
+  }
+}, { _id: false });
 
+// (puis continue ton fichier avec usagePeriodSchema, dailyUsageSchema, etc.)
 
 // Schéma pour une période d'utilisation (exemple : d'1h)
 const usagePeriodSchema = new mongoose.Schema({

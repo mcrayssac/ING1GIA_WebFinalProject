@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "ag-grid-community": "^33.2.3",
-    "ag-grid-react": "^33.2.3"
+    "ag-grid-react": "^33.2.3",
+    "cors": "^2.8.5",
+    "leaflet": "^1.9.4"
   }
 }
