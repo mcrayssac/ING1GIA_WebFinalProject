@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const sites = [
     {
         name: "Celestial Launch Complex 40",
@@ -540,5 +542,201 @@ const news = [
       location: "USA"
     }
   ];
+
+
+const sensors = [
+  { _id: new mongoose.Types.ObjectId(), designation: "Pression", requiredGrade: "Technicien" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Flux", requiredGrade: "Technicien" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Température", requiredGrade: "Technicien" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Vibration", requiredGrade: "Technicien" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Humidité", requiredGrade: "Technicien" },
+];
+
+ 
+const machines = [
+    {
+      mainPole: "Bas de la fusée",
+      subPole: "Injection carburant",
+      name: "Injecteur Cryogénique A1",
+      pointsPerCycle: 20,
+      maxUsers: 2,
+      requiredGrade: "Technicien confirmé",
+      availableSensors: [
+        { designation: "Pression" },
+        { designation: "Température"}
+      ],
+      sites: [], status :"in-use",
+      currentUsers: [],
+      usageStats: [
+        {
+          day: new Date("2025-04-08T00:00:00Z"),
+          sensorData: {
+            "Pression": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 101, user: "607f1f77bcf86cd799439011" },
+              { timestamp: new Date("2025-04-08T08:05:00Z"), value: 102, user: "607f1f77bcf86cd799439011" }
+            ],
+            "Flux": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 5.5, user: "607f1f77bcf86cd799439011" }
+            ],
+            "Température": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 20, user: "607f1f77bcf86cd799439011" }
+            ]
+          },
+          usagePeriods: [
+            { user: "607f1f77bcf86cd799439011", startTime: new Date("2025-04-08T07:00:00Z"), endTime: new Date("2025-04-08T08:00:00Z") }
+          ]
+        }
+      ]
+    },
+    {
+      mainPole: "Haut de la fusée",
+      subPole: "Surveillance thermique",
+      name: "Caméra Thermique X5",
+      pointsPerCycle: 10,
+      maxUsers: 1,
+      requiredGrade: "Technicien",
+      availableSensors: [
+        { designation: "Température"}
+      ],
+      sites: [], status :"blocked",
+      currentUsers: [],
+      usageStats: [
+        {
+          day: new Date("2025-04-08T00:00:00Z"),
+          sensorData: {
+            "Température": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 25, user: "607f1f77bcf86cd799439012" }
+            ]
+          },
+          usagePeriods: [
+            { user: "607f1f77bcf86cd799439012", startTime: new Date("2025-04-08T07:00:00Z"), endTime: new Date("2025-04-08T08:00:00Z") }
+          ]
+        }
+      ]
+    },
+    {
+      mainPole: "Extérieur",
+      subPole: "Conditions de lancement",
+      name: "Module d'Analyse Météo",
+      pointsPerCycle: 30,
+      maxUsers: 3,
+      requiredGrade: "Technicien confirmé",
+      availableSensors: [
+        { designation: "Pression" },
+        { designation: "Température"}
+      ],
+      sites: [], status :"in-use",
+      currentUsers: [],
+      usageStats: [
+        {
+          day: new Date("2025-04-08T00:00:00Z"),
+          sensorData: {
+            "Pression": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 102, user: "607f1f77bcf86cd799439013" }
+            ],
+            "Température": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 21, user: "607f1f77bcf86cd799439013" }
+            ]
+          },
+          usagePeriods: [
+            { user: "607f1f77bcf86cd799439013", startTime: new Date("2025-04-08T07:00:00Z"), endTime: new Date("2025-04-08T08:00:00Z") }
+          ]
+        }
+      ]
+    },
+    {
+      mainPole: "Réservoir principal",
+      subPole: "Pression O2",
+      name: "Valve d'Oxygène V2",
+      pointsPerCycle: 15,
+      maxUsers: 1,
+      requiredGrade: "Technicien confirmé",
+      availableSensors: [
+        { designation: "Pression" }
+      ],
+      sites: [], status :"available",
+      currentUsers: [],
+      usageStats: [
+        {
+          day: new Date("2025-04-08T00:00:00Z"),
+          sensorData: {
+            "Pression": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 45, user: "607f1f77bcf86cd799439014" }
+            ]
+          },
+          usagePeriods: [
+            { user: "607f1f77bcf86cd799439014", startTime: new Date("2025-04-08T07:00:00Z"), endTime: new Date("2025-04-08T08:00:00Z") }
+          ]
+        }
+      ]
+    },
+    {
+      mainPole: "Bas de la fusée",
+      subPole: "Injection carburant",
+      name: "Injecteur Cryogénique A2",
+      pointsPerCycle: 20,
+      maxUsers: 2,
+      requiredGrade: "Technicien confirmé",
+      availableSensors: [
+        { designation: "Pression" },
+        { designation: "Flux" },
+        { designation: "Température" }
+      ],
+      sites: [], status :"blocked",
+      currentUsers: [],
+      usageStats: [
+        {
+          day: new Date("2025-04-08T00:00:00Z"),
+          sensorData: {
+            "Pression": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 110, user: "607f1f77bcf86cd799439015" }
+            ],
+            "Flux": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 6.5, user: "607f1f77bcf86cd799439015" }
+            ],
+            "Température": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 22, user: "607f1f77bcf86cd799439015" }
+            ]
+          },
+          usagePeriods: [
+            { user: "607f1f77bcf86cd799439015", startTime: new Date("2025-04-08T07:00:00Z"), endTime: new Date("2025-04-08T08:00:00Z") }
+          ]
+        }
+      ]
+    },
+    {
+      mainPole: "Haut de la fusée",
+      subPole: "Surveillance thermique",
+      name: "Caméra Thermique X6",
+      pointsPerCycle: 10,
+      maxUsers: 1,
+      requiredGrade: "Technicien",
+      availableSensors: [
+        { designation: "Température"}
+      ],
+      sites: [], 
+      status :"in-use",
+      currentUsers: [],
+      usageStats: [
+        {
+          day: new Date("2025-04-08T00:00:00Z"),
+          sensorData: {
+            "Température": [
+              { timestamp: new Date("2025-04-08T08:00:00Z"), value: 28, user: "607f1f77bcf86cd799439016" }
+            ]
+          },
+          usagePeriods: [
+            { user: "607f1f77bcf86cd799439016", startTime: new Date("2025-04-08T07:00:00Z"), endTime: new Date("2025-04-08T08:00:00Z") }
+          ]
+        }
+      ]
+    },
+]
+machines.forEach(machine => {
+  machine.availableSensors = machine.availableSensors.map(sensor => {
+    const matchedSensor = sensors.find(s => s.designation === sensor.designation);
+    return matchedSensor ? matchedSensor._id : null;
+  }).filter(sensorId => sensorId !== null); // Filter out unmatched sensors
+});         
   
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news };
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news, machines, sensors};

@@ -38,6 +38,7 @@ require('./models/Product');
 require('./models/Statistic');
 require('./models/HistoryEvent');
 require('./models/News');
+require('./models/Machines'); 
 
 // Track all incoming requests
 app.use((req, res, next) => {
@@ -78,6 +79,12 @@ const seedRoutes = require('./routes/seedRoutes');
 app.use('/api/seed', seedRoutes);
 const newsRoutes = require('./routes/newsRoutes');
 app.use('/api/news', newsRoutes);
+const machinesRoutes = require('./routes/machinesRoutes');
+app.use('/api/machines', machinesRoutes);
+const addMachinesRoutes = require('./routes/addMachinesRoutes');
+app.use('/api/machinesForm', addMachinesRoutes);
+const sensorsRoutes = require('./routes/sensorsRoutes');
+app.use('/api/sensors', sensorsRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
