@@ -501,5 +501,11 @@ const employees = [
     },
 ];
 
+const grades = [
+    { name: "Apprentice", cap: 0, icon: "Trophy", color: "#CD7F32" },
+    { name: "Technician", cap: 100, icon: "Star", color: "#C0C0C0" },
+    { name: "Engineer", cap: 500, icon: "Award", color: "#FFD700" },
+    { name: "Manager", cap: 1000, icon: "Crown", color: "#E5E4E2" }
+];
 
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, employees };
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, employees, grades };

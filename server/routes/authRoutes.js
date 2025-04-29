@@ -4,6 +4,7 @@ const User = require("../models/User");
 const crypto = require("crypto");
 require('dotenv').config();
 const nodemailer = require("nodemailer");
+const Grade = require("../models/Grade");
 
 const router = express.Router();
 
@@ -141,13 +142,16 @@ router.post("/create-user", async (req, res) => {
         if (!employee) {
             return res.status(400).json({ message: "Employee not found for this email" });
         }
+        // Set default grade based on lower points threshold (default "Apprentice")
+        const defaultGrade = await Grade.findOne({ name: "Apprentice" });
 
         // New user creation
         const newUser = new User({
             username,
             email,
             password,
-            employee: employee._id
+            employee: employee._id,
+            grade: defaultGrade ? defaultGrade._id : null
         });
         await newUser.save();
 

@@ -86,6 +86,8 @@ const historyEventRoutes = require('./routes/historyEventRoutes');
 app.use('/api/history-events', historyEventRoutes);
 const satellitesRoutes = require('./routes/satellitesRoutes');
 app.use('/api/satellites', satellitesRoutes);
+const gradeRoutes = require('./routes/gradeRoutes');
+app.use('/api/grades', gradeRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
