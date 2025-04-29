@@ -1,106 +1,118 @@
-const express = require('express');
-const Machine = require('../models/Machine');
-const Sensor = require('../models/Sensor');
-const { verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
-const router = express.Router();
+// server/models/Machine.js
+const mongoose = require('mongoose');
 
-/**
- * @route POST /api/machines
- * @desc   Créer une nouvelle machine
- * @access Admin
- */
-router.post('/', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const m = new Machine(req.body);
-    await m.save();
-    res.status(201).json(m);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+// Pour stocker un relevé de capteur
+const sensorReadingSchema = new mongoose.Schema({
+  timestamp:  { type: Date,   default: Date.now },
+  value:      { type: Number, required: true },
+  user:       { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: process.env.MONGO_Collection_User 
   }
-});
+}, { _id: false });
 
-/**
- * @route GET /api/machines
- * @desc   Lister toutes les machines
- * @access Authenticated
- */
-router.get('/', verifyToken, async (req, res) => {
-  try {
-    const list = await Machine.find().populate('availableSensors');
-    res.json(list);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+// Période de travail d’1h sur la machine
+const usagePeriodSchema = new mongoose.Schema({
+  user:      { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: process.env.MONGO_Collection_User,
+    required: true 
+  },
+  startTime: { type: Date, required: true },
+  endTime:   { type: Date, required: true }
+}, { _id: false });
 
-/**
- * @route POST /api/machines/:id/start-cycle
- * @desc   Démarrer un cycle d'1h sur la machine (incrémente totalCycles, ajoute l’utilisateur)
- * @access Authenticated
- */
-router.post('/:id/start-cycle', verifyToken, async (req, res) => {
-  try {
-    const machine = await Machine.findById(req.params.id);
-    if (!machine) return res.status(404).send('Machine not found');
-
-    await machine.startCycle(req.user._id);
-    return res.json({ message: 'Cycle démarré', machine });
-  } catch (e) {
-    return res.status(400).json({ error: e.message });
-  }
-});
-
-/**
- * @route POST /api/machines/:id/sensors
- * @desc   Ajouter un capteur à la machine
- * @access Admin
- * @body   { name, requiredGrade }
- */
-router.post('/:id/sensors', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const machine = await Machine.findById(req.params.id);
-    if (!machine) return res.status(404).send('Machine not found');
-
-    const { name, requiredGrade } = req.body;
-    const s = new Sensor({ machine: machine._id, name, requiredGrade });
-    await s.save();
-
-    machine.availableSensors.push(s._id);
-    await machine.save();
-
-    res.status(201).json(s);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-/**
- * @route POST /api/machines/:mid/sensors/:sid/readings
- * @desc   Ajouter une lecture de capteur (avec user)
- * @access Authenticated
- * @body   { value }
- */
-router.post('/:mid/sensors/:sid/readings', verifyToken, async (req, res) => {
-  try {
-    const { value } = req.body;
-    const sensor = await Sensor.findById(req.params.sid);
-    if (!sensor) return res.status(404).send('Sensor not found');
-
-    // Vérifie que le capteur appartient bien à la machine
-    if (sensor.machine.toString() !== req.params.mid) {
-      return res.status(400).send('Sensor does not belong to this machine');
+// Statistiques journalières (agrégation par jour)
+const dailyUsageSchema = new mongoose.Schema({
+  day: {
+    type: Date,
+    required: true,
+    default() {
+      const d = new Date();
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
-
-    sensor.readings.push({
-      value,
-      user: req.user._id
-    });
-    await sensor.save();
-
-    res.json({ message: 'Lecture ajoutée', sensor });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  },
+  // Map capteur → tableau de readings
+  sensorData: {
+    type: Map,
+    of: [sensorReadingSchema],
+    default: {}
+  },
+  // Périodes d’utilisation dans la journée
+  usagePeriods: {
+    type: [usagePeriodSchema],
+    default: []
   }
+}, { _id: false });
+
+const machineSchema = new mongoose.Schema({
+  mainPole:       { type: String, required: true },
+  subPole:        { type: String, required: true },
+  name:           { type: String, required: true },
+  pointsPerCycle: { type: Number, required: true },
+  maxUsers:       { type: Number, required: true },
+  requiredGrade:  { type: String, required: true },
+
+  // Liste des capteurs embarqués et grade requis pour y accéder
+  availableSensors: [{
+    sensorName:    { type: String, required: true },
+    requiredGrade: { type: String, required: true }
+  }],
+
+  // Affectation multi-site
+  sites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_Site
+  }],
+
+  // État courant
+  status: {
+    type: String,
+    enum: ['available', 'in-use', 'blocked'],
+    default: 'available'
+  },
+  currentUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_User
+  }],
+
+  // Historique agrégé par jour
+  usageStats: {
+    type: [dailyUsageSchema],
+    default: []
+  }
+}, {
+  timestamps: true
 });
 
-module.exports = router;
+/**
+ * Ajoute un relevé de capteur sur la journée en cours.
+ */
+machineSchema.methods.addSensorReading = async function(sensorName, value, timestamp = new Date(), userId) {
+  // Vérification capteur existant
+  if (!this.availableSensors.some(s => s.sensorName === sensorName)) {
+    throw new Error(`Capteur "${sensorName}" non déclaré sur cette machine`);
+  }
+
+  // Jour tronqué
+  const day = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate());
+
+  // Recherche ou création du record journalier
+  let daily = this.usageStats.find(r => r.day.getTime() === day.getTime());
+  if (!daily) {
+    daily = { day, sensorData: new Map(), usagePeriods: [] };
+    this.usageStats.push(daily);
+    daily = this.usageStats[this.usageStats.length - 1];
+  }
+
+  // Initialisation du tableau si besoin
+  if (!daily.sensorData.has(sensorName)) {
+    daily.sensorData.set(sensorName, []);
+  }
+
+  // Pousser le relevé
+  daily.sensorData.get(sensorName).push({ timestamp, value, user: userId });
+  return this.save();
+};
+
+module.exports = mongoose.model(process.env.MONGO_Collection_Machine, machineSchema);

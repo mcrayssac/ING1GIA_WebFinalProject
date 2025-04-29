@@ -1,20 +1,22 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToastAlert } from "@/contexts/ToastContext";
 
 export default function StartCyclePage() {
-  const router = useRouter();
-  const { id: machineId } = router.query;
+  const { id: machineId } = useParams();
   const { toastSuccess, toastError } = useToastAlert();
   const [loading, setLoading] = useState(false);
 
   if (!machineId) {
-    return <p>Chargement de la machine…</p>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <p>Chargement de la machine…</p>
+      </div>
+    );
   }
 
   const handleStartCycle = async () => {
@@ -34,13 +36,11 @@ export default function StartCyclePage() {
           },
         }
       );
-      const body = await res.json();
       if (!res.ok) {
-        throw new Error(body.error || body);
+        const text = await res.text();
+        throw new Error(text || "Erreur démarrage du cycle");
       }
       toastSuccess("Cycle de travail démarré !");
-      // Optionnel : rediriger ou recharger
-      // router.refresh();
     } catch (err) {
       toastError(err.message);
     } finally {
