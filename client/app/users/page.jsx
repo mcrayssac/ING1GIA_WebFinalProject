@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2 } from "lucide-react"
+import { useUser } from "@/contexts/UserContext"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToastAlert } from "@/contexts/ToastContext"
 
 export default function UserSearchPage() {
-    const { toastError } = useToastAlert();
+    const { user } = useUser()
+    const router = useRouter()
+    const { toastError } = useToastAlert()
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/')
+        }
+    }, [user, router])
+
+    // Show nothing while checking user status and redirecting
+    if (!user) return null;
     const [users, setUsers] = useState([])
     const [filteredUsers, setFilteredUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState(null)
@@ -403,4 +416,3 @@ export default function UserSearchPage() {
         </>
     )
 }
-

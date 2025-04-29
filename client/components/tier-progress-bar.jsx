@@ -3,6 +3,7 @@ import { Trophy, Star, Award, Crown, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import React, { useState, useEffect, useMemo } from "react";
+import { useToastAlert } from "@/contexts/ToastContext";
 
 const TierProgressBar = ({ currentPoints = 0, currentGrade = null }) => {
     const [tiers, setTiers] = useState([]);
@@ -12,6 +13,8 @@ const TierProgressBar = ({ currentPoints = 0, currentGrade = null }) => {
         Award: Award,
         Crown: Crown,
     };
+
+    const { toastSuccess, toastError } = useToastAlert();
 
     // Calculate the width of the filled progress bar
     const calculateProgressWidth = (currentPoints, tiers) => {
@@ -32,8 +35,8 @@ const TierProgressBar = ({ currentPoints = 0, currentGrade = null }) => {
                     method: "GET",
                     credentials: "include",
                 });
-                if (!res.ok) throw new Error("Failed to fetch grades");
                 const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
                 const fetchedTiers = data.map((grade) => ({
                     name: grade.name,
                     threshold: grade.cap,
@@ -43,6 +46,7 @@ const TierProgressBar = ({ currentPoints = 0, currentGrade = null }) => {
                 setTiers(fetchedTiers);
             } catch (error) {
                 console.error("Error fetching grades:", error);
+                toastError("Failed to fetch grades", { description: error.message });
             }
         };
         fetchGrades();
@@ -224,7 +228,31 @@ const TierProgressBar = ({ currentPoints = 0, currentGrade = null }) => {
 
                         {currentPoints >= nextTier.threshold && (
                             <button
-                                onClick={() => window.alert("Upgrade request to " + nextTier.name + " has been sent. Waiting for admin approval.")}
+                                onClick={async () => {
+                                    try {
+                                        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
+                                            method: "POST",
+                                            credentials: "include",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                            },
+                                            body: JSON.stringify({
+                                                type: "GRADE_UPGRADE",
+                                                targetGrade: nextTier.name,
+                                            }),
+                                        });
+                                        
+                                        if (!response.ok) {
+                                            const error = await response.json();
+                                            throw new Error(error.message);
+                                        }
+                                        
+                                        toastSuccess("Upgrade request created successfully", { description: "An adminstrator will review your request." });                            
+                                    } catch (error) {
+                                        toastError("Failed to create ticket", { description: error.message });
+                                        console.error(error);
+                                    }
+                                }}
                                 className="mt-4 w-full p-3 bg-muted-foreground rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-muted-foreground/90 transition-colors"
                             >
                                 <Sparkles className="h-5 w-5" style={{ color: nextTier.color }} />
