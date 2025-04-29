@@ -3,7 +3,8 @@
 import * as Icons from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { navMain } from "@/data/data";
+import { navGuest, navUser, navAdmin, navSecondary } from "@/data/data";
+import { useUser } from "@/contexts/UserContext";
 
 function FooterHeader({ data }) {
     const router = useRouter();
@@ -32,14 +33,40 @@ function FooterHeader({ data }) {
 }
 
 export default function Footer() {
+    const { user } = useUser();
 
     return (
         <div>
             <footer className={`footer text-base-content p-10 rounded-t-2xl bg-primary text-primary-content shadow-xl`}>
-                <FooterHeader data={navMain} />
-                <FooterHeader data={navMain} />
-                <FooterHeader data={navMain} />
-                <FooterHeader data={navMain} />
+                {/* Guest navigation - always visible */}
+                <FooterHeader data={navGuest} />
+
+                {/* User navigation when logged in */}
+                {user && <FooterHeader data={navUser} />}
+
+                {/* Admin navigation for admin users */}
+                {user?.admin && <FooterHeader data={navAdmin} />}
+
+                {/* Secondary navigation */}
+                <nav>
+                    <h6 className="footer-title font-mono text-accent-foreground">Links</h6>
+                    {navSecondary.map((link) => {
+                        const Icon = link.icon ? Icons[link.icon] : null;
+                        return (
+                            <div key={link.title} className="flex items-center gap-2">
+                                {Icon && <Icon className="w-4 h-4" />}
+                                <a
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="link link-hover"
+                                >
+                                    {link.title}
+                                </a>
+                            </div>
+                        );
+                    })}
+                </nav>
             </footer>
             <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl bg-primary text-primary-content shadow-xl`}>
                 <aside className="grid-flow-col items-center font-mono">

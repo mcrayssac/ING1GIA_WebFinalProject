@@ -1,9 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { Trophy, Star, Award, Crown, Sparkles } from "lucide-react"
-import { DropdownMenuGroup, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { useToastAlert } from "@/contexts/ToastContext";
+import { useUser } from "@/contexts/UserContext";
 
 const MiniTierProgress = ({ currentPoints = 0, currentGrade = null }) => {
     const [tiers, setTiers] = useState([]);
+    const [userCounts, setUserCounts] = useState({});
+    const { toastSuccess, toastError } = useToastAlert();
+    const { user } = useUser();
+
+    // Fetch user counts per grade for admin view
+    useEffect(() => {
+        const fetchUserCounts = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/counts-by-grade`, {
+                    method: "GET",
+                    credentials: "include",
+                });
+                if (!res.ok) throw new Error("Failed to fetch user counts");
+                const data = await res.json();
+                setUserCounts(data);
+            } catch (error) {
+                console.error("Error fetching user counts:", error);
+            }
+        };
+
+        if (user?.admin) {
+            fetchUserCounts();
+        }
+    }, [user]);
     const iconMapping = {
         Trophy: Trophy,
         Star: Star,
@@ -79,6 +104,31 @@ const MiniTierProgress = ({ currentPoints = 0, currentGrade = null }) => {
 
     const progressWidth = calculateProgressWidth()
 
+    // Admin view
+    if (user?.admin) {
+        return (
+            <div className="px-2 py-1.5">
+                <h4 className="text-sm font-medium mb-2">Users per Grade</h4>
+                <div className="space-y-2">
+                    {tiers.map((tier) => (
+                        <div key={tier.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <div className="p-1 rounded-full" style={{ backgroundColor: `${tier.color}20` }}>
+                                    <tier.icon className="h-3.5 w-3.5" style={{ color: tier.color }} />
+                                </div>
+                                <span className="text-xs">{tier.name}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                {userCounts[tier.name] || 0} users
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Regular user view
     return (
         <>
             <div className="px-2 py-1.5">
@@ -123,7 +173,31 @@ const MiniTierProgress = ({ currentPoints = 0, currentGrade = null }) => {
 
             {nextTier && currentPoints >= nextTier.threshold && (
                 <button
-                onClick={() => window.alert("Upgrade to " + nextTier.name + " triggered")}
+                onClick={async () => {
+                    try {
+                        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
+                            method: "POST",
+                            credentials: "include",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                type: "GRADE_UPGRADE",
+                                targetGrade: nextTier.name,
+                            }),
+                        });
+                        
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message);
+                        }
+                        
+                        toastSuccess("Upgrade request created successfully", { description: "An adminstrator will review your request." });                            
+                    } catch (error) {
+                        toastError("Failed to create ticket", { description: error.message });
+                        console.error(error);
+                    }
+                }}
                 type="button"
                 className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
   focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 

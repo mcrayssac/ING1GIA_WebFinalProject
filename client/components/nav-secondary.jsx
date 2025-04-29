@@ -53,7 +53,7 @@ export function NavSecondary({ items, ...props }) {
                         return (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild size="sm">
-                                    <button onClick={() => { router.push(item.href) }}>
+                                    <button onClick={() => { window.location.href = item.url; }}>
                                         {Icon && <Icon />}
                                         <span>{item.title}</span>
                                     </button>

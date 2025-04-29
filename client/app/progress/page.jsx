@@ -2,11 +2,22 @@
 
 import { useUser } from "@/contexts/UserContext";
 import TierProgressBar from "@/components/tier-progress-bar";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ProgressPage() {
     const { user } = useUser();
+    const router = useRouter();
 
-    if (!user) {
+    useEffect(() => {
+        if (!user) {
+            router.push('/');
+        } else if (user.admin) {
+            router.push('/tickets');
+        }
+    }, [user, router]);
+
+    if (!user || user.admin) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-3xl mx-auto text-center">

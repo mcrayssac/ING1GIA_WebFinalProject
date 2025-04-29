@@ -508,4 +508,40 @@ const grades = [
     { name: "Manager", cap: 1000, icon: "Crown", color: "#E5E4E2" }
 ];
 
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, employees, grades };
+const adminUser = {
+    username: "admin",
+    email: "alice.smith@example.com",
+    password: "SpaceY2024!",
+    admin: true,
+    employee: null,
+    points: 0
+};
+
+const testUsers = [
+    {
+        username: "apprentice",
+        email: "forest.beryl8045@eagereverest.com", 
+        password: "SpaceY2024!",
+        admin: false,
+        points: 0,
+        employee: null
+    },
+    {
+        username: "technician",
+        email: "charlie.brown@example.com", 
+        password: "SpaceY2024!",
+        admin: false,
+        points: 125,
+        employee: null
+    },
+    {
+        username: "engineer",
+        email: "bob.johnson@example.com",
+        password: "SpaceY2024!",
+        admin: false,
+        points: 550,
+        employee: null
+    }
+];
+
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, employees, grades, adminUser, testUsers };

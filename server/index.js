@@ -88,6 +88,8 @@ const satellitesRoutes = require('./routes/satellitesRoutes');
 app.use('/api/satellites', satellitesRoutes);
 const gradeRoutes = require('./routes/gradeRoutes');
 app.use('/api/grades', gradeRoutes);
+const ticketRoutes = require('./routes/ticketRoutes');
+app.use('/api/tickets', ticketRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

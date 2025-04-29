@@ -3,14 +3,15 @@
 import React from "react";
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 
-import { navMain, navSecondary, projects } from "@/data/data";
+import { navGuest, navUser, navAdmin, navSecondary } from "@/data/data";
+import { useUser } from "@/contexts/UserContext";
 
 export function AppSidebar({ ...props }) {
+    const { user } = useUser();
 
     return (
         (<Sidebar
@@ -34,8 +35,21 @@ export function AppSidebar({ ...props }) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain object={navMain} />
-                <NavProjects projects={projects} />
+                <div className="space-y-4">
+                    {/* Main Navigation - always visible */}
+                    <NavMain object={navGuest} />
+
+                    {/* User Navigation when logged in */}
+                    {user && (
+                        <NavMain object={navUser} />
+                    )}
+
+                    {/* Admin Navigation for admin users */}
+                    {user?.admin && (
+                        <NavMain object={navAdmin} />
+                    )}
+                </div>
+                
                 <NavSecondary items={navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>

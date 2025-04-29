@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Grade = require('../models/Grade');
 const router = express.Router();
 const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
 
@@ -203,6 +204,33 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
  *
  * @returns {JSON} { admin: true } or { admin: false }
  */
+// Get user counts by grade (admin only)
+router.get('/counts-by-grade', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const grades = await Grade.find();
+        const userCounts = {};
+
+        // Initialize counts for all grades to 0
+        grades.forEach(grade => {
+            userCounts[grade.name] = 0;
+        });
+
+        // Get users with populated grade field
+        const users = await User.find().populate('grade');
+
+        // Count users for each grade
+        users.forEach(user => {
+            if (user.grade) {
+                userCounts[user.grade.name] = (userCounts[user.grade.name] || 0) + 1;
+            }
+        });
+
+        res.json(userCounts);
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 router.get('/verify', verifyToken, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);

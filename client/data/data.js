@@ -1,6 +1,7 @@
 const nextTarget = new Date("2025-05-05T00:00:00Z");
 
-const navMain = {
+// Navigation for guests (not logged in)
+const navGuest = {
     title: "Guests",
     items: [
         {
@@ -36,49 +37,50 @@ const navMain = {
             url: "/satellites",
             icon: "Orbit",
         },
+    ],
+};
+
+// Navigation for logged-in users
+const navUser = {
+    title: "User",
+    items: [
+        {
+            title: "Progress",
+            url: "/progress",
+            icon: "Trophy",
+        },
         {
             title: "Users",
             url: "/users",
             icon: "Users",
         },
+    ],
+};
+
+// Navigation for admin users
+const navAdmin = {
+    title: "Admin",
+    items: [
         {
-            title: "Progress",
-            url: "/progress",
-            icon: "Trophy",
+            title: "Tickets",
+            url: "/tickets",
+            icon: "Ticket",
         },
     ],
 };
 
 const navSecondary = [
     {
-        title: "Support",
-        url: "#",
-        icon: "LifeBuoy",
+        title: "Careers",
+        url: "https://www.spacex.com/careers/",
+        icon: "BriefcaseBusiness",
     },
     {
-        title: "Feedback",
-        url: "#",
-        icon: "Send",
+        title: "Updates",
+        url: "https://www.spacex.com/updates/",
+        icon: "Newspaper",
     },
 ];
-
-const projects = [
-    {
-        name: "Design Engineering",
-        url: "#",
-        icon: "Frame",
-    },
-    {
-        name: "Sales & Marketing",
-        url: "#",
-        icon: "PieChart",
-    },
-    {
-        name: "Travel",
-        url: "#",
-        icon: "Map",
-    },
-]
 
 const themes = [
     { name: "Light", value: "light", icon: "Sun" },
@@ -115,4 +117,4 @@ const themes = [
     { name: "Sunset", value: "sunset" },
 ];
 
-export { nextTarget, navMain, navSecondary, projects, themes };
+export { nextTarget, navGuest, navUser, navAdmin, navSecondary, themes };
