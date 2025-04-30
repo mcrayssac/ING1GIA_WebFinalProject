@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useForm } from "react-hook-form"
-import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2 } from "lucide-react"
+import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { useRouter } from "next/navigation"
 
@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToastAlert } from "@/contexts/ToastContext"
 
@@ -20,15 +20,6 @@ export default function UserSearchPage() {
     const { user } = useUser()
     const router = useRouter()
     const { toastError } = useToastAlert()
-
-    useEffect(() => {
-        if (!user) {
-            router.push('/')
-        }
-    }, [user, router])
-
-    // Show nothing while checking user status and redirecting
-    if (!user) return null;
     const [users, setUsers] = useState([])
     const [filteredUsers, setFilteredUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState(null)
@@ -45,13 +36,28 @@ export default function UserSearchPage() {
 
     const searchTerm = watch("searchTerm")
 
-    // Fetch users on mount
-    useEffect(() => {
-        fetchUsers()
-    }, [])
+    const fetchUsers = useCallback(async () => {
+        setIsLoading(true)
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users`, {
+                method: "GET",
+                credentials: "include",
+            })
 
-    // Filter users when search term, sort option, or filter role changes
-    useEffect(() => {
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message)
+            setUsers(data)
+            setFilteredUsers(data)
+        } catch (err) {
+            console.error("Error fetching users:", err)
+            toastError("Error fetching users. Please try again.")
+            router.replace("/login")
+        } finally {
+            setIsLoading(false)
+        }
+    }, [router, toastError])
+
+    const filterUsers = useCallback(() => {
         if (!users.length) return
 
         let result = [...users]
@@ -63,7 +69,7 @@ export default function UserSearchPage() {
                 (user) =>
                     user.username.toLowerCase().includes(term) ||
                     (user.email && user.email.toLowerCase().includes(term)) ||
-                    (user.location && user.location.toLowerCase().includes(term)),
+                    (user.location && user.location.toLowerCase().includes(term))
             )
         }
 
@@ -91,26 +97,44 @@ export default function UserSearchPage() {
         })
 
         setFilteredUsers(result)
-    }, [searchTerm, users, sortOption, filterRole])
+    }, [users, searchTerm, filterRole, sortOption])
 
-    const fetchUsers = async () => {
-        setIsLoading(true)
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users`, {
-                method: "GET",
-                credentials: "include",
-            })
-
-            const data = await response.json()
-            setUsers(data)
-            setFilteredUsers(data)
-        } catch (err) {
-            console.error("Error fetching users:", err)
-            toastError("Error fetching users. Please try again.")
-            route.push("/login")
-        } finally {
-            setIsLoading(false)
+    // Authentication effect
+    useEffect(() => {
+        if (user === false) {
+            router.replace("/")
+            return
         }
+        if (user) {
+            fetchUsers()
+        }
+    }, [user, router, fetchUsers])
+
+    // Filter effect
+    useEffect(() => {
+        filterUsers()
+    }, [filterUsers])
+
+    // Show loading state while user context is initializing
+    if (user === undefined) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    // Show access denied if not authenticated
+    if (user === false) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
+                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+                <p className="text-muted-foreground text-center">
+                    Please log in to view users.
+                </p>
+            </div>
+        )
     }
 
     const handleUserClick = (user) => {
@@ -124,7 +148,6 @@ export default function UserSearchPage() {
         setSortOption("username")
     }
 
-    // Format date for display
     const formatDate = (dateString) => {
         if (!dateString) return "N/A"
         return new Date(dateString).toLocaleDateString("en-US", {
@@ -134,7 +157,6 @@ export default function UserSearchPage() {
         })
     }
 
-    // Get initials for avatar fallback
     const getInitials = (name) => {
         return name
             .split(" ")

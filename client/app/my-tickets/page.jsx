@@ -7,16 +7,17 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import {
     Ticket,
-    CheckCircle,
-    XCircle,
     Clock,
-    Filter,
-    RefreshCw,
     Search,
     ChevronUp,
     ChevronDown,
+    Filter,
+    RefreshCw,
     Loader2,
     AlertCircle,
+    PlusCircle,
+    CheckCircle,
+    XCircle,
     Shield,
 } from "lucide-react"
 
@@ -33,7 +34,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
 import {
     Select,
     SelectContent,
@@ -47,7 +47,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import NoData from "@/components/no-data"
 
-export default function TicketsPage() {
+export default function MyTicketsPage() {
     const router = useRouter()
     const { user } = useUser()
     const { toastSuccess, toastError } = useToastAlert()
@@ -57,22 +57,24 @@ export default function TicketsPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [sortOrder, setSortOrder] = useState("newest")
-    const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
-    const [selectedTicket, setSelectedTicket] = useState(null)
-    const [rejectionReason, setRejectionReason] = useState("")
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+    const [selectedTicket, setSelectedTicket] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
-
+    const [createDialogOpen, setCreateDialogOpen] = useState(false)
+    const [targetGrade, setTargetGrade] = useState("")
+    const [availableGrades, setAvailableGrades] = useState([])
+    
     const fetchTickets = useCallback(async () => {
         setIsLoading(true)
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets/user`, {
                 method: "GET",
                 credentials: "include",
             })
             const data = await response.json()
             if (!response.ok) throw new Error(data.message)
             setTickets(data)
+            setFilteredTickets(data)
         } catch (error) {
             console.error(error)
             toastError("Failed to fetch tickets", { description: error.message })
@@ -81,7 +83,23 @@ export default function TicketsPage() {
         }
     }, [toastError])
 
+    const fetchAvailableGrades = useCallback(async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`, {
+                credentials: "include",
+            })
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message)
+            setAvailableGrades(data)
+        } catch (error) {
+            console.error(error)
+            toastError("Failed to fetch grades", { description: error.message })
+        }
+    }, [toastError])
+
     const filterAndSortTickets = useCallback(() => {
+        if (!tickets.length) return
+        
         let filtered = [...tickets]
 
         // Apply status filter
@@ -94,10 +112,8 @@ export default function TicketsPage() {
             const term = searchTerm.toLowerCase()
             filtered = filtered.filter(
                 (ticket) =>
-                    (ticket.userId?.username && ticket.userId.username.toLowerCase().includes(term)) ||
                     (ticket.currentGrade?.name && ticket.currentGrade.name.toLowerCase().includes(term)) ||
-                    (ticket.targetGrade?.name && ticket.targetGrade.name.toLowerCase().includes(term)) ||
-                    (ticket.reason && ticket.reason.toLowerCase().includes(term)),
+                    (ticket.targetGrade?.name && ticket.targetGrade.name.toLowerCase().includes(term))
             )
         }
 
@@ -114,57 +130,94 @@ export default function TicketsPage() {
         setFilteredTickets(filtered)
     }, [tickets, searchTerm, statusFilter, sortOrder])
 
-    const handleTicket = useCallback(async (ticketId, status, reason = "") => {
+    useEffect(() => {
+        if (user === false) {
+            router.replace('/')
+            return
+        }
+        if (user?.admin) {
+            router.replace('/tickets')
+            return
+        }
+        if (user) {
+            fetchTickets()
+            fetchAvailableGrades()
+        }
+    }, [user, router, fetchTickets, fetchAvailableGrades])
+
+    useEffect(() => {
+        filterAndSortTickets()
+    }, [filterAndSortTickets])
+
+    // Show loading state while user context is initializing
+    if (user === undefined) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    // Show access denied if not authenticated
+    if (user === false) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
+                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+                <p className="text-muted-foreground text-center">
+                    Please log in to view your tickets.
+                </p>
+            </div>
+        )
+    }
+
+    const refreshTickets = async () => {
+        setRefreshing(true)
+        await fetchTickets()
+        setRefreshing(false)
+    }
+
+    const handleCreateTicket = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets/${ticketId}`, {
-                method: "PATCH",
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
+                method: "POST",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ status, reason }),
+                body: JSON.stringify({
+                    type: "GRADE_UPGRADE",
+                    targetGrade,
+                }),
             })
 
-            if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.message)
-            }
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message)
 
             await fetchTickets()
-            toastSuccess(`Ticket ${status.toLowerCase()} successfully`)
-            setRejectDialogOpen(false)
-            setRejectionReason("")
+            setCreateDialogOpen(false)
+            setTargetGrade("")
+            toastSuccess("Ticket created successfully")
         } catch (error) {
             console.error(error)
-            toastError("Failed to process ticket", { description: error.message })
+            toastError("Failed to create ticket", { description: error.message })
         }
-    }, [fetchTickets, toastSuccess, toastError])
+    }
 
-    const refreshTickets = useCallback(async () => {
-        setRefreshing(true)
-        await fetchTickets()
-        setRefreshing(false)
-    }, [fetchTickets])
-
-    const openRejectDialog = useCallback((ticket) => {
-        setSelectedTicket(ticket)
-        setRejectDialogOpen(true)
-    }, [])
-
-    const openDetailsDialog = useCallback((ticket) => {
+    const openDetailsDialog = (ticket) => {
         setSelectedTicket(ticket)
         setDetailsDialogOpen(true)
-    }, [])
+    }
 
-    const handleReject = useCallback(() => {
-        if (!rejectionReason.trim()) {
-            toastError("Please provide a reason for rejection")
-            return
+    const formatDate = (dateString) => {
+        try {
+            return format(new Date(dateString), "PPP 'at' p")
+        } catch (error) {
+            return "Invalid date"
         }
-        handleTicket(selectedTicket._id, "REJECTED", rejectionReason)
-    }, [handleTicket, rejectionReason, selectedTicket, toastError])
+    }
 
-    const getStatusBadge = useCallback((status) => {
+    const getStatusBadge = (status) => {
         switch (status) {
             case "PENDING":
                 return (
@@ -194,67 +247,6 @@ export default function TicketsPage() {
                     </Badge>
                 )
         }
-    }, [])
-
-    const formatDate = useCallback((dateString) => {
-        try {
-            return format(new Date(dateString), "PPP 'at' p")
-        } catch (error) {
-            return "Invalid date"
-        }
-    }, [])
-
-    useEffect(() => {
-        if (user === false) {
-            router.replace('/login')
-            return
-        }
-        if (user && !user.admin) {
-            router.replace('/')
-            return
-        }
-        if (user?.admin) {
-            fetchTickets()
-        }
-    }, [user, router, fetchTickets])
-
-    useEffect(() => {
-        filterAndSortTickets()
-    }, [filterAndSortTickets])
-
-    // Show loading state while user context is initializing
-    if (user === undefined) {
-        return (
-            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-        )
-    }
-
-    // Show access denied if not authenticated
-    if (user === false) {
-        return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                <p className="text-muted-foreground text-center">
-                    Please log in to access this page.
-                </p>
-            </div>
-        )
-    }
-
-    // Show access denied if not admin
-    if (!user.admin) {
-        return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                <p className="text-muted-foreground text-center">
-                    You don't have permission to access this page. Please contact an administrator if you believe this is an error.
-                </p>
-            </div>
-        )
     }
 
     const pendingCount = tickets.filter((ticket) => ticket.status === "PENDING").length
@@ -263,22 +255,30 @@ export default function TicketsPage() {
 
     return (
         <div className="p-4 space-y-6">
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Ticket Management</h1>
-                    <p className="text-muted-foreground">Review and process grade upgrade requests</p>
+                    <h1 className="text-3xl font-bold">My Tickets</h1>
+                    <p className="text-muted-foreground">View and manage your grade upgrade requests</p>
                 </div>
-                <Button onClick={refreshTickets} variant="outline" disabled={refreshing}>
-                    {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Refresh
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={() => setCreateDialogOpen(true)} variant="default">
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        New Request
+                    </Button>
+                    <Button onClick={refreshTickets} variant="outline" disabled={refreshing}>
+                        {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        Refresh
+                    </Button>
+                </div>
             </div>
 
+            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-lg font-medium">Pending</CardTitle>
-                        <CardDescription>Tickets awaiting review</CardDescription>
+                        <CardDescription>Awaiting admin review</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{isLoading ? "..." : pendingCount}</div>
@@ -287,7 +287,7 @@ export default function TicketsPage() {
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-lg font-medium">Approved</CardTitle>
-                        <CardDescription>Successfully processed tickets</CardDescription>
+                        <CardDescription>Successful upgrades</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{isLoading ? "..." : approvedCount}</div>
@@ -296,7 +296,7 @@ export default function TicketsPage() {
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-lg font-medium">Rejected</CardTitle>
-                        <CardDescription>Declined upgrade requests</CardDescription>
+                        <CardDescription>Declined requests</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{isLoading ? "..." : rejectedCount}</div>
@@ -304,11 +304,12 @@ export default function TicketsPage() {
                 </Card>
             </div>
 
+            {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search by username, grade, or reason..."
+                        placeholder="Search by grade..."
                         className="pl-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -355,6 +356,7 @@ export default function TicketsPage() {
                 </div>
             </div>
 
+            {/* Tickets List */}
             <Tabs defaultValue="all" className="w-full">
                 <TabsList className="grid grid-cols-4 mb-4">
                     <TabsTrigger value="all">All</TabsTrigger>
@@ -401,70 +403,45 @@ export default function TicketsPage() {
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Ticket className="h-5 w-5 text-muted-foreground" />
-                                                                <h3 className="font-medium text-lg">
-                                                                    Grade Upgrade Request - {ticket.userId?.username || "Unknown User"}
-                                                                </h3>
+                                                                <h3 className="font-medium text-lg">Grade Upgrade Request</h3>
                                                                 {getStatusBadge(ticket.status)}
                                                             </div>
                                                             <p className="text-sm text-muted-foreground">
-                                                                From <span className="font-medium">{ticket.currentGrade?.name || "Unknown Grade"}</span>{" "}
-                                                                to <span className="font-medium">{ticket.targetGrade?.name || "Unknown Grade"}</span>
+                                                                From <span className="font-medium">{ticket.currentGrade?.name}</span>{" "}
+                                                                to <span className="font-medium">{ticket.targetGrade?.name}</span>
                                                             </p>
-                                                            <p className="text-sm text-muted-foreground">Created: {formatDate(ticket.createdAt)}</p>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Created: {formatDate(ticket.createdAt)}
+                                                            </p>
                                                             {ticket.processedAt && (
                                                                 <p className="text-sm text-muted-foreground">
                                                                     Processed: {formatDate(ticket.processedAt)}
-                                                                    {ticket.processedBy?.username ? ` by ${ticket.processedBy.username}` : ""}
                                                                 </p>
                                                             )}
                                                             {ticket.reason && (
                                                                 <div className="flex items-start mt-2 p-2 bg-red-50 border border-red-100 rounded-md">
                                                                     <AlertCircle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-                                                                    <p className="text-sm text-red-600">Reason: {ticket.reason}</p>
+                                                                    <p className="text-sm text-red-600">
+                                                                        Reason: {ticket.reason}
+                                                                    </p>
                                                                 </div>
                                                             )}
                                                         </div>
-
-                                                        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-                                                            <Button
-                                                                variant="default"
-                                                                size="sm"
-                                                                onClick={() => openDetailsDialog(ticket)}
-                                                                className="bg-cyan-600 hover:bg-cyan-700 whitespace-nowrap"
-                                                            >
-                                                                View Details
-                                                            </Button>
-
-                                                            {ticket.status === "PENDING" && (
-                                                                <>
-                                                                    <Button
-                                                                        variant="default"
-                                                                        size="sm"
-                                                                        onClick={() => handleTicket(ticket._id, "APPROVED")}
-                                                                        className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                                                                    >
-                                                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                                                        Approve
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="default"
-                                                                        size="sm"
-                                                                        onClick={() => openRejectDialog(ticket)}
-                                                                        className="bg-red-600 hover:bg-red-700 whitespace-nowrap"
-                                                                    >
-                                                                        <XCircle className="h-4 w-4 mr-2" />
-                                                                        Reject
-                                                                    </Button>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            onClick={() => openDetailsDialog(ticket)}
+                                                            className="bg-cyan-600 hover:bg-cyan-700 whitespace-nowrap"
+                                                        >
+                                                            View Details
+                                                        </Button>
                                                     </div>
                                                 </CardContent>
                                             </Card>
                                         ))}
 
-                                    {filteredTickets.filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase()).length ===
-                                        0 && <NoData message={`No ${tab !== "all" ? tab : ""} tickets found`} />}
+                                    {filteredTickets.filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase())
+                                        .length === 0 && <NoData message={`No ${tab !== "all" ? tab : ""} tickets found`} />}
                                 </div>
                             </ScrollArea>
                         )}
@@ -472,38 +449,47 @@ export default function TicketsPage() {
                 ))}
             </Tabs>
 
-            {/* Reject Dialog */}
-            <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+            {/* Create Ticket Dialog */}
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Reject Ticket</DialogTitle>
+                        <DialogTitle>New Grade Upgrade Request</DialogTitle>
                         <DialogDescription>
-                            Please provide a reason for rejecting this grade upgrade request. This will be visible to the user.
+                            Select the grade you would like to upgrade to. Your request will be reviewed by an administrator.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <h4 className="font-medium">Request Details</h4>
-                            <p className="text-sm">
-                                User: <span className="font-medium">{selectedTicket?.userId?.username}</span>
-                            </p>
-                            <p className="text-sm">
-                                From {selectedTicket?.currentGrade?.name} to {selectedTicket?.targetGrade?.name}
-                            </p>
+                            <h4 className="font-medium">Current Grade</h4>
+                            <p className="text-sm font-medium">{user?.grade?.name || "No Grade"}</p>
                         </div>
-                        <Textarea
-                            placeholder="Enter rejection reason..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="min-h-[100px]"
-                        />
+                        <div className="space-y-2">
+                            <h4 className="font-medium">Target Grade</h4>
+                            <Select value={targetGrade} onValueChange={setTargetGrade}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select target grade" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Available Grades</SelectLabel>
+                                        {availableGrades
+                                            .filter((grade) => grade._id !== user?.grade?._id)
+                                            .map((grade) => (
+                                                <SelectItem key={grade._id} value={grade.name}>
+                                                    {grade.name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={handleReject}>
-                            Confirm Rejection
+                        <Button onClick={handleCreateTicket} disabled={!targetGrade}>
+                            Submit Request
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -513,8 +499,8 @@ export default function TicketsPage() {
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Ticket Details</DialogTitle>
-                        <DialogDescription>Complete information about this grade upgrade request.</DialogDescription>
+                        <DialogTitle>Request Details</DialogTitle>
+                        <DialogDescription>Complete information about your grade upgrade request.</DialogDescription>
                     </DialogHeader>
                     {selectedTicket && (
                         <div className="space-y-4">
@@ -524,25 +510,15 @@ export default function TicketsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <h3 className="font-medium">User Information</h3>
-                                <div className="bg-muted p-3 rounded-md">
-                                    <p className="text-sm">
-                                        Username: <span className="font-medium">{selectedTicket.userId?.username || "Unknown"}</span>
-                                    </p>
-                                    <p className="text-sm">
-                                        User ID: <span className="font-mono text-xs">{selectedTicket.userId?._id || "Unknown"}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
                                 <h3 className="font-medium">Grade Information</h3>
                                 <div className="bg-muted p-3 rounded-md">
                                     <p className="text-sm">
-                                        Current Grade: <span className="font-medium">{selectedTicket.currentGrade?.name || "Unknown"}</span>
+                                        Current Grade:{" "}
+                                        <span className="font-medium">{selectedTicket.currentGrade?.name}</span>
                                     </p>
                                     <p className="text-sm">
-                                        Target Grade: <span className="font-medium">{selectedTicket.targetGrade?.name || "Unknown"}</span>
+                                        Target Grade:{" "}
+                                        <span className="font-medium">{selectedTicket.targetGrade?.name}</span>
                                     </p>
                                 </div>
                             </div>
@@ -555,22 +531,12 @@ export default function TicketsPage() {
                                     </p>
                                     {selectedTicket.processedAt && (
                                         <p className="text-sm">
-                                            Processed: <span className="font-medium">{formatDate(selectedTicket.processedAt)}</span>
+                                            Processed:{" "}
+                                            <span className="font-medium">{formatDate(selectedTicket.processedAt)}</span>
                                         </p>
                                     )}
                                 </div>
                             </div>
-
-                            {selectedTicket.processedBy && (
-                                <div className="space-y-2">
-                                    <h3 className="font-medium">Processed By</h3>
-                                    <div className="bg-muted p-3 rounded-md">
-                                        <p className="text-sm">
-                                            Admin: <span className="font-medium">{selectedTicket.processedBy.username}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
 
                             {selectedTicket.reason && (
                                 <div className="space-y-2">

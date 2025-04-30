@@ -1,31 +1,23 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import Footer from "@/components/footer";
-import { UserProvider } from "@/contexts/UserContext"
-import { ToastProvider } from "@/contexts/ToastContext";
-import { Toaster } from "@/components/ui/sonner"
-
-import { Space_Grotesk, Space_Mono } from "next/font/google";
-import "./globals.css";
+import { Space_Grotesk, Space_Mono } from "next/font/google"
+import { ClientLayout } from "@/components/client-layout"
+import "./globals.css"
 
 const spaceGrotesk = Space_Grotesk({
     weight: "300",
     variable: "--font-space-grotesk",
     subsets: ["latin"],
-});
+})
 
 const spaceMono = Space_Mono({
     weight: "700",
     variable: "--font-space-mono",
     subsets: ["latin"],
-});
+})
 
 export const metadata = {
     title: "SpaceY",
     description: "SpaceY is a space exploration company.",
-};
-
+}
 
 export default function RootLayout({ children }) {
     return (
@@ -33,25 +25,8 @@ export default function RootLayout({ children }) {
             <body
                 className={`${spaceGrotesk.variable} ${spaceMono.variable} antialiased [--header-height:calc(theme(spacing.14))]`}
             >
-                <UserProvider>
-                    <ToastProvider>
-                        <SidebarProvider className="flex flex-col min-h-screen">
-                            <SiteHeader />
-                            <div className="flex flex-1">
-                                <AppSidebar />
-                                <SidebarInset>
-                                    <div className="flex flex-1 flex-col gap-4 p-4">
-                                        {children}
-                                        <Footer />
-                                    </div>
-                                </SidebarInset>
-                            </div>
-                        </SidebarProvider>
-                        <Toaster richColors position="bottom-right" />
-                    </ToastProvider>
-                </UserProvider>
+                <ClientLayout>{children}</ClientLayout>
             </body>
         </html>
-    );
+    )
 }
-

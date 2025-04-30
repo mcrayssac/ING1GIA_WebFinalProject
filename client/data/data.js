@@ -50,6 +50,11 @@ const navUser = {
             icon: "Trophy",
         },
         {
+            title: "My Tickets",
+            url: "/my-tickets",
+            icon: "Ticket",
+        },
+        {
             title: "Users",
             url: "/users",
             icon: "Users",
