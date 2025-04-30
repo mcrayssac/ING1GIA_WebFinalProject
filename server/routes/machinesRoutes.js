@@ -57,5 +57,28 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// POST to add a new machine
+router.post("/", async (req, res) => {
+  try {
+    const newMachine = new Machine(req.body);
+    await newMachine.save();
+    res.status(201).json(newMachine);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add machine" });
+  }
+});
 
+// Get a machine by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const machine = await Machine.findById(id);
+    if (!machine) {
+      return res.status(404).json({ error: "Machine not found" });
+    }
+    res.json(machine);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 module.exports = router;

@@ -1,6 +1,6 @@
 "use client";
-import Link from "next/link";  
-
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useMemo } from "react";
 import { Search } from "lucide-react";
 import {
@@ -33,24 +33,84 @@ import NoData from "@/components/no-data";
 
 export default function MachinesPage() {
   const [machinesData, setMachinesData] = useState([]);
+  const [sensorsData, setSensorsData] = useState([]);
+  const [sitesData, setSitesData] = useState([]);
+  // const [usersData, setUsersData] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  const router = useRouter();
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch machines");
-        return res.json();
-      })
-      .then((data) => {
-        setMachinesData(data);
+    const fetchData = async () => {
+      try {
+        const [machinesRes, sensorsRes, sitesRes, usersRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`),
+          // fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users`)
+        ]);
+
+        if (!machinesRes.ok) throw new Error("Failed to fetch machines");
+        if (!sensorsRes.ok) throw new Error("Failed to fetch sensors");
+        if (!sitesRes.ok) throw new Error("Failed to fetch sites");
+        // if (!usersRes.ok) throw new Error("Failed to fetch users");
+
+        const [machines, sensors, sites, users] = await Promise.all([
+          machinesRes.json(),
+          sensorsRes.json(),
+          sitesRes.json(),
+          // usersRes.json()
+        ]);
+
+        // Enrich machine data with related entities
+        const enrichedMachines = machines.map(machine => ({
+          ...machine,
+          // Map sensor IDs to sensor objects
+          availableSensors: machine.availableSensors.map(sensorId => 
+            sensors.find(s => s._id === sensorId) || { _id: sensorId, designation: 'Unknown' }
+          ),
+          // Map site IDs to site names
+          sites: machine.sites.map(siteId => 
+            sites.find(s => s._id === siteId)?.name || 'Unknown site'
+          ).join(', '),
+          // Map user IDs to user names
+          currentUsers: machine.currentUsers.map(userId => 
+            users.find(u => u._id === userId)?.name || 'Unknown user'
+          )
+        }));
+
+        setMachinesData(enrichedMachines);
+        setSensorsData(sensors);
+        setSitesData(sites);
+        // setUsersData(users);
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         setError(err.message);
         setLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, []);
+
+  const handleDelete = async (machineId) => {
+    if (window.confirm("Are you sure you want to delete this machine?")) {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) throw new Error("Failed to delete machine");
+
+        setMachinesData(machinesData.filter((machine) => machine._id !== machineId));
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  }
+
 
   const columns = [
     {
@@ -68,11 +128,34 @@ export default function MachinesPage() {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-          {row.getValue("status")}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const status = row.getValue("status");
+        let bgColor, textColor;
+        
+        switch(status) {
+          case 'available':
+            bgColor = 'bg-green-100';
+            textColor = 'text-green-800';
+            break;
+          case 'in-use':
+            bgColor = 'bg-yellow-100';
+            textColor = 'text-yellow-800';
+            break;
+          case 'blocked':
+            bgColor = 'bg-red-100';
+            textColor = 'text-red-800';
+            break;
+          default:
+            bgColor = 'bg-gray-100';
+            textColor = 'text-gray-800';
+        }
+        
+        return (
+          <span className={`px-2 py-1 ${bgColor} ${textColor} rounded-full text-xs`}>
+            {status}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "pointsPerCycle",
@@ -86,9 +169,22 @@ export default function MachinesPage() {
       accessorKey: "requiredGrade",
       header: "Required Grade",
       cell: ({ row }) => (
-        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
           {row.getValue("requiredGrade")}
         </span>
+      ),
+    },
+    {
+      accessorKey: "sites",
+      header: "Installation Sites",
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.getValue("sites").split(', ').map((site, index) => (
+            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+              {site}
+            </span>
+          ))}
+        </div>
       ),
     },
     {
@@ -97,9 +193,9 @@ export default function MachinesPage() {
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           {row.getValue("availableSensors").map((sensor) => (
-            <span 
-              key={sensor.designation}
-              className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs"
+            <span
+              key={sensor._id}
+              className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
             >
               {sensor.designation}
             </span>
@@ -108,14 +204,44 @@ export default function MachinesPage() {
       ),
     },
     {
-      accessorKey: "currentUsers",
-      header: "Active Users",
-      cell: ({ row }) => (
-        <span className={row.getValue("currentUsers").length > 0 ? "text-green-600" : "text-gray-400"}>
-          {row.getValue("currentUsers").length}/{row.original.maxUsers}
-        </span>
-      ),
-    },
+            accessorKey: "actions",
+            header: "Actions",
+            cell: ({ row }) => (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(row.original._id);
+                }}
+              >
+                Delete
+              </Button>
+            ),
+          },
+    // {
+    //   accessorKey: "currentUsers",
+    //   header: "Active Users",
+    //   cell: ({ row }) => {
+    //     const currentUsers = row.getValue("currentUsers");
+    //     const maxUsers = row.original.maxUsers;
+        
+    //     return (
+    //       <div className="flex flex-col gap-1">
+    //         {currentUsers.length > 0 ? (
+    //           currentUsers.map((user, index) => (
+    //             <span key={index} className="text-green-600 text-xs">
+    //               {user}
+    //             </span>
+    //           ))
+    //         ) : (
+    //           <span className="text-gray-400 text-xs">No active users</span>
+    //         )}
+    //         <span className="text-xs text-gray-500">
+    //           {currentUsers.length}/{maxUsers}
+    //         </span>
+    //       </div>
+    //     );
+    //   },
+    // },
   ];
 
   const table = useReactTable({
@@ -131,20 +257,14 @@ export default function MachinesPage() {
     },
   });
 
-  const [globalFilter, setGlobalFilter] = useState("");
   useEffect(() => {
     table.setGlobalFilter(globalFilter);
   }, [globalFilter, table]);
 
-  const teams = useMemo(() => 
-    [...new Set(machinesData.map(m => m.requiredGrade).filter(Boolean))], 
-    [machinesData]
-  );
-
   return (
     <div className="container mx-auto px-4 py-8">
       {error && <Alert type="error" message={error} onClose={() => setError("")} />}
-      
+
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
           <div className="w-8 h-8 bg-blue-500 rounded" />
@@ -165,34 +285,19 @@ export default function MachinesPage() {
         
         <Select
           onValueChange={(value) => {
-            table.getColumn("requiredGrade")?.setFilterValue(value === "all" ? undefined : value);
+            table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
           }}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by grade" />
+            <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="Technicien">Technicien</SelectItem>
-            <SelectItem value="Technicien Confirmé">Technicien Confirmé</SelectItem>
-            <SelectItem value="Ingénieur">Ingénieur</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="available">Available</SelectItem>
+            <SelectItem value="in-use">In Use</SelectItem>
+            <SelectItem value="blocked">Blocked</SelectItem>
           </SelectContent>
         </Select>
-            <Select
-      onValueChange={(value) => {
-        table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value);
-      }}
-    >
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Filter by status" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All status</SelectItem>
-        <SelectItem value="available">Available</SelectItem>
-        <SelectItem value="in-use">In Use</SelectItem>
-        <SelectItem value="blocked">Blocked</SelectItem>
-      </SelectContent>
-    </Select>
       </div>
 
       {loading ? (
@@ -222,7 +327,8 @@ export default function MachinesPage() {
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
+                      onClick={() => router.push(`/machinesDetail/${row.original._id}`)}
+                      className="cursor-pointer hover:bg-gray-50"
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -268,9 +374,9 @@ export default function MachinesPage() {
           </div>
 
           <div className="flex justify-end mt-4">
-          <Link href="/machinesForm">
-            <Button variant="primary">Add a New Machine</Button>
-          </Link>
+            <Link href="/machinesForm">
+              <Button variant="primary">Add New Machine</Button>
+            </Link>
           </div>
         </>
       )}

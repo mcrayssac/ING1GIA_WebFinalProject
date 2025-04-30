@@ -81,10 +81,12 @@ const newsRoutes = require('./routes/newsRoutes');
 app.use('/api/news', newsRoutes);
 const machinesRoutes = require('./routes/machinesRoutes');
 app.use('/api/machines', machinesRoutes);
-const addMachinesRoutes = require('./routes/addMachinesRoutes');
-app.use('/api/machinesForm', addMachinesRoutes);
+// const addMachinesRoutes = require('./routes/addMachinesRoutes');
+// app.use('/api/machinesForm', addMachinesRoutes);
 const sensorsRoutes = require('./routes/sensorsRoutes');
 app.use('/api/sensors', sensorsRoutes);
+const gradeRoutes = require('./routes/gradeRoutes');
+app.use('/api/grades', gradeRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

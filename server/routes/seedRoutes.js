@@ -9,7 +9,8 @@ const HistoryEvent = require('../models/HistoryEvent');
 const News = require('../models/News');
 const Machines = require('../models/Machines'); 
 const Sensors = require('../models/Sensors');
-const { sites, products, statistics, historyEvents, news,machines, sensors } = require('../data/data');
+const Grades = require('../models/Grade'); // Example for static data without a model
+const { sites, products, statistics, historyEvents, news,machines, sensors, grades } = require('../data/data');
 
 
 /**
@@ -33,6 +34,7 @@ router.get('/', async (req, res) => {
             { key: 'News', data: news, model: News },
             { key: 'Machines', data: machines, model: Machines },
             {key: 'Sensors', data: sensors, model: Sensors}, 
+            {key:'Grade', data: grades, model: Grades}, // Example for static data without a model
         ];
 
         // Loop over each mapping and seed the data

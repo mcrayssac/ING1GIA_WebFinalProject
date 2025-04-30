@@ -89,3 +89,5 @@ export function MultiSelect({ options, selected, onChange, placeholder }) {
     </div>
   );
 }
+
+export default MultiSelect;

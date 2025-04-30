@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 
+import { useRouter } from "next/navigation";
+
 export default function AddMachinePage() {
+  const router = useRouter();
   const [machine, setMachine] = useState({
     name: "",
     mainPole: "",
@@ -16,11 +19,11 @@ export default function AddMachinePage() {
     requiredGrade: "",
     status: "available",
     sites: [],
-    availableSensors: []
+    availableSensors: [],
   });
 
   const [sites, setSites] = useState([]);
-  const [allSensors, setAllSensors] = useState([]);
+  const [Sensors, setSensors] = useState([]);
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,7 +41,7 @@ export default function AddMachinePage() {
         const sensorsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`);
         if (!sensorsRes.ok) throw new Error("Failed to fetch sensors");
         const sensorsData = await sensorsRes.json();
-        setAllSensors(sensorsData);
+        setSensors(sensorsData);
 
         // Fetch grades
         const gradesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`);
@@ -72,6 +75,8 @@ export default function AddMachinePage() {
     setError(null);
 
     try {
+      console.log("Submitting form with machine data:", machine);
+
       const machineData = {
         name: machine.name,
         mainPole: machine.mainPole,
@@ -80,14 +85,11 @@ export default function AddMachinePage() {
         maxUsers: Number(machine.maxUsers),
         requiredGrade: machine.requiredGrade,
         status: machine.status,
-        availableSensors: machine.availableSensors.map(sensor => ({
-          designation: sensor.designation,
-          requiredGrade: sensor.requiredGrade
-        })),
+        availableSensors: machine.availableSensors,
         sites: machine.sites,
-        currentUsers: [],
-        usageStats: []
       };
+
+      console.log("Formatted machine data:", machineData);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
         method: "POST",
@@ -95,11 +97,15 @@ export default function AddMachinePage() {
         body: JSON.stringify(machineData),
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Error response data:", errorData);
         throw new Error(errorData.error || "Failed to add machine");
       }
 
+      console.log("Machine added successfully!");
       alert("Machine added successfully!");
       setMachine({
         name: "",
@@ -110,9 +116,9 @@ export default function AddMachinePage() {
         requiredGrade: "",
         status: "available",
         sites: [],
-        availableSensors: []
+        availableSensors: [],
       });
-
+      router.push("/machines")
     } catch (err) {
       console.error("Error adding machine:", err);
       setError(err.message);
@@ -159,12 +165,13 @@ export default function AddMachinePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Sub Pole</label>
+              <label className="block text-sm font-medium text-gray-700">Sub Pole*</label>
               <Input
                 name="subPole"
                 value={machine.subPole}
                 onChange={handleChange}
                 placeholder="Enter sub pole"
+                required
               />
             </div>
 
@@ -253,87 +260,27 @@ export default function AddMachinePage() {
             />
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Configure Sensors</h3>
-
-            <div className="space-y-2">
-              {machine.availableSensors.map((sensor, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 border rounded">
-                  <div className="flex-1 font-medium">{sensor.designation}</div>
-                  <Select
-                    value={sensor.requiredGrade}
-                    onValueChange={(value) => {
-                      const updatedSensors = [...machine.availableSensors];
-                      updatedSensors[index].requiredGrade = value;
-                      setMachine(prev => ({
-                        ...prev,
-                        availableSensors: updatedSensors
-                      }));
-                    }}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {grades.map((grade) => (
-                        <SelectItem key={grade._id} value={grade.name}>
-                          {grade.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const updatedSensors = machine.availableSensors
-                        .filter((_, i) => i !== index);
-                      setMachine(prev => ({
-                        ...prev,
-                        availableSensors: updatedSensors
-                      }));
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <Select
-                onValueChange={(value) => {
-                  const sensor = allSensors.find(s => s._id === value);
-                  if (sensor && !machine.availableSensors.some(s => s.designation === sensor.name)) {
-                    setMachine(prev => ({
-                      ...prev,
-                      availableSensors: [
-                        ...prev.availableSensors,
-                        {
-                          designation: sensor.name,
-                          requiredGrade: grades[0]?.name || "technicien"
-                        }
-                      ]
-                    }));
-                  }
-                }}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Add a sensor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allSensors
-                    .filter(sensor => !machine.availableSensors.some(s => s.designation === sensor.name))
-                    .map(sensor => (
-                      <SelectItem key={sensor._id} value={sensor._id}>
-                        {sensor.name}
-                      </SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Available Sensors</label>
+            <MultiSelect
+              options={Sensors.map(sensor => ({
+                value: sensor._id,
+                label: sensor.designation
+              }))}
+              selected={machine.availableSensors.map(sensorId => {
+                const sensor = Sensors.find(s => s._id === sensorId);
+                return {
+                  value: sensorId,
+                  label: sensor?.designation || sensorId
+                };
+              })}
+              
+              onChange={(selected) => setMachine(prev => ({
+                ...prev,
+                availableSensors: selected.map(item => item.value)
+              }))}
+              placeholder="Select available sensors..."
+            />
           </div>
 
           <div className="flex justify-end pt-4">

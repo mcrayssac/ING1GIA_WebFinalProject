@@ -313,6 +313,14 @@ const statistics = [
     },
 ];
 
+const grades = [
+  { name: "Apprentice", cap: 0, icon: "Trophy", color: "#CD7F32" },
+  { name: "Technician", cap: 100, icon: "Star", color: "#C0C0C0" },
+  { name: "Engineer", cap: 500, icon: "Award", color: "#FFD700" },
+  { name: "Manager", cap: 1000, icon: "Crown", color: "#E5E4E2" }
+];
+
+
 const historyEvents = [
     {
         date: "March 15, 2002",
@@ -739,4 +747,4 @@ machines.forEach(machine => {
   }).filter(sensorId => sensorId !== null); // Filter out unmatched sensors
 });         
   
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news, machines, sensors};
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news, machines, sensors, grades };

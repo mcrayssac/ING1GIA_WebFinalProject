@@ -1,5 +1,6 @@
 const nextTarget = new Date("2025-05-05T00:00:00Z");
 
+
 const navMain = {
     title: "Guests",
     items: [
@@ -38,7 +39,67 @@ const navMain = {
         },
     ],
 };
+const navUser = {
+    title: "User",
+    items: [
+        {
+            title: "Machines",
+            url: "/machines",
+            icon: "Cog",
+        },
+        {
+            title: "Sensors",
+            url: "/sensors",
+            icon: "Chip",
+        },
+        {
+            title: "Progress",
+            url: "/progress",
+            icon: "Trophy",
+        },
+        {
+            title: "Users",
+            url: "/users",
+            icon: "Users",
+        },
+    ],
+};
 
+// Navigation for admin users
+const navAdmin = {
+    title: "Admin",
+    items: [
+        {
+            title: "Machines",
+            url: "/machines",
+            icon: "Cog",
+            items: [
+                {
+                    title: "Add Machine",
+                    url: "/machinesForm",
+                    icon: "Plus",
+                },
+            ],
+        },
+        {
+            title: "Sensors",
+            url: "/sensors",
+            icon: "Chip",
+            items: [
+                {
+                    title: "Add Sensor",
+                    url: "/sensorsForm",
+                    icon: "Plus",
+                },
+            ],
+        },
+        {
+            title: "Tickets",
+            url: "/tickets",
+            icon: "Ticket",
+        },
+    ],
+};
 const navSecondary = [
     {
         title: "Support",
@@ -106,4 +167,4 @@ const themes = [
 ];
 
 
-export { nextTarget, navMain, navSecondary, projects, themes };
+export { nextTarget, navMain, navSecondary, projects, themes, navUser, navAdmin };
