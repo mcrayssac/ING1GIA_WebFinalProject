@@ -173,7 +173,7 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
     const { userId } = req.body;
 
     try {
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).populate('grade');
 
         if (!user) {
             return res.status(404).send('User not found');
@@ -215,8 +215,12 @@ router.get('/counts-by-grade', verifyToken, isAdmin, async (req, res) => {
             userCounts[grade.name] = 0;
         });
 
-        // Get users with populated grade field
-        const users = await User.find().populate('grade');
+        // Create query based on user role and exclude current user
+        const query = {
+            _id: { $ne: req.user._id }, // Exclude current user
+            ...(req.user.admin ? {} : { admin: false }) // Add admin filter if not admin
+        };
+        const users = await User.find(query).populate('grade');
 
         // Count users for each grade
         users.forEach(user => {
@@ -233,7 +237,7 @@ router.get('/counts-by-grade', verifyToken, isAdmin, async (req, res) => {
 
 router.get('/verify', verifyToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        const user = await User.findById(req.user._id).populate('grade');
         if (user.admin) {
             res.status(200).json({ admin: true });
         } else {
@@ -259,7 +263,13 @@ router.get('/verify', verifyToken, async (req, res) => {
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const users = await User.find().select('-password -__v');
+        // Create query based on user role and exclude current user
+        const query = {
+            _id: { $ne: req.user._id }, // Exclude current user
+            ...(req.user.admin ? {} : { admin: false }) // Add admin filter if not admin
+        };
+        const users = await User.find(query).populate('grade').select('-password -__v');
+        console.log(users);
 
         if (!users) {
             return res.status(404).json({ error: 'No users found' });
@@ -322,7 +332,7 @@ router.put("/infos/:id", verifyToken, async (req, res) => {
             updateData.photo = null;
         }
 
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('grade');
         if (!updatedUser) {
             return res.status(404).json({ error: "User not found" });
         }
@@ -374,6 +384,24 @@ router.put("/password", verifyToken, async (req, res) => {
         res.json({ message: "Password updated successfully" });
     } catch (error) {
         console.error("Error updating password:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete user (admin only)
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        // Prevent deleting own account
+        if (req.user._id.toString() === req.params.id) {
+            return res.status(403).json({ error: "Cannot delete your own account" });
+        }
+
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json({ message: "User deleted successfully" });
+    } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });

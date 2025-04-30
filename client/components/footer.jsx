@@ -19,6 +19,7 @@ function FooterHeader({ data }) {
                         {Icon && <Icon className="w-4 h-4" />}
                         <a
                             key={link.url}
+                            data-navigation="true"
                             onClick={() => router.push(link.url)}
                             className="link link-hover"
                         >

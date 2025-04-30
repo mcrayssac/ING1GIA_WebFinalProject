@@ -71,6 +71,7 @@ export function NavUser() {
                             sideOffset={4}
                         >
                             <button
+                                data-navigation="true"
                                 onClick={() => router.push("/signup")}
                                 type="button"
                                 className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
@@ -82,6 +83,7 @@ export function NavUser() {
                             </button>
 
                             <button
+                                data-navigation="true"
                                 onClick={() => router.push("/login")}
                                 type="button"
                                 className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
@@ -156,6 +158,7 @@ export function NavUser() {
                         <DropdownMenuSeparator />
 
                         <button
+                            data-navigation="true"
                             onClick={() => router.push("/account")}
                             type="button"
                             className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 
@@ -167,6 +170,7 @@ export function NavUser() {
                         </button>
                         <DropdownMenuSeparator />
                         <button
+                            data-navigation="true"
                             onClick={handleLogout}
                             type="button"
                             className="relative flex select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors 

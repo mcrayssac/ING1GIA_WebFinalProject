@@ -15,18 +15,24 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToastAlert } from "@/contexts/ToastContext"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertCircle, Trash2 } from "lucide-react"
+
 
 export default function UserSearchPage() {
     const { user } = useUser()
     const router = useRouter()
-    const { toastError } = useToastAlert()
+    const { toastError, toastSuccess } = useToastAlert()
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [users, setUsers] = useState([])
     const [filteredUsers, setFilteredUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState(null)
     const [isDrawerOpen, setIsDrawerOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [sortOption, setSortOption] = useState("username")
-    const [filterRole, setFilterRole] = useState("all")
+    const [filterGrade, setFilterGrade] = useState("all")
+    const [grades, setGrades] = useState([])
 
     const { register, watch, reset } = useForm({
         defaultValues: {
@@ -69,13 +75,14 @@ export default function UserSearchPage() {
                 (user) =>
                     user.username.toLowerCase().includes(term) ||
                     (user.email && user.email.toLowerCase().includes(term)) ||
-                    (user.location && user.location.toLowerCase().includes(term))
+                    (user.location && user.location.toLowerCase().includes(term)) ||
+                    (user.grade?.name && user.grade.name.toLowerCase().includes(term))
             )
         }
 
-        // Apply role filter
-        if (filterRole !== "all") {
-            result = result.filter((user) => user.role === filterRole)
+        // Apply grade filter
+        if (filterGrade !== "all") {
+            result = result.filter((user) => user.grade?._id === filterGrade)
         }
 
         // Apply sorting
@@ -97,7 +104,22 @@ export default function UserSearchPage() {
         })
 
         setFilteredUsers(result)
-    }, [users, searchTerm, filterRole, sortOption])
+    }, [users, searchTerm, filterGrade, sortOption])
+
+    const fetchGrades = useCallback(async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`, {
+                method: "GET",
+                credentials: "include",
+            })
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message)
+            setGrades(data)
+        } catch (err) {
+            console.error("Error fetching grades:", err)
+            toastError("Error fetching grades. Please try again.")
+        }
+    }, [toastError])
 
     // Authentication effect
     useEffect(() => {
@@ -107,8 +129,9 @@ export default function UserSearchPage() {
         }
         if (user) {
             fetchUsers()
+            fetchGrades()
         }
-    }, [user, router, fetchUsers])
+    }, [user, router, fetchUsers, fetchGrades])
 
     // Filter effect
     useEffect(() => {
@@ -144,7 +167,7 @@ export default function UserSearchPage() {
 
     const clearSearch = () => {
         reset()
-        setFilterRole("all")
+        setFilterGrade("all")
         setSortOption("username")
     }
 
@@ -198,15 +221,17 @@ export default function UserSearchPage() {
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex items-center gap-2 flex-1">
                                     <Filter className="h-5 w-5 text-muted-foreground" />
-                                    <Select value={filterRole} onValueChange={setFilterRole}>
+                                    <Select value={filterGrade} onValueChange={setFilterGrade}>
                                         <SelectTrigger className="border-2">
-                                            <SelectValue placeholder="Filter by role" />
+                                            <SelectValue placeholder="Filter by grade" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Roles</SelectItem>
-                                            <SelectItem value="admin">Admin</SelectItem>
-                                            <SelectItem value="user">User</SelectItem>
-                                            <SelectItem value="moderator">Moderator</SelectItem>
+                                            <SelectItem value="all">All Grades</SelectItem>
+                                            {grades.map((grade) => (
+                                                <SelectItem key={grade._id} value={grade._id}>
+                                                    {grade.name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -225,11 +250,11 @@ export default function UserSearchPage() {
                                             <SelectItem value="oldest">Oldest First</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
                 {/* Results Section */}
                 <div className="mb-4">
@@ -267,9 +292,9 @@ export default function UserSearchPage() {
                                         <div className="w-full px-4 pb-4 space-y-2">
                                             <div className="flex justify-between items-start">
                                                 <h3 className="font-bold text-lg truncate">{user.username}</h3>
-                                                {user.role && (
-                                                    <Badge variant={user.role === "admin" ? "destructive" : "secondary"} className="ml-2">
-                                                        {user.role}
+                                                {user.grade && (
+                                                    <Badge variant="outline" className="ml-2 text-accent-foreground">
+                                                        {user.grade.name}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -327,9 +352,9 @@ export default function UserSearchPage() {
 
                                 <h2 className="text-2xl font-bold">{selectedUser.username}</h2>
 
-                                {selectedUser.role && (
-                                    <Badge variant={selectedUser.role === "admin" ? "destructive" : "secondary"} className="mt-2">
-                                        {selectedUser.role}
+                                {selectedUser.grade && (
+                                    <Badge variant="outline" className="mt-2 text-accent-foreground">
+                                        {selectedUser.grade.name}
                                     </Badge>
                                 )}
 
@@ -428,6 +453,76 @@ export default function UserSearchPage() {
                                                 <p className="text-sm text-muted-foreground">{formatDate(selectedUser.createdAt)}</p>
                                             </div>
                                         </div>
+                                    )}
+                                    {user.admin && (
+                                        <>
+                                            <Separator className="my-6" />
+                                            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div>
+                                                                <DialogTrigger asChild>
+                                                                    <Button 
+                                                                        variant="secondary" 
+                                                                        className="w-full"
+                                                                        disabled={selectedUser._id === user._id}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                                        Delete User
+                                                                    </Button>
+                                                                </DialogTrigger>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        {selectedUser._id === user._id && (
+                                                            <TooltipContent>
+                                                                <p>Cannot delete your own account</p>
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                                <DialogContent>
+                                                    <DialogHeader>
+                                                        <DialogTitle className="flex items-center gap-2">
+                                                            <AlertCircle className="h-5 w-5 text-secondary" />
+                                                            Delete User
+                                                        </DialogTitle>
+                                                        <DialogDescription>
+                                                            Are you sure you want to delete {selectedUser.username}? This action cannot be undone.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <DialogFooter>
+                                                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                                                            Cancel
+                                                        </Button>
+                                                        <Button 
+                                                            variant="secondary"
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const response = await fetch(
+                                                                        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/${selectedUser._id}`,
+                                                                        {
+                                                                            method: "DELETE",
+                                                                            credentials: "include",
+                                                                        }
+                                                                    );
+                                                                    if (!response.ok) throw new Error("Failed to delete user");
+                                                                    await fetchUsers();
+                                                                    toastSuccess("User deleted successfully");
+                                                                    setIsDeleteDialogOpen(false);
+                                                                    setIsDrawerOpen(false);
+                                                                } catch (error) {
+                                                                    toastError("Failed to delete user");
+                                                                    console.error(error);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
+                                        </>
                                     )}
                                 </div>
                             </div>

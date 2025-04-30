@@ -33,7 +33,7 @@ export function NavMain({ object }) {
                         <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild tooltip={item.title}>
-                                    <button onClick={() => { router.push(item.url) }}>
+                                    <button data-navigation="true" onClick={() => { router.push(item.url) }}>
                                         {Icon && <Icon />}
                                         <span>{item.title}</span>
                                     </button>
@@ -53,7 +53,7 @@ export function NavMain({ object }) {
                                                     return (
                                                         <SidebarMenuSubItem key={subItem.title}>
                                                             <SidebarMenuSubButton asChild>
-                                                                <button onClick={() => { router.push(subItem.url) }}>
+                                                                <button data-navigation="true" onClick={() => { router.push(subItem.url) }}>
                                                                     {SubIcon && <SubIcon style={{ color: "oklch(var(--p))" }} />}
                                                                     <span>{subItem.title}</span>
                                                                 </button>
