@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useEffect } from "react"
 const UserContext = createContext()
 
 export const UserProvider = ({ children }) => {
-    const [user, setUser] = useState(null)
+    const [user, setUser] = useState(undefined) // Initialize as undefined for loading state
 
     const fetchUser = async () => {
         try {
@@ -14,9 +14,12 @@ export const UserProvider = ({ children }) => {
                 credentials: "include",
             })
 
-            if (!response.ok) throw new Error("Failed to fetch user info")
+            if (!response.ok) {
+                setUser(false) // Set to false when no valid token/session
+                return
+            }
+            
             const data = await response.json()
-
             setUser({
                 name: data.username,
                 avatar: data.photo,
@@ -31,7 +34,7 @@ export const UserProvider = ({ children }) => {
             })
         } catch (err) {
             console.error("Error fetching user info:", err)
-            setUser(null)
+            setUser(false) // Set to false on error
         }
     }
 
