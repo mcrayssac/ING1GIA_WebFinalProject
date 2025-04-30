@@ -43,7 +43,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/:id/start-cycle", async (req, res) => {
   const machineId = req.params.id;
-  const userId = "6811ab4a756aee01fb36472a"; // utilisateur temporaire codé en dur
+  const userId = "6811ca61af36482fce7c3939"; // utilisateur temporaire codé en dur
 
   try {
     const machine = await Machine.findById(machineId);
