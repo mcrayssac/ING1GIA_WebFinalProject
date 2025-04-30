@@ -29,6 +29,35 @@ services:
     depends_on:
       - mongodb
 
+  sensor-simulator:
+    container_name: sensor-simulator
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: node middlewares/cycleDataGenerator.js
+
+  cleanup-cycle:
+    container_name: cleanup-cycle
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: node middlewares/cleanupCycle.js
+
+
   mongodb:
     container_name: mongodb
     image: mongo:latest

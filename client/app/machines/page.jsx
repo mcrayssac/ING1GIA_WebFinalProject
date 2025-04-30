@@ -97,14 +97,15 @@ export default function MachinesPage() {
       header: "Sensors",
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
-          {row.getValue("availableSensors")?.map((sensor) => (
+          {row.getValue("availableSensors")?.map((sensor, index) => (
             <span
-              key={sensor.designation}
-              className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs"
+              key={sensor._id || sensor.designation || sensor || index}
+              className="bg-gray-200 px-2 py-1 rounded text-sm"
             >
-              {sensor.designation}
+              {sensor.designation || sensor}
             </span>
           ))}
+
         </div>
       ),
     },

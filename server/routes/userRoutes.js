@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const Grade = require('../models/Grade');
+const Grade = require('../models/Grades');
 const router = express.Router();
 
 // --- Helpers pour les photos ---
