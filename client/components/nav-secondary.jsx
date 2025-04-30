@@ -53,7 +53,7 @@ export function NavSecondary({ items, ...props }) {
                         return (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild size="sm">
-                                    <button onClick={() => { window.location.href = item.url; }}>
+                                    <button data-navigation="true" onClick={() => { window.location.href = item.url; }}>
                                         {Icon && <Icon />}
                                         <span>{item.title}</span>
                                     </button>
@@ -67,11 +67,12 @@ export function NavSecondary({ items, ...props }) {
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild size="sm">
                                 <a
-                                    href="#"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         handleThemeChange(currentTheme === "light" ? "dark" : "light");
-                                    }}>
+                                    }}
+                                    className="link link-hover"
+                                    >
                                     <Icons.Palette />
                                     <span>Themes</span>
                                     <span className="ml-auto flex items-center text-xs text-secondary">
@@ -96,12 +97,11 @@ export function NavSecondary({ items, ...props }) {
                                             <SidebarMenuSubItem key={theme.value}>
                                                 <SidebarMenuSubButton asChild>
                                                     <a
-                                                        href="#"
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             handleThemeChange(theme.value);
                                                         }}
-                                                        className="text-primary"
+                                                        className="text-primary link link-hover"
                                                     >
                                                         {Icon && <Icon style={{ color: "oklch(var(--p))" }} />}
                                                         <span>{theme.name}</span>

@@ -48,7 +48,7 @@ const verifyToken = (req, res, next) => {
 
     if (!token) return res.status(401).send('Access token missing');
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
         if (err && err.name === 'TokenExpiredError') {
             // Try refreshing token
             if (!refreshToken) return res.status(401).send('Refresh token missing');
@@ -82,8 +82,15 @@ const verifyToken = (req, res, next) => {
         } else if (err) {
             return res.status(403).send('Invalid token');
         } else {
-            req.user = user;
-            next();
+            try {
+                // Fetch user from database to get complete user data including admin status
+                const userFromDb = await User.findById(user._id);
+                if (!userFromDb) return res.status(403).send('User not found');
+                req.user = userFromDb;
+                next();
+            } catch (err) {
+                res.status(500).send('Error fetching user data');
+            }
         }
     });
 };
