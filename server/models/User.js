@@ -2,6 +2,8 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+
+
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
@@ -17,12 +19,16 @@ const userSchema = new mongoose.Schema({
     admin: { type: Boolean, required: false, default: false },
     photo: { data: Buffer, contentType: String },
     points: { type: Number, default: 0 },
+    hasActiveCycle: { type: Boolean, default: false },
+    /*
     employee: {                        
         type: mongoose.Schema.Types.ObjectId,
         ref: process.env.MONGO_Collection_Employee,
         required: true
     },
+    
     grade: { type: mongoose.Schema.Types.ObjectId, ref: process.env.MONGO_Collection_Grade, required: false }
+    */
 });
 
 userSchema.pre('save', async function (next) {

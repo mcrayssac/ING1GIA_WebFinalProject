@@ -732,11 +732,62 @@ const machines = [
       ]
     },
 ]
+
+const users = [
+  {
+    username: "testuser",
+    email: "testuser@example.com",
+    password: "password123", // sera hashé automatiquement via le modèle
+    points: 0,
+    admin: false,
+    hasActiveCycle: false, // champ que tu vas ajouter au modèle
+  }
+];
+
+const employees = [
+  {
+    _id: "664103a1d2fdd120d436b123",
+    name: "Jean Dupont",
+    position: "Technicien",
+  }
+];
+
+const grades = [
+  {
+    _id: "664103b5d2fdd120d436b456",
+    name: "Technicien"
+  }
+];
+
+const users = [
+  {
+    username: "testuser",
+    email: "testuser@example.com",
+    password: "password123", // sera hashé automatiquement via le modèle
+    bio: "Utilisateur de test pour développement.",
+    urls: {
+      linkedin: "https://linkedin.com/in/testuser",
+      github: "https://github.com/testuser"
+    },
+    dob: new Date("2000-01-01"),
+    location: "Paris",
+    points: 0,
+    admin: false,
+    hasActiveCycle: false,
+    employee: "664103a1d2fdd120d436b123", // ID existant dans tes seeds
+    grade: "664103b5d2fdd120d436b456", // ID existant dans tes seeds
+  }
+];
+
+
+
 machines.forEach(machine => {
   machine.availableSensors = machine.availableSensors.map(sensor => {
     const matchedSensor = sensors.find(s => s.designation === sensor.designation);
     return matchedSensor ? matchedSensor._id : null;
   }).filter(sensorId => sensorId !== null); // Filter out unmatched sensors
-});         
+}); 
+
+
   
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news, machines, sensors};
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news, machines, sensors, users, employees, grades };

@@ -1,120 +1,108 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Grade = require('../models/Grade');
 const router = express.Router();
-const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
 
-/**
- * @route POST /.../users/login
- * @desc Authenticates a user using their credentials and returns a JWT token.
- * @access Public
- *
- * @usage Example request:
- * POST /.../users/login
- * Content-Type: application/json
- * {
- *   "username": "user",
- *   "password": "password"
- * }
- *
- * @returns {JSON} { token: "JWT token string" }
- */
-router.post('/login', authenticateUser, (req, res) => {
-    // The authenticateUser middleware validate the credentials and attach the user to req.user
-    const token = jwt.sign({ _id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+// --- Helpers pour les photos ---
+function dataURLToBuffer(dataURL) {
+    const matches = dataURL.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return null;
+    const contentType = matches[1];
+    const buffer = Buffer.from(matches[2], "base64");
+    return { buffer, contentType };
+}
+
+function bufferToDataURL(buffer, contentType) {
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
+}
+
+// --- LOGIN ---
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ _id: user._id }, process.env.REFRESH_SECRET, { expiresIn: '7d' });
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: false,
+            maxAge: 15 * 60 * 1000
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: false,
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
 });
 
-/**
- * @route POST /.../users/register
- * @desc Registers a new user, ensuring they are not an admin by default, and returns a JWT token.
- * @access Public
- *
- * @usage Example request:
- * POST /.../users/register
- * Headers:
- *   Authorization: Basic <base64 encoded username:password>
- * Content-Type: application/json
- * 
- * @returns {JSON} { token: "JWT token string" }
- */
+router.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.clearCookie('refreshToken');
+    res.send('Logged out');
+});
+
+// --- REGISTER ---
 router.post('/register', async (req, res) => {
     try {
         const user = new User(req.body);
-
-        // Set admin to false
         user.admin = false;
 
-        // Verify if user already exists
         const existing = await User.findOne({ username: user.username });
         if (existing) return res.status(409).send('User already exists');
 
         await user.save();
-
-        // Do login and return JWT and send 201 user created with token
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
         res.status(201).json({ token });
     } catch (error) {
         res.status(500).send(error.message);
     }
 });
 
-/**
- * @route GET /.../users/infos
- * @desc Retrieves the information (username and admin status) of the authenticated user.
- * @access Private (requires a valid JWT token in the Authorization header)
- *
- * @usage Example request:
- * GET /.../users/infos
- * Headers:
- *   Authorization: Bearer <JWT token>
- *
- * @returns {JSON} { username: "user", admin: false }
- */
-router.get('/infos', verifyToken, async (req, res) => {
+// --- INFOS (désécurisé) ---
+router.get('/infos', async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        res.json({ username: user.username, admin: user.admin });
+        let user = await User.findOne().populate('grade').select('-password -__v');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user = user.toObject();
+        if (user.urls && user.urls instanceof Map) {
+            user.urls = Object.fromEntries(user.urls);
+        }
+        if (user.photo?.data && user.photo?.contentType) {
+            user.photo = bufferToDataURL(user.photo.data, user.photo.contentType);
+        }
+
+        res.json(user);
     } catch (error) {
         res.status(500).send(error.message);
     }
 });
 
-/**
- * @route POST /.../users/admin/reset
- * @desc Resets a specified user's password to a randomly generated one.
- *       Only accessible by admin users.
- * @access Private (admin only; requires a valid JWT token with admin privileges)
- *
- * @usage Example request:
- * POST /.../users/admin/reset
- * Headers:
- *   Authorization: Bearer <JWT token>
- * Content-Type: application/json
- * {
- *   "userId": "id_of_user_to_reset"
- * }
- *
- * @returns {JSON} {
- *   message: "Password reset successfully",
- *   user: { ...updatedUserData },
- *   newPassword: "randomlyGeneratedPassword"
- * }
- */
-router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
+// --- RESET PASSWORD (désécurisé) ---
+router.post('/admin/reset', async (req, res) => {
     const { userId } = req.body;
-
     try {
         const user = await User.findById(userId);
+        if (!user) return res.status(404).send('User not found');
 
-        if (!user) {
-            return res.status(404).send('User not found');
-        }
-
-        // Generate a random password
         const randomPassword = Math.random().toString(36).slice(-8);
-
-        // Update the user's password
         user.password = randomPassword;
         await user.save();
 
@@ -124,48 +112,101 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /.../users/verify
- * @desc Verifies the provided JWT token and returns the user's admin status.
- * @access Private (requires a valid JWT token in the Authorization header)
- *
- * @usage Example request:
- * GET /.../users/verify
- * Headers:
- *   Authorization: Bearer <JWT token>
- *
- * @returns {JSON} { admin: true } or { admin: false }
- */
-router.get('/verify', verifyToken, async (req, res) => {
+// --- VERIFY (désécurisé) ---
+router.get('/verify', async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        if (user.admin) {
-            res.status(200).json({ admin: true });
-        } else {
-            res.status(200).json({ admin: false });
-        }
+        const user = await User.findOne();
+        res.status(200).json({ admin: user?.admin || false });
     } catch (error) {
         res.status(500).send(error.message);
     }
 });
 
-/**
- * @route GET /.../users/
- * @desc Retrieves a list of all registered users.
- *       This endpoint is restricted to admin users only.
- * @access Private (admin only; requires a valid JWT token with admin privileges)
- *
- * @usage Example request:
- * GET /.../users/
- * Headers:
- *   Authorization: Bearer <JWT token>
- *
- * @returns {JSON} Array of user objects
- */
-router.get('/', verifyToken, isAdmin, async (req, res) => {
+// --- GET ALL USERS (désécurisé) ---
+router.get('/', async (req, res) => {
     try {
-        const users = await User.find();
-        res.json(users);
+        const users = await User.find().select('-password -__v');
+        const usersData = users.map(user => {
+            const obj = user.toObject();
+            if (obj.urls && obj.urls instanceof Map) obj.urls = Object.fromEntries(obj.urls);
+            if (obj.photo?.data && obj.photo?.contentType) {
+                obj.photo = bufferToDataURL(obj.photo.data, obj.photo.contentType);
+            }
+            return obj;
+        });
+
+        res.json(usersData);
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+// --- UPDATE USER (désécurisé) ---
+router.put("/infos/:id", async (req, res) => {
+    try {
+        const { username, email, bio, urls, dob, location, photo } = req.body;
+        const updateData = { username, email, bio, urls, dob, location };
+
+        if (photo) {
+            const photoData = dataURLToBuffer(photo);
+            if (photoData) {
+                updateData.photo = {
+                    data: photoData.buffer,
+                    contentType: photoData.contentType,
+                };
+            }
+        } else {
+            updateData.photo = null;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        if (!updatedUser) return res.status(404).json({ error: "User not found" });
+
+        res.json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- UPDATE PASSWORD (désécurisé) ---
+router.put("/password", async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Both old and new passwords are required" });
+    }
+
+    try {
+        const user = await User.findOne();
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) return res.status(400).json({ error: "Old password is incorrect" });
+
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: "Password updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- USERS COUNT BY GRADE (désécurisé) ---
+router.get('/counts-by-grade', async (req, res) => {
+    try {
+        const grades = await Grade.find();
+        const users = await User.find().populate('grade');
+        const counts = {};
+
+        grades.forEach(grade => counts[grade.name] = 0);
+        users.forEach(user => {
+            if (user.grade) {
+                counts[user.grade.name] = (counts[user.grade.name] || 0) + 1;
+            }
+        });
+
+        res.json(counts);
     } catch (error) {
         res.status(500).send(error.message);
     }
