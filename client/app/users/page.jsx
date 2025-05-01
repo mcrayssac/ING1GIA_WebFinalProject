@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useForm } from "react-hook-form"
-import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield } from "lucide-react"
+import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield, Briefcase, Building2, Building, Clock } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { useRouter } from "next/navigation"
 
@@ -250,11 +250,11 @@ export default function UserSearchPage() {
                                             <SelectItem value="oldest">Oldest First</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Results Section */}
                 <div className="mb-4">
@@ -399,6 +399,90 @@ export default function UserSearchPage() {
                                 </div>
                             </div>
 
+                            {selectedUser.employee && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Employment Information</h3>
+                                        <div className="space-y-3">
+                                            {selectedUser.employee.employeeId && (
+                                                <div className="flex items-center">
+                                                    <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Employee ID</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.employeeId}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+    <div className="flex items-center">
+        <Briefcase className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Position</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.position}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Building2 className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Department</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.department}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Building className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Office</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.office}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Clock className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Contract Type</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.contractType}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Calendar className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Hire Date</p>
+                                                    <p className="text-sm text-muted-foreground">{formatDate(selectedUser.employee.hireDate)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {selectedUser.employee?.site && typeof selectedUser.employee.site === "object" && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Site Information</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center">
+                                                <MapPin className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Site Name</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.site.name}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Clock className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Opening Hours</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.site.openHours}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium mb-1">Description</p>
+                                                <p className="text-sm text-muted-foreground">{selectedUser.employee.site.description}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
                             {(selectedUser.urls?.x || selectedUser.urls?.linkedin) && (
                                 <>
                                     <Separator />
@@ -431,101 +515,96 @@ export default function UserSearchPage() {
                                 </>
                             )}
 
-                            <Separator />
+                            {user.admin && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Account Information</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center">
+                                                <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">User ID</p>
+                                                    <p className="text-sm text-muted-foreground font-mono">{selectedUser._id}</p>
+                                                </div>
+                                            </div>
 
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-lg">Account Information</h3>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center">
-                                        <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
-                                        <div>
-                                            <p className="text-sm font-medium">User ID</p>
-                                            <p className="text-sm text-muted-foreground font-mono">{selectedUser._id}</p>
-                                        </div>
-                                    </div>
-
-                                    {selectedUser.createdAt && (
-                                        <div className="flex items-center">
-                                            <Calendar className="h-5 w-5 mr-3 text-accent-foreground" />
                                             <div>
-                                                <p className="text-sm font-medium">Member Since</p>
-                                                <p className="text-sm text-muted-foreground">{formatDate(selectedUser.createdAt)}</p>
+                                                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <div>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button 
+                                                                            variant="secondary" 
+                                                                            className="w-full"
+                                                                            disabled={selectedUser._id === user._id}
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                                            Delete User
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            {selectedUser._id === user._id && (
+                                                                <TooltipContent>
+                                                                    <p>Cannot delete your own account</p>
+                                                                </TooltipContent>
+                                                            )}
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle className="flex items-center gap-2">
+                                                                <AlertCircle className="h-5 w-5 text-secondary" />
+                                                                Delete User
+                                                            </DialogTitle>
+                                                            <DialogDescription>
+                                                                Are you sure you want to delete {selectedUser.username}? This action cannot be undone.
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <DialogFooter>
+                                                            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                                                                Cancel
+                                                            </Button>
+                                                            <Button 
+                                                                variant="secondary"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const response = await fetch(
+                                                                            `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/${selectedUser._id}`,
+                                                                            {
+                                                                                method: "DELETE",
+                                                                                credentials: "include",
+                                                                            }
+                                                                        );
+                                                                        const data = await response.json();
+                                                                        
+                                                                        if (!response.ok) {
+                                                                            throw new Error(data.error || "Failed to delete user");
+                                                                        }
+                                                                        
+                                                                        await fetchUsers();
+                                                                        toastSuccess(data.message || "User deleted successfully");
+                                                                        setIsDeleteDialogOpen(false);
+                                                                        setIsDrawerOpen(false);
+                                                                    } catch (error) {
+                                                                        toastError(error.message || "Failed to delete user");
+                                                                        console.error(error);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
                                             </div>
                                         </div>
-                                    )}
-                                    {user.admin && (
-                                        <>
-                                            <Separator className="my-6" />
-                                            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <div>
-                                                                <DialogTrigger asChild>
-                                                                    <Button 
-                                                                        variant="secondary" 
-                                                                        className="w-full"
-                                                                        disabled={selectedUser._id === user._id}
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                                        Delete User
-                                                                    </Button>
-                                                                </DialogTrigger>
-                                                            </div>
-                                                        </TooltipTrigger>
-                                                        {selectedUser._id === user._id && (
-                                                            <TooltipContent>
-                                                                <p>Cannot delete your own account</p>
-                                                            </TooltipContent>
-                                                        )}
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                                <DialogContent>
-                                                    <DialogHeader>
-                                                        <DialogTitle className="flex items-center gap-2">
-                                                            <AlertCircle className="h-5 w-5 text-secondary" />
-                                                            Delete User
-                                                        </DialogTitle>
-                                                        <DialogDescription>
-                                                            Are you sure you want to delete {selectedUser.username}? This action cannot be undone.
-                                                        </DialogDescription>
-                                                    </DialogHeader>
-                                                    <DialogFooter>
-                                                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                                                            Cancel
-                                                        </Button>
-                                                        <Button 
-                                                            variant="secondary"
-                                                            onClick={async () => {
-                                                                try {
-                                                                    const response = await fetch(
-                                                                        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/${selectedUser._id}`,
-                                                                        {
-                                                                            method: "DELETE",
-                                                                            credentials: "include",
-                                                                        }
-                                                                    );
-                                                                    if (!response.ok) throw new Error("Failed to delete user");
-                                                                    await fetchUsers();
-                                                                    toastSuccess("User deleted successfully");
-                                                                    setIsDeleteDialogOpen(false);
-                                                                    setIsDrawerOpen(false);
-                                                                } catch (error) {
-                                                                    toastError("Failed to delete user");
-                                                                    console.error(error);
-                                                                }
-                                                            }}
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </DialogFooter>
-                                                </DialogContent>
-                                            </Dialog>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                 </SheetContent>

@@ -8,8 +8,12 @@ const Grade = require("../models/Grade");
 
 const router = express.Router();
 
-// Token storage for verification
+// Token storage for verification and password reset
 const verificationTokens = new Map();
+const resetTokens = new Map();
+
+// Reset token expiry time (15 minutes)
+const RESET_TOKEN_EXPIRY = 15 * 60 * 1000;
 
 /**
  * @route POST /.../auth/request-signup
@@ -165,6 +169,102 @@ router.post("/create-user", async (req, res) => {
         // Handle other errors
         console.error("Error creating user: ", error);
         res.status(500).json({ message: error.message });
+    }
+});
+
+/**
+ * @route POST /.../auth/forgot-password
+ * @desc Request password reset token
+ * @access Public
+ */
+router.post("/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Check if user exists
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(200).json({ message: "If a user with this email exists, they will receive a password reset link." });
+        }
+
+        // Generate reset token
+        const token = crypto.randomBytes(32).toString("hex");
+        const expiryTime = Date.now() + RESET_TOKEN_EXPIRY;
+        resetTokens.set(token, { email, expiry: expiryTime });
+
+        const resetLink = `${process.env.ORIGIN_LOCAL}/reset-password?token=${token}`;
+
+        // Send email
+        const transporter = nodemailer.createTransport({
+            service: "Gmail",
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASSWORD,
+            }
+        });
+
+        await transporter.sendMail({
+            from: `"SPACE Y" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Password Reset Request",
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #2c3e50;">Password Reset Request</h2>
+                    <p>Hi there,</p>
+                    <p>We received a request to reset your password. Click the button below to create a new password:</p>
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="${resetLink}" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                            Reset Password
+                        </a>
+                    </p>
+                    <p>If you didn't request this, you can safely ignore this email.</p>
+                    <p>This link will expire in 15 minutes.</p>
+                    <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all;">${resetLink}</p>
+                    <p>Thanks,<br/>The Team</p>
+                </div>
+            `
+        });
+
+        res.json({ message: "If a user with this email exists, they will receive a password reset link." });
+    } catch (error) {
+        console.error("Error in forgot password:", error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+/**
+ * @route POST /.../auth/reset-password
+ * @desc Reset password using token
+ * @access Public
+ */
+router.post("/reset-password", async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        // Verify token exists and hasn't expired
+        const tokenData = resetTokens.get(token);
+        if (!tokenData || Date.now() > tokenData.expiry) {
+            resetTokens.delete(token);
+            return res.status(400).json({ message: "Invalid or expired reset token" });
+        }
+
+        // Update user's password
+        const user = await User.findOne({ email: tokenData.email });
+        if (!user) {
+            return res.status(400).json({ message: "User not found" });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        // Delete used token
+        resetTokens.delete(token);
+
+        res.json({ message: "Password reset successful. You can now log in with your new password." });
+    } catch (error) {
+        console.error("Error in reset password:", error);
+        res.status(500).json({ message: "An error occurred" });
     }
 });
 

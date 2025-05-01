@@ -73,7 +73,7 @@ router.post('/login', authenticateUser, (req, res) => {
 router.post('/logout', (req, res) => {
     res.clearCookie('token');
     res.clearCookie('refreshToken');
-    res.send('Logged out');
+    res.json({ message: "Logged out successfully" });
 });
 
 /**
@@ -98,7 +98,7 @@ router.post('/register', async (req, res) => {
 
         // Verify if user already exists
         const existing = await User.findOne({ username: user.username });
-        if (existing) return res.status(409).send('User already exists');
+        if (existing) return res.status(409).json({ error: "User already exists" });
 
         await user.save();
 
@@ -106,7 +106,7 @@ router.post('/register', async (req, res) => {
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         res.status(201).json({ token });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -124,7 +124,15 @@ router.post('/register', async (req, res) => {
  */
 router.get('/infos', verifyToken, async (req, res) => {
     try {
-        let user = await User.findById(req.user._id).populate('grade').select('-password -__v');
+        let user = await User.findById(req.user._id)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            })
+            .select('-password -__v');
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -144,7 +152,7 @@ router.get('/infos', verifyToken, async (req, res) => {
 
         res.json(user);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "An unexpected error occurred" });
     }
 });
 
@@ -176,7 +184,7 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
         const user = await User.findById(userId).populate('grade');
 
         if (!user) {
-            return res.status(404).send('User not found');
+            return res.status(404).json({ error: "User not found" });
         }
 
         // Generate a random password
@@ -188,7 +196,7 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
 
         res.status(200).json({ message: 'Password reset successfully', user, newPassword: randomPassword });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "An unexpected error occurred" });
     }
 });
 
@@ -231,20 +239,19 @@ router.get('/counts-by-grade', verifyToken, isAdmin, async (req, res) => {
 
         res.json(userCounts);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "Failed to fetch user counts" });
     }
 });
 
 router.get('/verify', verifyToken, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).populate('grade');
-        if (user.admin) {
-            res.status(200).json({ admin: true });
-        } else {
-            res.status(200).json({ admin: false });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
         }
+        res.json({ admin: !!user.admin });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "Failed to verify user status" });
     }
 });
 
@@ -268,7 +275,15 @@ router.get('/', verifyToken, async (req, res) => {
             _id: { $ne: req.user._id }, // Exclude current user
             ...(req.user.admin ? {} : { admin: false }) // Add admin filter if not admin
         };
-        const users = await User.find(query).populate('grade').select('-password -__v');
+        const users = await User.find(query)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            })
+            .select('-password -__v');
         console.log(users);
 
         if (!users) {
@@ -291,7 +306,10 @@ router.get('/', verifyToken, async (req, res) => {
 
         res.json(usersData);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ 
+            error: error.message || "Failed to fetch users",
+            details: error.name === "MongooseError" ? "Database error occurred" : undefined
+        });
     }
 });
 
@@ -400,9 +418,12 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        res.json({ message: "User deleted successfully" });
+        res.json({ message: `User ${user.username} deleted successfully` });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        if (error.name === "CastError") {
+            return res.status(400).json({ error: "Invalid user ID format" });
+        }
+        res.status(500).json({ error: error.message || "Failed to delete user" });
     }
 });
 

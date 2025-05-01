@@ -24,97 +24,94 @@ async function seedDatabase() {
             .catch((error) => console.error('Error connecting to MongoDB:', error));
 
         // Clear existing data
-        await Satellite.deleteMany({});
-        await Site.deleteMany({});
-        await Product.deleteMany({});
-        await Statistic.deleteMany({});
-        await HistoryEvent.deleteMany({});
-        await User.deleteMany({});
+        await Promise.all([
+            Satellite.deleteMany({}),
+            Site.deleteMany({}),
+            Product.deleteMany({}),
+            Statistic.deleteMany({}),
+            HistoryEvent.deleteMany({}),
+            Employee.deleteMany({}),
+            Grade.deleteMany({}),
+            User.deleteMany({})
+        ]);
         console.log('Cleared existing data');
 
-        // Seed new data
-        // Define the static data mappings 
-        const mappedData = [
-            { key: 'Satellites', data: await satellites, model: Satellite },
-            { key: 'Sites', data: sites, model: Site },
-            { key: 'Products', data: products, model: Product },
-            { key: 'Statistics', data: statistics, model: Statistic },
-            { key: 'HistoryEvents', data: historyEvents, model: HistoryEvent },
-            { key: 'Employees', data: employees, model: Employee },
-            { key: 'Grades', data: grades, model: Grade }
-        ];
+        // First, seed satellites and sites
+        await Satellite.insertMany(await satellites);
+        await Site.insertMany(sites);
+        console.log('Seeded satellites and sites');
 
-        // Seed all data
-        for (const { key, data } of mappedData) {
-            if (!data) throw new Error(`Data for key: ${key} is undefined`);
-            else if (!Array.isArray(data)) throw new Error(`Data for key: ${key} is not an array`);
-            else if (data.length === 0) throw new Error(`Data for key: ${key} is empty`);
+        // Seed basic data
+        await Promise.all([
+            Product.insertMany(products),
+            Statistic.insertMany(statistics),
+            HistoryEvent.insertMany(historyEvents),
+            Grade.insertMany(grades)
+        ]);
+        console.log('Seeded basic data');
 
-            if (!mongoose.models[key]) throw new Error(`Model not found for key: ${key}`);
+        // Prepare employee data with site references
+        const siteMap = new Map();
+        const allSites = await Site.find({});
+        allSites.forEach(site => siteMap.set(site.name, site._id));
 
-            await mongoose.models[key].deleteMany({});
-            await mongoose.models[key].insertMany(data);
+        const employeesWithSites = employees.map(emp => {
+            const siteId = siteMap.get(emp.office);
+            if (!siteId) {
+                throw new Error(`Site not found for office: ${emp.office}`);
+            }
+            return { ...emp, site: siteId };
+        });
 
-            console.log(`Data seeded for key: ${key}`);
-        }
+        // Seed employees
+        const savedEmployees = await Employee.insertMany(employeesWithSites);
+        console.log('Seeded employees with site references');
 
-        // Find Alice's employee record to link to admin user
-        const aliceEmployee = await Employee.findOne({ email: 'alice.smith@example.com' });
+        // Find grades for reference
+        const gradeLevels = await Grade.find({}).lean();
+        const gradeMap = new Map(gradeLevels.map(grade => [grade.name, grade._id]));
+
+        // Create admin user with employee reference
+        const aliceEmployee = savedEmployees.find(emp => emp.email === adminUser.email);
         if (!aliceEmployee) {
             throw new Error('Admin employee record not found');
         }
+        await User.create({
+            ...adminUser,
+            employee: aliceEmployee._id
+        });
+        console.log('Created admin user');
 
-        // Clear existing users
-        await User.deleteMany({});
-
-        // Create admin user with employee reference
-        adminUser.employee = aliceEmployee._id;
-        await User.create(adminUser);
-        console.log('Admin user created successfully');
-
-        // Create test users for each grade level
-        for (const testUser of testUsers) {
-            const employee = await Employee.findOne({ email: testUser.email });
+        // Create test users with proper references
+        const testUsersWithRefs = testUsers.map(user => {
+            const employee = savedEmployees.find(emp => emp.email === user.email);
             if (!employee) {
-                throw new Error(`Employee not found for test user: ${testUser.username}`);
+                throw new Error(`Employee not found for test user: ${user.username}`);
             }
-            testUser.employee = employee._id;
-            await User.create(testUser);
-        }
-        console.log('Test users created successfully');
 
-        // Assign grades to non-admin users based on their points
-        const users = await User.find({ admin: false });
-        for (const user of users) {
-            let grade;
-            if (user.points < 100) {
-                grade = await Grade.findOne({ name: "Apprentice" });
-            } else if (user.points < 500) {
-                grade = await Grade.findOne({ name: "Technician" });
-            } else if (user.points < 1000) {
-                grade = await Grade.findOne({ name: "Engineer" });
-            } else {
-                grade = await Grade.findOne({ name: "Manager" });
-            }
-            
-            if (!grade) {
-                throw new Error(`Grade not found for user: ${user.username}`);
-            }
-            
-            await User.findByIdAndUpdate(user._id, { grade: grade._id });
-        }
+            let gradeName;
+            if (user.points < 100) gradeName = "Apprentice";
+            else if (user.points < 500) gradeName = "Technician";
+            else if (user.points < 1000) gradeName = "Engineer";
+            else gradeName = "Manager";
 
-        // Ensure admin has no grade
-        await User.updateMany({ admin: true }, { $unset: { grade: "" } });
-        console.log('User grades assigned successfully');
+            return {
+                ...user,
+                employee: employee._id,
+                grade: gradeMap.get(gradeName)
+            };
+        });
 
-        console.log('Data seeded successfully');
+        await Promise.all(testUsersWithRefs.map(user => User.create(user)));
+        console.log('Created test users with proper references');
+
+        console.log('Database seeding completed successfully');
     }
     catch (error) {
-        console.error('Error seeding data:', error);
+        console.error('Error seeding database:', error);
+        throw error;
     }
     finally {
-        // Close the database connection
         await mongoose.connection.close();
         console.log('Database connection closed');
     }
@@ -124,7 +121,9 @@ async function seedDatabase() {
 seedDatabase()
     .then(() => {
         console.log('Seeding completed');
+        process.exit(0);
     })
     .catch((error) => {
         console.error('Error during seeding:', error);
+        process.exit(1);
     });
