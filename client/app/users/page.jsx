@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useForm } from "react-hook-form"
-import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield, Briefcase, Building2, Building, Clock, Plus, UserPlus } from "lucide-react"
+import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield, Briefcase, Building2, Building, Clock, Plus, UserPlus, Star } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { useRouter } from "next/navigation"
 import { AddUserDialog } from "@/components/add-user-dialog"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,8 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToastAlert } from "@/contexts/ToastContext"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AlertCircle, Trash2 } from "lucide-react"
-
+import { AlertCircle, Trash2, Pencil } from "lucide-react"
 
 export default function UserSearchPage() {
     const { user } = useUser()
@@ -33,9 +31,9 @@ export default function UserSearchPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [sortOption, setSortOption] = useState("username")
     const [filterGrade, setFilterGrade] = useState("all")
-    const [grades, setGrades] = useState([]);
-    const [sites, setSites] = useState([]);
-    const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [grades, setGrades] = useState([])
+    const [sites, setSites] = useState([])
+    const [isAddUserOpen, setIsAddUserOpen] = useState(false)
 
     const { register, watch, reset } = useForm({
         defaultValues: {
@@ -52,7 +50,6 @@ export default function UserSearchPage() {
                 method: "GET",
                 credentials: "include",
             })
-
             const data = await response.json()
             if (!response.ok) throw new Error(data.message)
             setUsers(data)
@@ -129,17 +126,16 @@ export default function UserSearchPage() {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`, {
                 method: "GET",
                 credentials: "include",
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message);
-            setSites(data);
+            })
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message)
+            setSites(data)
         } catch (err) {
-            console.error("Error fetching sites:", err);
-            toastError("Error fetching sites. Please try again.");
+            console.error("Error fetching sites:", err)
+            toastError("Error fetching sites. Please try again.")
         }
-    }, [toastError]);
+    }, [toastError])
 
-    // Authentication effect
     useEffect(() => {
         if (user === false) {
             router.replace("/")
@@ -152,32 +148,9 @@ export default function UserSearchPage() {
         }
     }, [user, router, fetchUsers, fetchGrades, fetchSites])
 
-    // Filter effect
     useEffect(() => {
         filterUsers()
     }, [filterUsers])
-
-    // Show loading state while user context is initializing
-    if (user === undefined) {
-        return (
-            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-        )
-    }
-
-    // Show access denied if not authenticated
-    if (user === false) {
-        return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                <p className="text-muted-foreground text-center">
-                    Please log in to view users.
-                </p>
-            </div>
-        )
-    }
 
     const handleUserClick = (user) => {
         setSelectedUser(user)
@@ -204,6 +177,26 @@ export default function UserSearchPage() {
             .split(" ")
             .map((part) => part.charAt(0).toUpperCase())
             .join("")
+    }
+
+    if (user === undefined) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    if (user === false) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
+                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+                <p className="text-muted-foreground text-center">
+                    Please log in to view users.
+                </p>
+            </div>
+        )
     }
 
     return (
@@ -288,7 +281,6 @@ export default function UserSearchPage() {
                     </CardContent>
                 </Card>
 
-                {/* Results Section */}
                 <div className="mb-4">
                     <p className="text-muted-foreground">
                         {isLoading ? "Loading users..." : `${filteredUsers.length} users found`}
@@ -309,18 +301,13 @@ export default function UserSearchPage() {
                             >
                                 <CardContent className="p-0">
                                     <div className="flex flex-col items-center">
-                                        {/* Colored header */}
                                         <div className="bg-accent-foreground w-full h-12"></div>
-
-                                        {/* Avatar */}
                                         <Avatar className="h-16 w-16 border-4 border-background -mt-8 mb-2">
                                             <AvatarImage src={user.photo} alt={user.username} />
                                             <AvatarFallback className="bg-secondary text-secondary-foreground">
                                                 {getInitials(user.username)}
                                             </AvatarFallback>
                                         </Avatar>
-
-                                        {/* User info */}
                                         <div className="w-full px-4 pb-4 space-y-2">
                                             <div className="flex justify-between items-start">
                                                 <h3 className="font-bold text-lg truncate">{user.username}</h3>
@@ -330,14 +317,12 @@ export default function UserSearchPage() {
                                                     </Badge>
                                                 )}
                                             </div>
-
                                             {user.email && (
                                                 <div className="flex items-center text-sm text-muted-foreground">
                                                     <Mail className="h-4 w-4 mr-2" />
                                                     <span className="truncate">{user.email}</span>
                                                 </div>
                                             )}
-
                                             {user.location && (
                                                 <div className="flex items-center text-sm text-muted-foreground">
                                                     <MapPin className="h-4 w-4 mr-2" />
@@ -362,234 +347,69 @@ export default function UserSearchPage() {
                         </Button>
                     </div>
                 )}
-            </div>
 
-            {/* User Detail Drawer */}
-            <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                <SheetContent className="sm:max-w-md overflow-y-auto">
-                    <SheetHeader className="mb-4">
-                        <SheetTitle>User Details</SheetTitle>
-                        <SheetDescription>Detailed information about the selected user.</SheetDescription>
-                    </SheetHeader>
+                {/* User Detail Sheet */}
+                <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                    <SheetContent className="sm:max-w-md overflow-y-auto">
+                        <SheetHeader className="mb-4">
+                            <SheetTitle>User Details</SheetTitle>
+                            <SheetDescription>Detailed information about the selected user.</SheetDescription>
+                        </SheetHeader>
 
-                    {selectedUser && (
-                        <div className="space-y-6">
-                            <div className="flex flex-col items-center text-center">
-                                <Avatar className="h-24 w-24 mb-4">
-                                    <AvatarImage src={selectedUser.photo} alt={selectedUser.username} />
-                                    <AvatarFallback className="bg-secondary text-secondary-foreground text-xl">
-                                        {getInitials(selectedUser.username)}
-                                    </AvatarFallback>
-                                </Avatar>
-
-                                <h2 className="text-2xl font-bold">{selectedUser.username}</h2>
-
-                                {selectedUser.grade && (
-                                    <Badge variant="outline" className="mt-2 text-accent-foreground">
-                                        {selectedUser.grade.name}
-                                    </Badge>
-                                )}
-
-                                {selectedUser.bio && <p className="text-muted-foreground mt-4 text-sm">{selectedUser.bio}</p>}
-                            </div>
-
-                            <Separator />
-
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-lg">Contact Information</h3>
-
-                                <div className="space-y-3">
-                                    {selectedUser.email && (
-                                        <div className="flex items-center">
-                                            <Mail className="h-5 w-5 mr-3 text-accent-foreground" />
-                                            <div>
-                                                <p className="text-sm font-medium">Email</p>
-                                                <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
-                                            </div>
-                                        </div>
+                        {selectedUser && (
+                            <div className="space-y-6">
+                                {/* Avatar and Basic Info */}
+                                <div className="flex flex-col items-center text-center">
+                                    <Avatar className="h-24 w-24 mb-4">
+                                        <AvatarImage src={selectedUser.photo} alt={selectedUser.username} />
+                                        <AvatarFallback className="bg-secondary text-secondary-foreground text-xl">
+                                            {getInitials(selectedUser.username)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <h2 className="text-2xl font-bold">{selectedUser.username}</h2>
+                                    {selectedUser.grade && (
+                                        <Badge variant="outline" className="mt-2 text-accent-foreground">
+                                            {selectedUser.grade.name}
+                                        </Badge>
                                     )}
-
-                                    {selectedUser.location && (
-                                        <div className="flex items-center">
-                                            <MapPin className="h-5 w-5 mr-3 text-accent-foreground" />
-                                            <div>
-                                                <p className="text-sm font-medium">Location</p>
-                                                <p className="text-sm text-muted-foreground">{selectedUser.location}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {selectedUser.dob && (
-                                        <div className="flex items-center">
-                                            <Calendar className="h-5 w-5 mr-3 text-accent-foreground" />
-                                            <div>
-                                                <p className="text-sm font-medium">Date of Birth</p>
-                                                <p className="text-sm text-muted-foreground">{formatDate(selectedUser.dob)}</p>
-                                            </div>
-                                        </div>
+                                    {selectedUser.bio && (
+                                        <p className="text-muted-foreground mt-4 text-sm">{selectedUser.bio}</p>
                                     )}
                                 </div>
-                            </div>
 
-                            {selectedUser.employee && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg">Employment Information</h3>
-                                        <div className="space-y-3">
-                                            {selectedUser.employee.employeeId && (
-                                                <div className="flex items-center">
-                                                    <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">Employee ID</p>
-                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.employeeId}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-    <div className="flex items-center">
-        <Briefcase className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Position</p>
-                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.position}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <Building2 className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Department</p>
-                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.department}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <Building className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Office</p>
-                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.office}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <Clock className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Contract Type</p>
-                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.contractType}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <Calendar className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Hire Date</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(selectedUser.employee.hireDate)}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {selectedUser.employee?.site && typeof selectedUser.employee.site === "object" && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg">Site Information</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center">
-                                                <MapPin className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Site Name</p>
-                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.site.name}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <Clock className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Opening Hours</p>
-                                                    <p className="text-sm text-muted-foreground">{selectedUser.employee.site.openHours}</p>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium mb-1">Description</p>
-                                                <p className="text-sm text-muted-foreground">{selectedUser.employee.site.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {(selectedUser.urls?.x || selectedUser.urls?.linkedin) && (
-                                <>
-                                    <Separator />
-
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg">Social Media</h3>
-
-                                        <div className="space-y-3">
-                                            {selectedUser.urls?.x && (
-                                                <div className="flex items-center">
-                                                    <Twitter className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">Twitter</p>
-                                                        <p className="text-sm text-muted-foreground">@{selectedUser.urls.x}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {selectedUser.urls?.linkedin && (
-                                                <div className="flex items-center">
-                                                    <Linkedin className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">LinkedIn</p>
-                                                        <p className="text-sm text-muted-foreground">in/{selectedUser.urls.linkedin}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {user.admin && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg">Account Information</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center">
-                                                <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">User ID</p>
-                                                    <p className="text-sm text-muted-foreground font-mono">{selectedUser._id}</p>
-                                                </div>
-                                            </div>
-
-                                            <div>
+                                {/* Admin Actions */}
+                                {user?.admin && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg">Account Actions</h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Button 
+                                                    variant="default"
+                                                    className="w-full text-white"
+                                                    onClick={() => {
+                                                        setIsDrawerOpen(false)
+                                                        router.push(`/users/${selectedUser._id}`)
+                                                    }}
+                                                >
+                                                    <Pencil className="h-4 w-4 mr-2 text-white" />
+                                                    Edit
+                                                </Button>
                                                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <div>
-                                                                    <DialogTrigger asChild>
-                                                                        <Button 
-                                                                            variant="secondary" 
-                                                                            className="w-full"
-                                                                            disabled={selectedUser._id === user._id}
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4 mr-2" />
-                                                                            Delete User
-                                                                        </Button>
-                                                                    </DialogTrigger>
-                                                                </div>
-                                                            </TooltipTrigger>
-                                                            {selectedUser._id === user._id && (
-                                                                <TooltipContent>
-                                                                    <p>Cannot delete your own account</p>
-                                                                </TooltipContent>
-                                                            )}
-                                                        </Tooltip>
-                                                    </TooltipProvider>
+                                                    <DialogTrigger asChild>
+                                                        <Button 
+                                                            variant="secondary" 
+                                                            className="w-full"
+                                                            disabled={selectedUser._id === user._id}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            Delete
+                                                        </Button>
+                                                    </DialogTrigger>
                                                     <DialogContent>
                                                         <DialogHeader>
                                                             <DialogTitle className="flex items-center gap-2">
-                                                                <AlertCircle className="h-5 w-5 text-secondary" />
+                                                                <AlertCircle className="h-5 w-5 text-destructive" />
                                                                 Delete User
                                                             </DialogTitle>
                                                             <DialogDescription>
@@ -597,11 +417,14 @@ export default function UserSearchPage() {
                                                             </DialogDescription>
                                                         </DialogHeader>
                                                         <DialogFooter>
-                                                            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                                                            <Button 
+                                                                variant="outline" 
+                                                                onClick={() => setIsDeleteDialogOpen(false)}
+                                                            >
                                                                 Cancel
                                                             </Button>
                                                             <Button 
-                                                                variant="secondary"
+                                                                variant="destructive"
                                                                 onClick={async () => {
                                                                     try {
                                                                         const response = await fetch(
@@ -610,20 +433,20 @@ export default function UserSearchPage() {
                                                                                 method: "DELETE",
                                                                                 credentials: "include",
                                                                             }
-                                                                        );
-                                                                        const data = await response.json();
+                                                                        )
+                                                                        const data = await response.json()
                                                                         
                                                                         if (!response.ok) {
-                                                                            throw new Error(data.error || "Failed to delete user");
+                                                                            throw new Error(data.error || "Failed to delete user")
                                                                         }
                                                                         
-                                                                        await fetchUsers();
-                                                                        toastSuccess(data.message || "User deleted successfully");
-                                                                        setIsDeleteDialogOpen(false);
-                                                                        setIsDrawerOpen(false);
+                                                                        await fetchUsers()
+                                                                        toastSuccess(data.message || "User deleted successfully")
+                                                                        setIsDeleteDialogOpen(false)
+                                                                        setIsDrawerOpen(false)
                                                                     } catch (error) {
-                                                                        toastError(error.message || "Failed to delete user");
-                                                                        console.error(error);
+                                                                        toastError(error.message || "Failed to delete user")
+                                                                        console.error(error)
                                                                     }
                                                                 }}
                                                             >
@@ -634,21 +457,199 @@ export default function UserSearchPage() {
                                                 </Dialog>
                                             </div>
                                         </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </SheetContent>
-            </Sheet>
+                                    </>
+                                )}
 
-            <AddUserDialog 
-                open={isAddUserOpen}
-                onOpenChange={setIsAddUserOpen}
-                onSuccess={fetchUsers}
-                sites={sites}
-                grades={grades}
-            />
+                                <Separator />
+
+                                {/* User Information */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-lg">User Information</h3>
+                                    <div className="space-y-3">
+                                        {selectedUser.grade && (
+                                            <div className="flex items-center">
+                                                <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Grade</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.grade.name}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center">
+                                            <Star className="h-5 w-5 mr-3 text-accent-foreground" />
+                                            <div>
+                                                <p className="text-sm font-medium">Points</p>
+                                                <p className="text-sm text-muted-foreground">{selectedUser.points || 0}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Contact Information */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-lg">Contact Information</h3>
+                                    <div className="space-y-3">
+                                        {selectedUser.email && (
+                                            <div className="flex items-center">
+                                                <Mail className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Email</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedUser.location && (
+                                            <div className="flex items-center">
+                                                <MapPin className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Location</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedUser.location}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedUser.dob && (
+                                            <div className="flex items-center">
+                                                <Calendar className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Date of Birth</p>
+                                                    <p className="text-sm text-muted-foreground">{formatDate(selectedUser.dob)}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Employee Information */}
+                                {selectedUser.employee && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg">Employment Information</h3>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center">
+                                                    <UserCircle className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Employee ID</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.employeeId}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Briefcase className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Position</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.position}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Building2 className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Department</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.department}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Building className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Office</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.office}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Clock className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Contract Type</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.contractType}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Calendar className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Hire Date</p>
+                                                        <p className="text-sm text-muted-foreground">{formatDate(selectedUser.employee.hireDate)}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Site Information */}
+                                {selectedUser.employee?.site && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg">Site Information</h3>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center">
+                                                    <Building className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Site Name</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.site.name}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Clock className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Opening Hours</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.site.openHours}</p>
+                                                    </div>
+                                                </div>
+                                                {selectedUser.employee.site.description && (
+                                                    <div>
+                                                        <p className="text-sm font-medium mb-1">Description</p>
+                                                        <p className="text-sm text-muted-foreground">{selectedUser.employee.site.description}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Social Media */}
+                                {(selectedUser.urls?.x || selectedUser.urls?.linkedin) && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg">Social Media</h3>
+                                            <div className="space-y-3">
+                                                {selectedUser.urls?.x && (
+                                                    <div className="flex items-center">
+                                                        <Twitter className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                        <div>
+                                                            <p className="text-sm font-medium">Twitter</p>
+                                                            <p className="text-sm text-muted-foreground">@{selectedUser.urls.x}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {selectedUser.urls?.linkedin && (
+                                                    <div className="flex items-center">
+                                                        <Linkedin className="h-5 w-5 mr-3 text-accent-foreground" />
+                                                        <div>
+                                                            <p className="text-sm font-medium">LinkedIn</p>
+                                                            <p className="text-sm text-muted-foreground">in/{selectedUser.urls.linkedin}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                            </div>
+                        )}
+                    </SheetContent>
+                </Sheet>
+
+                <AddUserDialog 
+                    open={isAddUserOpen}
+                    onOpenChange={setIsAddUserOpen}
+                    onSuccess={fetchUsers}
+                    sites={sites}
+                    grades={grades}
+                />
+            </div>
         </>
     )
 }

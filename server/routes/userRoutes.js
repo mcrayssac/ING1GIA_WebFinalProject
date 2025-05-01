@@ -668,4 +668,130 @@ router.get('/unlinked-employees', verifyToken, isAdmin, async (req, res) => {
     }
 });
 
+// Get single user
+router.get('/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            })
+            .select('-password -__v');
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Convert to plain object and handle special fields
+        const userData = user.toObject();
+        
+        if (userData.urls && userData.urls instanceof Map) {
+            userData.urls = Object.fromEntries(userData.urls);
+        }
+
+        if (userData.photo && userData.photo.data && userData.photo.contentType) {
+            userData.photo = bufferToDataURL(userData.photo.data, userData.photo.contentType);
+        }
+
+        res.json(userData);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to fetch user" });
+    }
+});
+
+// Update user information
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const { username, email, location, grade, bio, urls, dob, points, photo } = req.body;
+        
+        const updateData = {
+            username,
+            email,
+            location,
+            grade,
+            bio,
+            urls,
+            dob,
+            points
+        };
+
+        // Handle photo update
+        if (photo) {
+            const photoData = dataURLToBuffer(photo);
+            if (photoData) {
+                updateData.photo = {
+                    data: photoData.buffer,
+                    contentType: photoData.contentType
+                };
+            }
+        } else {
+            updateData.photo = null;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        )
+        .populate('grade')
+        .populate({
+            path: 'employee',
+            populate: {
+                path: 'site'
+            }
+        });
+
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Convert the updated user's photo back to data URL for response
+        const responseData = updatedUser.toObject();
+        if (responseData.photo && responseData.photo.data) {
+            responseData.photo = bufferToDataURL(responseData.photo.data, responseData.photo.contentType);
+        }
+
+        res.json(responseData);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to update user" });
+    }
+});
+
+// Update employee information
+router.put('/:id/employee', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (!user.employee) {
+            // Create new employee if it doesn't exist
+            const employee = new Employee(req.body);
+            await employee.save();
+            user.employee = employee._id;
+            await user.save();
+        } else {
+            // Update existing employee
+            await Employee.findByIdAndUpdate(user.employee, req.body);
+        }
+
+        const updatedUser = await User.findById(req.params.id)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            });
+
+        res.json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to update employee information" });
+    }
+});
+
 module.exports = router;
