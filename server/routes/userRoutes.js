@@ -3,7 +3,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Grade = require('../models/Grade');
+const Employee = require('../models/Employee');
 const router = express.Router();
+
 const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
 
 // Helper to convert data URL to Buffer and extract content type
@@ -424,6 +426,245 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
             return res.status(400).json({ error: "Invalid user ID format" });
         }
         res.status(500).json({ error: error.message || "Failed to delete user" });
+    }
+});
+
+/**
+ * @route POST /.../users/create-with-existing-employee
+ * @desc Creates a new user and links it to an existing employee
+ * @access Private (admin only)
+ */
+router.post('/create-with-existing-employee', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const { 
+            username, 
+            email, 
+            password,
+            admin = false,
+            location,
+            bio,
+            grade,
+            employeeId 
+        } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !password || !employeeId) {
+            return res.status(400).json({ 
+                error: "Missing required fields",
+                details: "Username, email, password, and employee ID are required"
+            });
+        }
+
+        // Verify employee exists and isn't already linked
+        const employee = await Employee.findById(employeeId).populate('site');
+        if (!employee) {
+            return res.status(404).json({
+                error: "Employee not found",
+                details: "The specified employee does not exist"
+            });
+        }
+
+        const existingUser = await User.findOne({ employee: employeeId });
+        if (existingUser) {
+            return res.status(409).json({
+                error: "Employee already linked",
+                details: "This employee is already linked to a user account"
+            });
+        }
+
+        // Create the user
+        try {
+            const selectedGrade = grade ? 
+                await Grade.findById(grade) : 
+                await Grade.findOne({ name: "Apprentice" });
+
+            if (grade && !selectedGrade) {
+                throw new Error("Invalid grade selected");
+            }
+            
+            const user = new User({
+                username,
+                email,
+                password,
+                admin,
+                location,
+                bio,
+                employee: employee._id,
+                grade: selectedGrade ? selectedGrade._id : null
+            });
+            
+            await user.save();
+
+            // Fetch the complete user data with populated fields
+            const createdUser = await User.findById(user._id)
+                .populate('grade')
+                .populate({
+                    path: 'employee',
+                    populate: {
+                        path: 'site'
+                    }
+                });
+
+            res.status(201).json(createdUser);
+        } catch (err) {
+            if (err.code === 11000) {
+                // Duplicate key error
+                const field = Object.keys(err.keyPattern)[0];
+                return res.status(409).json({
+                    error: "Duplicate user data",
+                    details: `A user with this ${field} already exists`,
+                    field
+                });
+            }
+            throw err;
+        }
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Failed to create user",
+            details: error.message,
+            code: error.code
+        });
+    }
+});
+
+/**
+ * @route POST /.../users/create-with-employee
+ * @desc Creates a new user along with their employee record
+ * @access Private (admin only)
+ */
+router.post('/create-with-employee', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const { 
+            // User data
+            username, 
+            email, 
+            password,
+            admin = false,
+            location,
+            bio,
+            grade,
+            // Employee data
+            employeeId,
+            department,
+            position,
+            office,
+            contractType,
+            site,
+            hireDate 
+        } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !password || !employeeId || !department || !position || !office || !site) {
+            return res.status(400).json({ 
+                error: "Missing required fields",
+                details: "All fields are required except hire date"
+            });
+        }
+
+        // Create employee first
+        let employee;
+        try {
+            employee = new Employee({
+                employeeId,
+                email,
+                department,
+                position,
+                office,
+                contractType,
+                site,
+                hireDate: hireDate || new Date()
+            });
+            await employee.save();
+        } catch (err) {
+            // Handle employee-specific errors
+            if (err.code === 11000) {
+                // Duplicate key error
+                const field = Object.keys(err.keyPattern)[0];
+                return res.status(409).json({
+                    error: "Duplicate employee data",
+                    details: `An employee with this ${field} already exists`,
+                    field
+                });
+            }
+            throw err;
+        }
+
+        // Then create the user
+        try {
+            const selectedGrade = grade ? 
+                await Grade.findById(grade) : 
+                await Grade.findOne({ name: "Apprentice" });
+
+            if (grade && !selectedGrade) {
+                throw new Error("Invalid grade selected");
+            }
+            
+            const user = new User({
+                username,
+                email,
+                password,
+                admin,
+                location,
+                bio,
+                employee: employee._id,
+                grade: selectedGrade ? selectedGrade._id : null
+            });
+            
+            await user.save();
+
+            // Fetch the complete user data with populated fields
+            const createdUser = await User.findById(user._id)
+                .populate('grade')
+                .populate({
+                    path: 'employee',
+                    populate: {
+                        path: 'site'
+                    }
+                });
+
+            res.status(201).json(createdUser);
+        } catch (err) {
+            // If user creation fails, delete the employee
+            await Employee.findByIdAndDelete(employee._id);
+
+            if (err.code === 11000) {
+                // Duplicate key error
+                const field = Object.keys(err.keyPattern)[0];
+                return res.status(409).json({
+                    error: "Duplicate user data",
+                    details: `A user with this ${field} already exists`,
+                    field
+                });
+            }
+            throw err;
+        }
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Failed to create user and employee",
+            details: error.message,
+            code: error.code
+        });
+    }
+});
+
+// Get employees without users
+router.get('/unlinked-employees', verifyToken, isAdmin, async (req, res) => {
+    try {
+        // Find all users and get their employee IDs
+        const users = await User.find({}, 'employee');
+        const linkedEmployeeIds = users.map(user => user.employee).filter(id => id);
+
+        // Find employees that are not linked to any user
+        const unlinkedEmployees = await Employee.find({
+            _id: { $nin: linkedEmployeeIds }
+        }).populate('site');
+
+        res.json(unlinkedEmployees);
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Failed to fetch unlinked employees",
+            details: error.message
+        });
     }
 });
 

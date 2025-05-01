@@ -169,6 +169,7 @@ export default function ResetPasswordPage() {
                                                     />
                                                     <button
                                                         type="button"
+                                                        data-action="close-overlay"
                                                         onClick={() => setShowPassword(!showPassword)}
                                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                                     >
@@ -194,6 +195,7 @@ export default function ResetPasswordPage() {
                                                     />
                                                     <button
                                                         type="button"
+                                                        data-action="close-overlay"
                                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                                     >
@@ -204,8 +206,8 @@ export default function ResetPasswordPage() {
 
                                             {/* Password Requirements */}
                                             <div className="space-y-2 bg-muted p-3 rounded-md">
-                                                <p className="text-sm font-medium flex items-center">
-                                                    <ShieldCheck className="h-4 w-4 mr-2 text-muted-foreground" />
+                                                <p className="text-sm font-medium flex items-center text-primary">
+                                                    <ShieldCheck className="h-4 w-4 mr-2 text-primary" />
                                                     Password Requirements
                                                 </p>
                                                 <ul className="space-y-1 text-xs">

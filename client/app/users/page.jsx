@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useForm } from "react-hook-form"
-import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield, Briefcase, Building2, Building, Clock } from "lucide-react"
+import { Search, Users, Filter, X, UserCircle, Mail, MapPin, Calendar, Twitter, Linkedin, Loader2, Shield, Briefcase, Building2, Building, Clock, Plus, UserPlus } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { useRouter } from "next/navigation"
+import { AddUserDialog } from "@/components/add-user-dialog"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +33,9 @@ export default function UserSearchPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [sortOption, setSortOption] = useState("username")
     const [filterGrade, setFilterGrade] = useState("all")
-    const [grades, setGrades] = useState([])
+    const [grades, setGrades] = useState([]);
+    const [sites, setSites] = useState([]);
+    const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
     const { register, watch, reset } = useForm({
         defaultValues: {
@@ -121,6 +124,21 @@ export default function UserSearchPage() {
         }
     }, [toastError])
 
+    const fetchSites = useCallback(async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`, {
+                method: "GET",
+                credentials: "include",
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+            setSites(data);
+        } catch (err) {
+            console.error("Error fetching sites:", err);
+            toastError("Error fetching sites. Please try again.");
+        }
+    }, [toastError]);
+
     // Authentication effect
     useEffect(() => {
         if (user === false) {
@@ -130,8 +148,9 @@ export default function UserSearchPage() {
         if (user) {
             fetchUsers()
             fetchGrades()
+            fetchSites()
         }
-    }, [user, router, fetchUsers, fetchGrades])
+    }, [user, router, fetchUsers, fetchGrades, fetchSites])
 
     // Filter effect
     useEffect(() => {
@@ -190,9 +209,22 @@ export default function UserSearchPage() {
     return (
         <>
             <div className="container mt-8 mx-auto px-4 py-8">
-                <div className="flex items-center space-x-4">
-                    <Users className="w-8 h-8" />
-                    <h1 className="text-4xl font-black font-mono text-start">Users</h1>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Users className="w-8 h-8" />
+                        <h1 className="text-4xl font-black font-mono text-start">Users</h1>
+                    </div>
+                    {user?.admin && (
+                        <Button 
+                            variant="default" 
+                            className="flex items-center gap-2"
+                            onClick={() => setIsAddUserOpen(true)}
+                            data-action="close-overlay"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Add User
+                        </Button>
+                    )}
                 </div>
 
                 {/* Search and Filter Section */}
@@ -609,6 +641,14 @@ export default function UserSearchPage() {
                     )}
                 </SheetContent>
             </Sheet>
+
+            <AddUserDialog 
+                open={isAddUserOpen}
+                onOpenChange={setIsAddUserOpen}
+                onSuccess={fetchUsers}
+                sites={sites}
+                grades={grades}
+            />
         </>
     )
 }

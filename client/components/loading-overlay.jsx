@@ -6,6 +6,19 @@ import { Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+/**
+ * A loading overlay component that appears during navigation.
+ * 
+ * To bypass the loading overlay for specific buttons or links:
+ * - Add data-action="close-overlay" attribute to the element
+ * 
+ * Example:
+ * ```jsx
+ * <Button data-action="close-overlay" onClick={() => {}}>
+ *   No Loading Overlay
+ * </Button>
+ * ```
+ */
 export function LoadingOverlay() {
     const pathname = usePathname()
     const [show, setShow] = useState(false)
