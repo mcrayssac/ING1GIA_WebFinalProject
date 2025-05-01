@@ -479,26 +479,42 @@ const employees = [
         employeeId: 'EMP001',
         email: 'alice.smith@example.com',
         department: 'Engineering',
-        position: 'Software Engineer'
+        position: 'Software Engineer',
+        office: 'SpaceY Headquarters',
+        hireDate: new Date('2022-01-15'),
+        contractType: 'Full-time',
+        site: null
     },
     {
         employeeId: 'EMP002',
         email: 'bob.johnson@example.com',
         department: 'Human Resources',
-        position: 'HR Manager'
+        position: 'HR Manager',
+        office: 'SpaceY Washington Office',
+        hireDate: new Date('2021-06-01'),
+        contractType: 'Full-time',
+        site: null
     },
     {
         employeeId: 'EMP003',
         email: 'charlie.brown@example.com',
         department: 'Marketing',
-        position: 'Content Strategist'
+        position: 'Content Strategist',
+        office: 'SpaceY Pacific Office',
+        hireDate: new Date('2023-03-10'),
+        contractType: 'Contract',
+        site: null
     },
     {
         employeeId: 'EMP004',
         email: 'forest.beryl8045@eagereverest.com',
         department: 'Engineering',
-        position: 'Junior Data Scientist'
-    },
+        position: 'Junior Data Scientist',
+        office: 'SpaceY Redmond Office',
+        hireDate: new Date('2024-01-05'),
+        contractType: 'Intern',
+        site: null
+    }
 ];
 
 const grades = [
