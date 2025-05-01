@@ -67,9 +67,10 @@ export function AppSidebar({ ...props }) {
                         <NavMain object={navGuest} />
 
                         {/* User Navigation when logged in */}
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait">
                             {user && (
                                 <motion.div
+                                    key="user-nav"
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: "auto" }}
                                     exit={{ opacity: 0, height: 0 }}
@@ -81,6 +82,7 @@ export function AppSidebar({ ...props }) {
                             {/* Admin Navigation for admin users */}
                             {user?.admin && (
                                 <motion.div
+                                    key="admin-nav"
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: "auto" }}
                                     exit={{ opacity: 0, height: 0 }}
