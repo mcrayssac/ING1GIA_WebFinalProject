@@ -1,215 +1,161 @@
-"use client";
+const express = require("express");
+const router = express.Router();
+const Machine = require("../models/Machines");
+const User = require("../models/User");
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, Legend,
-  CartesianGrid, ResponsiveContainer, Brush,
-} from "recharts";
-import { Button } from "@/components/ui/button";
-import Loading from "@/components/loading";
-import Alert   from "@/components/alert";
-import { addDays, format } from "date-fns";
-import { fr } from "date-fns/locale";
+// ---------------------------------------------------------------------------
+// GET /api/machines
+// Query-params éventuels :
+//   • search         → filtre "name contains" (insensible à la casse)
+//   • status         → 'available' | 'in-use' | 'blocked'
+//   • requiredGrade  → string exact (ex. 'Technician')
+// ---------------------------------------------------------------------------
+router.get("/", async (req, res, next) => {
+  try {
+    const { search, status, requiredGrade } = req.query;
 
-const COLORS     = ["#00a6fb", "#0077b6", "#00b4d8"];
-const STEP_SEC   = 10;                    // 1 point / 10 s
-const DAY_POINTS = 86_400 / STEP_SEC;     // 8 640
+    const filter = {};
+    if (search)        filter.name          = { $regex: search, $options: "i" };
+    if (status)        filter.status        = status;
+    if (requiredGrade) filter.requiredGrade = requiredGrade;
 
-export default function SensorGraphPage() {
-  const { id: machineId, sensorId } = useParams();
-  const router = useRouter();
+    const machines = await Machine.find(filter);
+    // (Pas de .populate ici puisque ton front récupère sensors/sites à part)
 
-  const [machine, setMachine]   = useState(null);
-  const [sensors, setSensors]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error,   setError]     = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [chartData, setChartData]       = useState([]);
-  const [userColors, setUserColors]     = useState({});
-  const [view, setView] = useState({ start: 0, end: DAY_POINTS - 1 });
+    res.json(machines);
+  } catch (err) {
+    next(err);
+  }
+});
 
-  /* ------------ fetch machine + sensors ------------ */
-  useEffect(() => {
-    (async () => {
-      try {
-        const [mRes, sRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`),
-          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
-        ]);
-        if (!mRes.ok) throw new Error("Machine introuvable");
-        const [mData, sData] = await Promise.all([mRes.json(), sRes.json()]);
-        setMachine(mData);
-        setSensors(sData);
-      } catch (e) { setError(e.message); }
-      finally     { setLoading(false); }
-    })();
-  }, [machineId]);
+// ---------------------------------------------------------------------------
+// GET /api/machines/:id
+// Renvoie la fiche machine complète
+// ---------------------------------------------------------------------------
+router.get("/:id", async (req, res, next) => {
+  try {
+    const machine = await Machine.findById(req.params.id)
+      // On peuple les capteurs et les sites pour avoir leurs infos si besoin.
+      // La page front ne garde que les _id, mais si un jour tu veux afficher
+      // les noms directement, c’est déjà prêt.
+      .populate("availableSensors")
+      .populate("sites");
 
-  /* ------------ construit dataset ------------ */
-  useEffect(() => {
-    console.log("effet déclenché");          
-    if (!machine || sensors.length === 0) return;
-    console.log("machine et capteurs OK");
-    const sensor = sensors.find(s => s._id.toString() === sensorId);
-    if (!sensor) { setError("Capteur non trouvé"); return; }
+    if (!machine)
+      return res.status(404).json({ error: "Machine not found" });
 
-    const designation = sensor.designation;
+    res.json(machine);
+  } catch (err) {
+    next(err);
+  }
+});
 
-    const dayStartUTC = Date.UTC(
-      selectedDate.getUTCFullYear(),
-      selectedDate.getUTCMonth(),
-      selectedDate.getUTCDate()
-    );
 
-    const dayRec = machine.usageStats?.find(
-      d => new Date(d.day).getTime() === dayStartUTC
-    );
-    console.log("sensorId =", sensorId);
-    console.log("designation =", designation);
-    console.log(
-      "disponibles :",
-      dayRec?.sensorData ? Object.keys(dayRec.sensorData) : "aucune"
-    );
-  
-    if (!dayRec || !dayRec.sensorData?.[designation]) {
-      setChartData([]); return;
-    }
+// Route : lancer un cycle sur une machine
+router.post("/:id/start-cycle", async (req, res) => {
+  const userId = "68147b03df5b3fd0e59b63c0"; // user de test (codé en dur)
+  const machineId = req.params.id;
 
-    /* ---- met les valeurs dans des « bacs » de 10 s ---- */
-    const byUser = {};  // {id -> Map(label -> value)}
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (user.hasActiveCycle)
+      return res.status(400).json({ error: "User already in active cycle" });
 
-    dayRec.sensorData[designation].forEach(({ timestamp, value, user }) => {
-      const t = new Date(timestamp);
-      const alignedSec = Math.floor(t.getUTCSeconds() / STEP_SEC) * STEP_SEC;
-      const bucketUTC  = Date.UTC(
-        t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(),
-        t.getUTCHours(), t.getUTCMinutes(), alignedSec
-      );
-      const label = new Date(bucketUTC).toISOString().slice(11, 19); // HH:MM:SS
-      const uid   = typeof user === "string"
-        ? user
-        : (user?.username ?? user?.name ?? user?._id ?? "inconnu");
-      (byUser[uid] ??= new Map()).set(label, value);
-    });
+    const machine = await Machine.findById(machineId).populate("availableSensors");
+    if (!machine) return res.status(404).json({ error: "Machine not found" });
 
-    /* ---- ticks de la journée ---- */
-    const labels = Array.from({ length: DAY_POINTS }, (_, i) =>
-      new Date(dayStartUTC + i * STEP_SEC * 1e3)
-        .toISOString()
-        .slice(11, 19)
-    );
+    if (machine.currentUsers.length >= machine.maxUsers)
+      return res.status(400).json({ error: "Machine has reached max users" });
 
-    const dataset = labels.map(time => {
-      const row = { time };
-      for (const u of Object.keys(byUser)) {
-        row[u] = byUser[u].get(time) ?? 0;
-      }
-      return row;
-    });
+    // 1. Marquer l'utilisateur comme actif
+    user.hasActiveCycle = true;
+    user.points += machine.pointsPerCycle;
+    await user.save();
 
-    /* ---- palette & couleurs ---- */
-    const palette = {};
-    Object.keys(byUser).forEach((u, i) => palette[u] = COLORS[i % COLORS.length]);
+    // 2. Ajouter le user à la machine
+    machine.currentUsers.push(user._id);
 
-    setChartData(dataset);
-    setUserColors(palette);
-
-    /* ---- calcul de la plage contenant des données ---- */
-    const firstIdx = dataset.findIndex(r =>
-      Object.keys(r).some(k => k !== "time" && r[k] !== 0)
-    );
-    const lastIdx = dataset.length - 1 - [...dataset].reverse().findIndex(r =>
-      Object.keys(r).some(k => k !== "time" && r[k] !== 0)
-    );
-    if (firstIdx !== -1) {
-      const margin = 5;                              // 5 ticks de marge visuelle
-      setView({
-        start: Math.max(0, firstIdx - margin),
-        end:   Math.min(dataset.length - 1, lastIdx + margin),
-      });
+    // 3. Déterminer le nouveau statut
+    if (machine.currentUsers.length >= machine.maxUsers) {
+      machine.status = "blocked";
     } else {
-      setView({ start: 0, end: dataset.length - 1 }); // pas de données
+      machine.status = "in-use";
     }
-  }, [machine, sensors, sensorId, selectedDate]);
 
-  /* ------------ zoom molette ------------ */
-  const handleWheel = e => {
-    if (!chartData.length) return;
-    e.preventDefault();
+    // 4. Ajouter une période d'utilisation
+    const now = new Date();
+    const end = new Date(now.getTime() + 60 * 60 * 1000); // +1h
 
-    const span  = view.end - view.start;
-    const step  = Math.max(1, Math.round(span * 0.1));
-    const dir   = e.deltaY < 0 ? 1 : -1;       // up = zoom in
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let usageEntry = machine.usageStats.find(
+      (entry) => entry.day.getTime() === today.getTime()
+    );
 
-    let start = view.start + dir * step;
-    let end   = view.end   - dir * step;
+    if (!usageEntry) {
+      usageEntry = { day: today, sensorData: {}, usagePeriods: [] };
+      machine.usageStats.push(usageEntry);
+    }
 
-    start = Math.max(0, start);
-    end   = Math.min(chartData.length - 1, end);
-    if (end - start < 10) return;
+    usageEntry.usagePeriods.push({
+      user: user._id,
+      startTime: now,
+      endTime: end,
+    });
 
-    setView({ start, end });
-  };
+    await machine.save();
 
-  const changeDate = d => setSelectedDate(prev => addDays(prev, d));
+    // Note : génération de données fictives via script séparé ou cron
+    // Vous pouvez appeler ici un script ou enregistrer un événement à traiter via queue ou worker
 
-  /* ------------ render ------------ */
-  if (loading) return <Loading />;
-  if (error)
-    return <Alert type="error" message={error}
-                  onClose={() => router.push(`/machines/${machineId}`)} />;
+    return res.status(200).json({
+      success: true,
+      message: "Cycle démarré avec succès",
+      pointsAdded: machine.pointsPerCycle,
+      cycleEndsAt: end,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+});
 
-  const sensor = sensors.find(s => s._id.toString() === sensorId);
+// ---------------------------------------------------------------------------
+// GET /api/machines/:id/sensors/:sensorId
+// Renvoie la machine + le capteur demandé + stats complètes
+// ---------------------------------------------------------------------------
+router.get("/:id/:sensorId", async (req, res, next) => {
+  try {
+    const { id: machineId, sensorId } = req.params;
 
-  return (
-    <div className="container mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold mb-1">
-        Données capteur&nbsp;: {sensor?.designation}
-      </h1>
-      <p className="text-gray-600 mb-6">Machine&nbsp;: {machine.name}</p>
+    // 1) Machine avec capteurs peuplés
+    const machine = await Machine.findById(machineId)
+      .populate("availableSensors");
+    if (!machine)
+      return res.status(404).json({ error: "Machine not found" });
 
-      {/* navigation date */}
-      <div className="flex items-center justify-center gap-4 mb-6">
-        <Button size="sm" onClick={() => changeDate(-1)}>&larr;</Button>
-        <div className="text-lg font-semibold">
-          {format(selectedDate, "d MMMM yyyy", { locale: fr })}
-        </div>
-        <Button size="sm" onClick={() => changeDate(1)}>&rarr;</Button>
-      </div>
+    // 2) Capteur présent sur la machine ?
+    const sensor = machine.availableSensors.find(
+      (s) => s._id.toString() === sensorId
+    );
+    if (!sensor)
+      return res
+        .status(404)
+        .json({ error: "Sensor not found on this machine" });
 
-      {chartData.length === 0 ? (
-        <p className="text-center text-gray-500">Aucune donnée pour ce jour</p>
-      ) : (
-        <ResponsiveContainer width="100%" height={460}>
-          <LineChart data={chartData} onWheel={handleWheel}>
-            <CartesianGrid strokeDasharray="3 3" />
+    // 3) Réponse
+    res.json({
+      machineId,
+      sensor,
+      usageStats: machine.usageStats,   // le front filtrera la journée voulue
+      totalCycles: machine.totalCycles,
+      status: machine.status,
+      maxUsers: machine.maxUsers,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
-            <XAxis dataKey="time"
-                   interval={(3600 / STEP_SEC) - 1} />
-            <YAxis allowDecimals={false} />
 
-            <Tooltip
-              formatter={(v, u) => [`${v}`, `Utilisateur ${u}`]}
-              labelFormatter={l => `UTC : ${l}`} />
-            <Legend />
-
-            {Object.keys(chartData[0]).filter(k => k !== "time").map(u => (
-              <Line key={u} dataKey={u} type="monotone"
-                    stroke={userColors[u]}
-                    dot={{ r: 2 }} /* petit point sur chaque valeur > 0 */
-              />
-            ))}
-
-            <Brush dataKey="time"
-                   startIndex={view.start}
-                   endIndex={view.end}
-                   onChange={({ startIndex, endIndex }) =>
-                     setView({ start: startIndex, end: endIndex })}
-                   height={30} stroke="#8884d8" travellerWidth={10} />
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-    </div>
-  );
-}
+module.exports = router;

@@ -20,15 +20,7 @@ const userSchema = new mongoose.Schema({
     photo: { data: Buffer, contentType: String },
     points: { type: Number, default: 0 },
     hasActiveCycle: { type: Boolean, default: false },
-    /*
-    employee: {                        
-        type: mongoose.Schema.Types.ObjectId,
-        ref: process.env.MONGO_Collection_Employee,
-        required: true
-    },
-    
-    grade: { type: mongoose.Schema.Types.ObjectId, ref: process.env.MONGO_Collection_Grade, required: false }
-    */
+
 });
 
 userSchema.pre('save', async function (next) {
