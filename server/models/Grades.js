@@ -21,4 +21,4 @@ const gradeSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Grades', gradeSchema, process.env.MONGO_Collection_Grade || 'Grades');
+module.exports= mongoose.model( process.env.MONGO_Collection_Grade,gradeSchema);

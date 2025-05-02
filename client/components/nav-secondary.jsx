@@ -17,10 +17,13 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useRouter } from "next/navigation"
 
 import { themes } from "@/data/data";
 
 export function NavSecondary({ items, ...props }) {
+    const router = useRouter();
+
     // State for the current theme
     const currentDate = new Date();
     const themeFromCookie = Cookies.get("theme") || (currentDate.getHours() >= 18 || currentDate.getHours() < 8 ? "dark" : "light");
@@ -50,10 +53,10 @@ export function NavSecondary({ items, ...props }) {
                         return (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild size="sm">
-                                    <a href={item.url}>
+                                    <button data-navigation="true" onClick={() => { window.location.href = item.url; }}>
                                         {Icon && <Icon />}
                                         <span>{item.title}</span>
-                                    </a>
+                                    </button>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         )
@@ -64,11 +67,12 @@ export function NavSecondary({ items, ...props }) {
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild size="sm">
                                 <a
-                                    href="#"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         handleThemeChange(currentTheme === "light" ? "dark" : "light");
-                                    }}>
+                                    }}
+                                    className="link link-hover"
+                                >
                                     <Icons.Palette />
                                     <span>Themes</span>
                                     <span className="ml-auto flex items-center text-xs text-secondary">
@@ -93,12 +97,11 @@ export function NavSecondary({ items, ...props }) {
                                             <SidebarMenuSubItem key={theme.value}>
                                                 <SidebarMenuSubButton asChild>
                                                     <a
-                                                        href="#"
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             handleThemeChange(theme.value);
                                                         }}
-                                                        className="text-primary"
+                                                        className="text-primary link link-hover"
                                                     >
                                                         {Icon && <Icon style={{ color: "oklch(var(--p))" }} />}
                                                         <span>{theme.name}</span>

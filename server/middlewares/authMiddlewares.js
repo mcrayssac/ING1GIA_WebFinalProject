@@ -13,14 +13,14 @@ const authenticateUser = async (req, res, next) => {
 
     // Check if Authorization header is present
     if (!authHeader || !authHeader.startsWith('Basic ')) {
-      return res.status(401).send('Basic authentication required');
+        return res.status(401).send('Basic authentication required');
     }
 
     // Decode base64 credentials
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [username, password] = credentials.split(':');
-  
+
     try {
         // Find user by username
         const user = await User.findOne({ username });
@@ -38,28 +38,60 @@ const authenticateUser = async (req, res, next) => {
         res.status(500).send(error.message);
     }
 };
-  
+
 // JWT Authentication Middleware
 const verifyToken = (req, res, next) => {
-    // Get token from Authorization header
-    const token = req.headers['authorization'];
-    // console.log("Token : ", token);
+    const token = req.cookies.token;
+    const refreshToken = req.cookies.refreshToken;
+    // console.log('Token:', token);
+    // console.log('Refresh Token:', refreshToken);
 
-    // Check if token is present
-    if (!token) return res.status(401).send('Token required');
-  
-    // Verify token
-    jwt.verify(token.split(' ')[1], process.env.JWT_SECRET, (err, user) => {
-        // If token is invalid, return 403
-        if (err) {
-            console.log(warning('Access denied'));
+    if (!token) return res.status(401).send('Access token missing');
+
+    jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+        if (err && err.name === 'TokenExpiredError') {
+            // Try refreshing token
+            if (!refreshToken) return res.status(401).send('Refresh token missing');
+
+            jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, decoded) => {
+                if (err) {
+                    console.log(warning('Refresh token invalid'));
+                    return res.status(403).send('Invalid refresh token');
+                }
+
+                try {
+                    const userFromDb = await User.findById(decoded._id);
+                    if (!userFromDb) return res.status(403).send('User not found');
+
+                    // Generate new access token
+                    const newAccessToken = jwt.sign({ _id: userFromDb._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+                    res.cookie('token', newAccessToken, {
+                        httpOnly: true,
+                        sameSite: 'Lax',
+                        secure: false,
+                        maxAge: 15 * 60 * 1000
+                    });
+
+                    console.log(success('Access token refreshed'));
+                    req.user = userFromDb;
+                    next();
+                } catch (err) {
+                    res.status(500).send('Token refresh failed');
+                }
+            });
+        } else if (err) {
             return res.status(403).send('Invalid token');
+        } else {
+            try {
+                // Fetch user from database to get complete user data including admin status
+                const userFromDb = await User.findById(user._id);
+                if (!userFromDb) return res.status(403).send('User not found');
+                req.user = userFromDb;
+                next();
+            } catch (err) {
+                res.status(500).send('Error fetching user data');
+            }
         }
-
-        // If token is valid, log success and call next middleware
-        console.log(success('Access granted'));
-        req.user = user;
-        next();
     });
 };
 

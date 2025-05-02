@@ -139,7 +139,7 @@ export default function NewsPage() {
                                         <div
                                             key={item._id}
                                             className="card shadow-xl bg-base-100 text-base-content cursor-pointer"
-                                            onClick={() => router.push(`/news/${item._id}`)}
+                                            onClick={() => router.push(`/newsDetail/${item._id}`)}
                                         >
 
                                                 <figure className="aspect-[3/2] w-full">

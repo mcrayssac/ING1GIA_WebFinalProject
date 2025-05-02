@@ -1,79 +1,109 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
-import Cookies from "js-cookie";
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 
-import { navMain, navSecondary, projects } from "@/data/data";
+import { navGuest, navUser, navAdmin, navSecondary } from "@/data/data";
+import { useUser } from "@/contexts/UserContext";
+
+const sidebarVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            duration: 0.4,
+            when: "beforeChildren",
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 }
+};
 
 export function AppSidebar({ ...props }) {
-    // Local state for the user object
-    const [user, setUser] = useState(null);
-
-    // Fetch the user info on mount
-    useEffect(() => {
-        // Get the token from cookies
-        const token = Cookies.get("token");
-        if (token) {
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users/infos`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                },
-            })
-                .then((response) => {
-                    if (!response.ok) throw new Error("Failed to fetch user info");
-                    return response.json();
-                })
-                .then((data) => {
-                    // Construct the user object with fetched data
-                    setUser({
-                        name: data.username,
-                        avatar: "favicon.ico",
-                        admin: data.admin,
-                    });
-                })
-                .catch((err) => {
-                    console.error("Error fetching user info:", err);
-                    setUser(null);
-                });
-        }
-    }, []);
+    const { user } = useUser();
 
     return (
-        (<Sidebar
-            className="top-[--header-height] !h-[calc(100svh-var(--header-height))]"
-            {...props}>
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <a>
-                                <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <img src="/pictures/spacey_logo.png" alt="SpaceX" className="rounded-lg" />
-                                </div>
-                                <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold">SpaceY</span>
-                                    <span className="truncate text-xs">Exploration company</span>
-                                </div>
-                            </a>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
-            <SidebarContent>
-                <NavMain object={navMain} />
-                <NavProjects projects={projects} />
-                <NavSecondary items={navSecondary} className="mt-auto" />
-            </SidebarContent>
-            <SidebarFooter>
-                <NavUser user={user} />
-            </SidebarFooter>
-        </Sidebar>)
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={sidebarVariants}
+        >
+            <Sidebar
+                className="top-[--header-height] !h-[calc(100svh-var(--header-height))]"
+                {...props}>
+                <SidebarHeader>
+                    <SidebarMenu>
+                        <motion.div variants={itemVariants}>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton size="lg" asChild>
+                                    <a>
+                                        <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
+                                            <img src="/pictures/spacey_logo.png" alt="SpaceX" className="rounded-lg" />
+                                        </div>
+                                        <div className="grid flex-1 text-left text-sm leading-tight">
+                                            <span className="truncate font-semibold">SpaceY</span>
+                                            <span className="truncate text-xs">Exploration company</span>
+                                        </div>
+                                    </a>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </motion.div>
+                    </SidebarMenu>
+                </SidebarHeader>
+                <SidebarContent>
+                    <div className="flex flex-col h-full">
+                        <motion.div variants={itemVariants} className="space-y-4">
+                            {/* Main Navigation - always visible */}
+                            <NavMain object={navGuest} />
+
+                            {/* User Navigation when logged in */}
+                            <AnimatePresence mode="wait">
+                                {user && (
+                                    <motion.div
+                                        key="user-nav"
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                    >
+                                        <NavMain object={navUser} />
+                                    </motion.div>
+                                )}
+
+                                {/* Admin Navigation for admin users */}
+                                {user?.admin && (
+                                    <motion.div
+                                        key="admin-nav"
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                    >
+                                        <NavMain object={navAdmin} />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="mt-auto">
+                            <NavSecondary items={navSecondary} />
+                        </motion.div>
+                    </div>
+                </SidebarContent>
+                <motion.div variants={itemVariants}>
+                    <SidebarFooter>
+                        <NavUser />
+                    </SidebarFooter>
+                </motion.div>
+            </Sidebar>
+        </motion.div>
     );
 }

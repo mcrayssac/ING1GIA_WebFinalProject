@@ -36,8 +36,83 @@ const navMain = {
             url: "/map",
             icon: "Map",
         },
+        {
+            title: "Satellites",
+            url: "/satellites",
+            icon: "Orbit",
+        },
     ],
 };
+
+// Navigation for logged-in users
+const navUser = {
+    title: "User",
+    items: [
+        {
+            title: "Machines",
+            url: "/machines",
+            icon: "Cog",
+        },
+        {
+            title: "Sensors",
+            url: "/sensors",
+            icon: "Activity", 
+        },
+        {
+            title: "Progress",
+            url: "/progress",
+            icon: "Trophy",
+        },
+        {
+            title: "My Tickets",
+            url: "/my-tickets",
+            icon: "Ticket",
+        },
+        {
+            title: "Users",
+            url: "/users",
+            icon: "Users",
+        },
+    ],
+};
+
+// Navigation for admin users
+const navAdmin = {
+    title: "Admin",
+    items: [
+        {
+            title: "Machines",
+            url: "/machines",
+            icon: "Cog",
+            items: [
+                {
+                    title: "Add Machine",
+                    url: "/machinesForm",
+                    icon: "Plus",
+                },
+            ],
+        },
+        {
+            title: "Sensors",
+            url: "/sensors",
+            icon: "Activity",
+            items: [
+                {
+                    title: "Add Sensor",
+                    url: "/sensorsForm",
+                    icon: "Plus",
+                },
+            ],
+        },
+        {
+            title: "Tickets",
+            url: "/tickets",
+            icon: "Ticket",
+        },
+    ],
+};
+
+
 
 const navSecondary = [
     {
