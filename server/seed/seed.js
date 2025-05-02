@@ -9,9 +9,9 @@ const Employee = require('../models/Employee');
 const Grade = require('../models/Grade');
 const User = require('../models/User');
 const News = require('../models/News');
-const Machines = require('../models/Machines'); 
-const Sensors = require('../models/Sensors');
-const { sites, products, statistics, historyEvents, employees, grades, adminUser, testUsers, news,machines, sensors } = require('../data/data');
+const Machine = require('../models/Machine'); 
+const Sensor = require('../models/Sensor');
+const { sites, products, statistics, historyEvents, employees, grades, adminUser, testUsers, news, machines, sensors } = require('../data/data');
 const satellites = require('./satellites');
 
 const MONGO_URI = process.env.MONGO_URI;
@@ -49,10 +49,10 @@ async function seedDatabase() {
             Product.insertMany(products),
             Statistic.insertMany(statistics),
             HistoryEvent.insertMany(historyEvents),
-            Grade.insertMany(grades)
+            Grade.insertMany(grades),
             News.insertMany(news),
-            Machines.insertMany(machines),
-            Sensors.insertMany(sensors)
+            Machine.insertMany(machines),
+            Sensor.insertMany(sensors)
         ]);
         console.log('Seeded basic data');
 

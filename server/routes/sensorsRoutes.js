@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Sensor = require("../models/Sensors");
+const Sensor = require("../models/Sensor");
 
 // GET all sensors
 router.get("/", async (req, res) => {

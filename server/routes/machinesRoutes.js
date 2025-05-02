@@ -1,7 +1,7 @@
 // routes/machines.js - Consolidated machine routes
 const express = require("express");
 const router = express.Router();
-const Machine = require("../models/Machines");
+const Machine = require("../models/Machine");
 
 // Get all machines with filters
 router.get("/", async (req, res) => {

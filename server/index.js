@@ -45,7 +45,7 @@ require('./models/Product');
 require('./models/Statistic');
 require('./models/HistoryEvent');
 require('./models/News');
-require('./models/Machines'); 
+require('./models/Machine'); 
 
 // Track all incoming requests
 app.use((req, res, next) => {
@@ -86,8 +86,6 @@ const statisticRoutes = require('./routes/statisticRoutes');
 app.use('/api/statistics', statisticRoutes);
 const historyEventRoutes = require('./routes/historyEventRoutes');
 app.use('/api/history-events', historyEventRoutes);
-const seedRoutes = require('./routes/seedRoutes');
-app.use('/api/seed', seedRoutes);
 const newsRoutes = require('./routes/newsRoutes');
 app.use('/api/news', newsRoutes);
 const machinesRoutes = require('./routes/machinesRoutes');
