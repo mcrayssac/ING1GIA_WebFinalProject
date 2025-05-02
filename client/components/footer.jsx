@@ -2,33 +2,72 @@
 
 import * as Icons from "lucide-react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 import { navGuest, navUser, navAdmin, navSecondary } from "@/data/data";
 import { useUser } from "@/contexts/UserContext";
+
+const itemVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 }
+};
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
 
 function FooterHeader({ data }) {
     const router = useRouter();
 
     return (
-        <nav>
-            <h6 className="footer-title font-mono text-accent-foreground">{data.title}</h6>
-            {data.items.map((link) => {
-                const Icon = link.icon ? Icons[link.icon] : null;
-                return (
-                    <div key={link.title} className="flex items-center gap-2">
-                        {Icon && <Icon className="w-4 h-4" />}
-                        <a
-                            key={link.url}
-                            onClick={() => router.push(link.url)}
-                            className="link link-hover"
+        <motion.nav
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.h6 
+                className="footer-title font-mono text-accent-foreground"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                {data.title}
+            </motion.h6>
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {data.items.map((link) => {
+                    const Icon = link.icon ? Icons[link.icon] : null;
+                    return (
+                        <motion.div
+                            key={link.title}
+                            variants={itemVariants}
+                            className="flex items-center gap-2"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
-                            {link.title}
-                        </a>
-                    </div>
-                )
-            }
-            )}
-        </nav>
+                            {Icon && <Icon className="w-4 h-4" />}
+                            <a
+                                key={link.url}
+                                data-navigation="true"
+                                onClick={() => router.push(link.url)}
+                                className="link link-hover"
+                            >
+                                {link.title}
+                            </a>
+                        </motion.div>
+                    )
+                })}
+            </motion.div>
+        </motion.nav>
     );
 }
 
@@ -37,7 +76,12 @@ export default function Footer() {
 
     return (
         <div>
-            <footer className={`footer text-base-content p-10 rounded-t-2xl bg-primary text-primary-content shadow-xl`}>
+            <motion.footer
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className={`footer text-base-content p-10 rounded-t-2xl bg-primary text-primary-content shadow-xl`}
+            >
                 {/* Guest navigation - always visible */}
                 <FooterHeader data={navGuest} />
 
@@ -48,12 +92,29 @@ export default function Footer() {
                 {user?.admin && <FooterHeader data={navAdmin} />}
 
                 {/* Secondary navigation */}
-                <nav>
-                    <h6 className="footer-title font-mono text-accent-foreground">Links</h6>
+                <motion.nav
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <motion.h6
+                        className="footer-title font-mono text-accent-foreground"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        Links
+                    </motion.h6>
                     {navSecondary.map((link) => {
                         const Icon = link.icon ? Icons[link.icon] : null;
                         return (
-                            <div key={link.title} className="flex items-center gap-2">
+                            <motion.div
+                                key={link.title}
+                                variants={itemVariants}
+                                className="flex items-center gap-2"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
                                 {Icon && <Icon className="w-4 h-4" />}
                                 <a
                                     href={link.url}
@@ -63,13 +124,23 @@ export default function Footer() {
                                 >
                                     {link.title}
                                 </a>
-                            </div>
+                            </motion.div>
                         );
                     })}
-                </nav>
-            </footer>
-            <footer className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl bg-primary text-primary-content shadow-xl`}>
-                <aside className="grid-flow-col items-center font-mono">
+                </motion.nav>
+            </motion.footer>
+            <motion.footer
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className={`footer text-base-content border-base-300 border-t px-10 py-4 rounded-b-2xl bg-primary text-primary-content shadow-xl`}
+            >
+                <motion.aside
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="grid-flow-col items-center font-mono"
+                >
                     <Icons.Orbit className="w-9 h-9 animate-spin mr-2" style={{ animationDuration: "10s" }} />
                     <p>
                         SpaceY Company
@@ -78,9 +149,19 @@ export default function Footer() {
                         <br />
                         Copyright © 2025 - All rights reserved by SpaceY
                     </p>
-                </aside>
-                <nav className="md:place-self-center md:justify-self-end">
-                    <div className="grid grid-flow-col gap-4 animate-bounce" style={{ animationDuration: "5s" }}>
+                </motion.aside>
+                <motion.nav
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    className="md:place-self-center md:justify-self-end"
+                >
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="grid grid-flow-col gap-4"
+                    >
                         <a className="link link-hover transition-transform transform hover:scale-125" href="https://github.com/mcrayssac/ING1GIA_WebFinalProject" target="_blank" rel="noopener noreferrer">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -162,9 +243,9 @@ export default function Footer() {
                                 <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
                             </svg>
                         </a>
-                    </div>
-                </nav>
-            </footer>
+                    </motion.div>
+                </motion.nav>
+            </motion.footer>
         </div>
     );
 }

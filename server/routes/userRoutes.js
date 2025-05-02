@@ -3,7 +3,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Grade = require('../models/Grade');
+const Employee = require('../models/Employee');
 const router = express.Router();
+
 const { authenticateUser, verifyToken, isAdmin } = require('../middlewares/authMiddlewares');
 
 // Helper to convert data URL to Buffer and extract content type
@@ -73,7 +75,7 @@ router.post('/login', authenticateUser, (req, res) => {
 router.post('/logout', (req, res) => {
     res.clearCookie('token');
     res.clearCookie('refreshToken');
-    res.send('Logged out');
+    res.json({ message: "Logged out successfully" });
 });
 
 /**
@@ -98,7 +100,7 @@ router.post('/register', async (req, res) => {
 
         // Verify if user already exists
         const existing = await User.findOne({ username: user.username });
-        if (existing) return res.status(409).send('User already exists');
+        if (existing) return res.status(409).json({ error: "User already exists" });
 
         await user.save();
 
@@ -106,7 +108,7 @@ router.post('/register', async (req, res) => {
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         res.status(201).json({ token });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -124,7 +126,15 @@ router.post('/register', async (req, res) => {
  */
 router.get('/infos', verifyToken, async (req, res) => {
     try {
-        let user = await User.findById(req.user._id).populate('grade').select('-password -__v');
+        let user = await User.findById(req.user._id)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            })
+            .select('-password -__v');
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -144,7 +154,7 @@ router.get('/infos', verifyToken, async (req, res) => {
 
         res.json(user);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "An unexpected error occurred" });
     }
 });
 
@@ -173,10 +183,10 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
     const { userId } = req.body;
 
     try {
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).populate('grade');
 
         if (!user) {
-            return res.status(404).send('User not found');
+            return res.status(404).json({ error: "User not found" });
         }
 
         // Generate a random password
@@ -188,7 +198,7 @@ router.post('/admin/reset', verifyToken, isAdmin, async (req, res) => {
 
         res.status(200).json({ message: 'Password reset successfully', user, newPassword: randomPassword });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "An unexpected error occurred" });
     }
 });
 
@@ -215,8 +225,12 @@ router.get('/counts-by-grade', verifyToken, isAdmin, async (req, res) => {
             userCounts[grade.name] = 0;
         });
 
-        // Get users with populated grade field
-        const users = await User.find().populate('grade');
+        // Create query based on user role and exclude current user
+        const query = {
+            _id: { $ne: req.user._id }, // Exclude current user
+            ...(req.user.admin ? {} : { admin: false }) // Add admin filter if not admin
+        };
+        const users = await User.find(query).populate('grade');
 
         // Count users for each grade
         users.forEach(user => {
@@ -227,20 +241,19 @@ router.get('/counts-by-grade', verifyToken, isAdmin, async (req, res) => {
 
         res.json(userCounts);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "Failed to fetch user counts" });
     }
 });
 
 router.get('/verify', verifyToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        if (user.admin) {
-            res.status(200).json({ admin: true });
-        } else {
-            res.status(200).json({ admin: false });
+        const user = await User.findById(req.user._id).populate('grade');
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
         }
+        res.json({ admin: !!user.admin });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ error: error.message || "Failed to verify user status" });
     }
 });
 
@@ -259,7 +272,21 @@ router.get('/verify', verifyToken, async (req, res) => {
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const users = await User.find().select('-password -__v');
+        // Create query based on user role and exclude current user
+        const query = {
+            _id: { $ne: req.user._id }, // Exclude current user
+            ...(req.user.admin ? {} : { admin: false }) // Add admin filter if not admin
+        };
+        const users = await User.find(query)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            })
+            .select('-password -__v');
+        console.log(users);
 
         if (!users) {
             return res.status(404).json({ error: 'No users found' });
@@ -281,7 +308,10 @@ router.get('/', verifyToken, async (req, res) => {
 
         res.json(usersData);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json({ 
+            error: error.message || "Failed to fetch users",
+            details: error.name === "MongooseError" ? "Database error occurred" : undefined
+        });
     }
 });
 
@@ -322,7 +352,7 @@ router.put("/infos/:id", verifyToken, async (req, res) => {
             updateData.photo = null;
         }
 
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('grade');
         if (!updatedUser) {
             return res.status(404).json({ error: "User not found" });
         }
@@ -375,6 +405,392 @@ router.put("/password", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Error updating password:", error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete user (admin only)
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        // Prevent deleting own account
+        if (req.user._id.toString() === req.params.id) {
+            return res.status(403).json({ error: "Cannot delete your own account" });
+        }
+
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json({ message: `User ${user.username} deleted successfully` });
+    } catch (error) {
+        if (error.name === "CastError") {
+            return res.status(400).json({ error: "Invalid user ID format" });
+        }
+        res.status(500).json({ error: error.message || "Failed to delete user" });
+    }
+});
+
+/**
+ * @route POST /.../users/create-with-existing-employee
+ * @desc Creates a new user and links it to an existing employee
+ * @access Private (admin only)
+ */
+router.post('/create-with-existing-employee', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const { 
+            username, 
+            email, 
+            password,
+            admin = false,
+            location,
+            bio,
+            grade,
+            employeeId 
+        } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !password || !employeeId) {
+            return res.status(400).json({ 
+                error: "Missing required fields",
+                details: "Username, email, password, and employee ID are required"
+            });
+        }
+
+        // Verify employee exists and isn't already linked
+        const employee = await Employee.findById(employeeId).populate('site');
+        if (!employee) {
+            return res.status(404).json({
+                error: "Employee not found",
+                details: "The specified employee does not exist"
+            });
+        }
+
+        const existingUser = await User.findOne({ employee: employeeId });
+        if (existingUser) {
+            return res.status(409).json({
+                error: "Employee already linked",
+                details: "This employee is already linked to a user account"
+            });
+        }
+
+        // Create the user
+        try {
+            const selectedGrade = grade ? 
+                await Grade.findById(grade) : 
+                await Grade.findOne({ name: "Apprentice" });
+
+            if (grade && !selectedGrade) {
+                throw new Error("Invalid grade selected");
+            }
+            
+            const user = new User({
+                username,
+                email,
+                password,
+                admin,
+                location,
+                bio,
+                employee: employee._id,
+                grade: selectedGrade ? selectedGrade._id : null
+            });
+            
+            await user.save();
+
+            // Fetch the complete user data with populated fields
+            const createdUser = await User.findById(user._id)
+                .populate('grade')
+                .populate({
+                    path: 'employee',
+                    populate: {
+                        path: 'site'
+                    }
+                });
+
+            res.status(201).json(createdUser);
+        } catch (err) {
+            if (err.code === 11000) {
+                // Duplicate key error
+                const field = Object.keys(err.keyPattern)[0];
+                return res.status(409).json({
+                    error: "Duplicate user data",
+                    details: `A user with this ${field} already exists`,
+                    field
+                });
+            }
+            throw err;
+        }
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Failed to create user",
+            details: error.message,
+            code: error.code
+        });
+    }
+});
+
+/**
+ * @route POST /.../users/create-with-employee
+ * @desc Creates a new user along with their employee record
+ * @access Private (admin only)
+ */
+router.post('/create-with-employee', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const { 
+            // User data
+            username, 
+            email, 
+            password,
+            admin = false,
+            location,
+            bio,
+            grade,
+            // Employee data
+            employeeId,
+            department,
+            position,
+            office,
+            contractType,
+            site,
+            hireDate 
+        } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !password || !employeeId || !department || !position || !office || !site) {
+            return res.status(400).json({ 
+                error: "Missing required fields",
+                details: "All fields are required except hire date"
+            });
+        }
+
+        // Create employee first
+        let employee;
+        try {
+            employee = new Employee({
+                employeeId,
+                email,
+                department,
+                position,
+                office,
+                contractType,
+                site,
+                hireDate: hireDate || new Date()
+            });
+            await employee.save();
+        } catch (err) {
+            // Handle employee-specific errors
+            if (err.code === 11000) {
+                // Duplicate key error
+                const field = Object.keys(err.keyPattern)[0];
+                return res.status(409).json({
+                    error: "Duplicate employee data",
+                    details: `An employee with this ${field} already exists`,
+                    field
+                });
+            }
+            throw err;
+        }
+
+        // Then create the user
+        try {
+            const selectedGrade = grade ? 
+                await Grade.findById(grade) : 
+                await Grade.findOne({ name: "Apprentice" });
+
+            if (grade && !selectedGrade) {
+                throw new Error("Invalid grade selected");
+            }
+            
+            const user = new User({
+                username,
+                email,
+                password,
+                admin,
+                location,
+                bio,
+                employee: employee._id,
+                grade: selectedGrade ? selectedGrade._id : null
+            });
+            
+            await user.save();
+
+            // Fetch the complete user data with populated fields
+            const createdUser = await User.findById(user._id)
+                .populate('grade')
+                .populate({
+                    path: 'employee',
+                    populate: {
+                        path: 'site'
+                    }
+                });
+
+            res.status(201).json(createdUser);
+        } catch (err) {
+            // If user creation fails, delete the employee
+            await Employee.findByIdAndDelete(employee._id);
+
+            if (err.code === 11000) {
+                // Duplicate key error
+                const field = Object.keys(err.keyPattern)[0];
+                return res.status(409).json({
+                    error: "Duplicate user data",
+                    details: `A user with this ${field} already exists`,
+                    field
+                });
+            }
+            throw err;
+        }
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Failed to create user and employee",
+            details: error.message,
+            code: error.code
+        });
+    }
+});
+
+// Get employees without users
+router.get('/unlinked-employees', verifyToken, isAdmin, async (req, res) => {
+    try {
+        // Find all users and get their employee IDs
+        const users = await User.find({}, 'employee');
+        const linkedEmployeeIds = users.map(user => user.employee).filter(id => id);
+
+        // Find employees that are not linked to any user
+        const unlinkedEmployees = await Employee.find({
+            _id: { $nin: linkedEmployeeIds }
+        }).populate('site');
+
+        res.json(unlinkedEmployees);
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Failed to fetch unlinked employees",
+            details: error.message
+        });
+    }
+});
+
+// Get single user
+router.get('/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            })
+            .select('-password -__v');
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Convert to plain object and handle special fields
+        const userData = user.toObject();
+        
+        if (userData.urls && userData.urls instanceof Map) {
+            userData.urls = Object.fromEntries(userData.urls);
+        }
+
+        if (userData.photo && userData.photo.data && userData.photo.contentType) {
+            userData.photo = bufferToDataURL(userData.photo.data, userData.photo.contentType);
+        }
+
+        res.json(userData);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to fetch user" });
+    }
+});
+
+// Update user information
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const { username, email, location, grade, bio, urls, dob, points, photo } = req.body;
+        
+        const updateData = {
+            username,
+            email,
+            location,
+            grade,
+            bio,
+            urls,
+            dob,
+            points
+        };
+
+        // Handle photo update
+        if (photo) {
+            const photoData = dataURLToBuffer(photo);
+            if (photoData) {
+                updateData.photo = {
+                    data: photoData.buffer,
+                    contentType: photoData.contentType
+                };
+            }
+        } else {
+            updateData.photo = null;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        )
+        .populate('grade')
+        .populate({
+            path: 'employee',
+            populate: {
+                path: 'site'
+            }
+        });
+
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Convert the updated user's photo back to data URL for response
+        const responseData = updatedUser.toObject();
+        if (responseData.photo && responseData.photo.data) {
+            responseData.photo = bufferToDataURL(responseData.photo.data, responseData.photo.contentType);
+        }
+
+        res.json(responseData);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to update user" });
+    }
+});
+
+// Update employee information
+router.put('/:id/employee', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (!user.employee) {
+            // Create new employee if it doesn't exist
+            const employee = new Employee(req.body);
+            await employee.save();
+            user.employee = employee._id;
+            await user.save();
+        } else {
+            // Update existing employee
+            await Employee.findByIdAndUpdate(user.employee, req.body);
+        }
+
+        const updatedUser = await User.findById(req.params.id)
+            .populate('grade')
+            .populate({
+                path: 'employee',
+                populate: {
+                    path: 'site'
+                }
+            });
+
+        res.json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "Failed to update employee information" });
     }
 });
 

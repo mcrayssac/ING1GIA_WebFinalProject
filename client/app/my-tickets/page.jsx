@@ -15,7 +15,6 @@ import {
     RefreshCw,
     Loader2,
     AlertCircle,
-    PlusCircle,
     CheckCircle,
     XCircle,
     Shield,
@@ -60,9 +59,6 @@ export default function MyTicketsPage() {
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
     const [selectedTicket, setSelectedTicket] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
-    const [createDialogOpen, setCreateDialogOpen] = useState(false)
-    const [targetGrade, setTargetGrade] = useState("")
-    const [availableGrades, setAvailableGrades] = useState([])
     
     const fetchTickets = useCallback(async () => {
         setIsLoading(true)
@@ -80,20 +76,6 @@ export default function MyTicketsPage() {
             toastError("Failed to fetch tickets", { description: error.message })
         } finally {
             setIsLoading(false)
-        }
-    }, [toastError])
-
-    const fetchAvailableGrades = useCallback(async () => {
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`, {
-                credentials: "include",
-            })
-            const data = await response.json()
-            if (!response.ok) throw new Error(data.message)
-            setAvailableGrades(data)
-        } catch (error) {
-            console.error(error)
-            toastError("Failed to fetch grades", { description: error.message })
         }
     }, [toastError])
 
@@ -141,9 +123,8 @@ export default function MyTicketsPage() {
         }
         if (user) {
             fetchTickets()
-            fetchAvailableGrades()
         }
-    }, [user, router, fetchTickets, fetchAvailableGrades])
+    }, [user, router, fetchTickets])
 
     useEffect(() => {
         filterAndSortTickets()
@@ -175,33 +156,6 @@ export default function MyTicketsPage() {
         setRefreshing(true)
         await fetchTickets()
         setRefreshing(false)
-    }
-
-    const handleCreateTicket = async () => {
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    type: "GRADE_UPGRADE",
-                    targetGrade,
-                }),
-            })
-
-            const data = await response.json()
-            if (!response.ok) throw new Error(data.message)
-
-            await fetchTickets()
-            setCreateDialogOpen(false)
-            setTargetGrade("")
-            toastSuccess("Ticket created successfully")
-        } catch (error) {
-            console.error(error)
-            toastError("Failed to create ticket", { description: error.message })
-        }
     }
 
     const openDetailsDialog = (ticket) => {
@@ -261,16 +215,10 @@ export default function MyTicketsPage() {
                     <h1 className="text-3xl font-bold">My Tickets</h1>
                     <p className="text-muted-foreground">View and manage your grade upgrade requests</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button onClick={() => setCreateDialogOpen(true)} variant="default">
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        New Request
-                    </Button>
-                    <Button onClick={refreshTickets} variant="outline" disabled={refreshing}>
-                        {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                        Refresh
-                    </Button>
-                </div>
+                <Button onClick={refreshTickets} variant="outline" disabled={refreshing}>
+                    {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Refresh
+                </Button>
             </div>
 
             {/* Stats Cards */}
@@ -448,52 +396,6 @@ export default function MyTicketsPage() {
                     </TabsContent>
                 ))}
             </Tabs>
-
-            {/* Create Ticket Dialog */}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>New Grade Upgrade Request</DialogTitle>
-                        <DialogDescription>
-                            Select the grade you would like to upgrade to. Your request will be reviewed by an administrator.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <h4 className="font-medium">Current Grade</h4>
-                            <p className="text-sm font-medium">{user?.grade?.name || "No Grade"}</p>
-                        </div>
-                        <div className="space-y-2">
-                            <h4 className="font-medium">Target Grade</h4>
-                            <Select value={targetGrade} onValueChange={setTargetGrade}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select target grade" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>Available Grades</SelectLabel>
-                                        {availableGrades
-                                            .filter((grade) => grade._id !== user?.grade?._id)
-                                            .map((grade) => (
-                                                <SelectItem key={grade._id} value={grade.name}>
-                                                    {grade.name}
-                                                </SelectItem>
-                                            ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateTicket} disabled={!targetGrade}>
-                            Submit Request
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Details Dialog */}
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
