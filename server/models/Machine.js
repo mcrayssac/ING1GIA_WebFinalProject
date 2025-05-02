@@ -1,7 +1,15 @@
 const mongoose = require('mongoose');
 
-// const sensorSchema = require('./Sensors');
-// const sensorDataSchema = require('./sensorData');
+// Schéma pour un relevé de capteur (sensor reading)
+const sensorReadingSchema = new mongoose.Schema({
+    timestamp: { type: Date, required: true },
+    value: { type: Number, required: true },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: process.env.MONGO_Collection_User,
+        required: true
+    }
+}, { _id: false });
 
 // Schéma pour une période d'utilisation (exemple : d'1h)
 const usagePeriodSchema = new mongoose.Schema({
@@ -25,7 +33,11 @@ const dailyUsageSchema = new mongoose.Schema({
             return new Date(now.getFullYear(), now.getMonth(), now.getDate());
         }
     },
-
+    sensorData: {
+        type: Map,
+        of: [sensorReadingSchema],
+        default: {}
+    },
     // Périodes d'utilisation durant la journée
     usagePeriods: { type: [usagePeriodSchema], default: [] }
 }, { _id: false });
@@ -69,7 +81,8 @@ const machineSchema = new mongoose.Schema({
     }],
 
     // Statistiques d'utilisation, organisées par jour
-    usageStats: { type: [dailyUsageSchema], default: [] }
+    usageStats: { type: [dailyUsageSchema], default: [] },
+    totalCycles: { type: Number, default: 0 }
 }, {
     timestamps: true
 });
@@ -86,6 +99,11 @@ const machineSchema = new mongoose.Schema({
  * @returns {Promise} - Promesse résolue après sauvegarde.
  */
 machineSchema.methods.addSensorReading = async function (designation, value, userId, timestamp = new Date()) {
+    // Vérifie que les capteurs ont bien été peuplés avec .populate()
+    if (!this.populated('availableSensors')) {
+        throw new Error('availableSensors must be populated to add a sensor reading');
+    }
+
     // Vérifier que le capteur est déclaré dans la machine
     const sensorExists = this.availableSensors.some(s => s.designation === designation);
     if (!sensorExists) {
