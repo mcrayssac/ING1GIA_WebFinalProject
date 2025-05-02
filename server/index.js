@@ -39,6 +39,9 @@ require('./models/Statistic');
 require('./models/HistoryEvent');
 require('./models/News');
 require('./models/Machines'); 
+require('./models/Sensors');
+require('./models/Grades');
+
 
 // Track all incoming requests
 app.use((req, res, next) => {
@@ -85,6 +88,8 @@ const addMachinesRoutes = require('./routes/addMachinesRoutes');
 app.use('/api/machinesForm', addMachinesRoutes);
 const sensorsRoutes = require('./routes/sensorsRoutes');
 app.use('/api/sensors', sensorsRoutes);
+const gradesRoutes = require('./routes/gradesRoutes');
+app.use('/api/grades', gradesRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

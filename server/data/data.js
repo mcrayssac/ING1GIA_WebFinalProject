@@ -553,25 +553,9 @@ const sensors = [
 ];
 
  
-const machines = [
-    {
-      name: "Injecteur Cryogénique A1",
-      mainPole: "Bas de la fusée",
-      subPole: "Injection carburant",
-      pointsPerCycle: 20,
-      maxUsers: 2,
-      requiredGrade: "Technicien confirmé",
-      availableSensors: [ // désignations temporaires
-        { designation: "Pression" },
-        { designation: "Flux" },
-        { designation: "Température" }
-      ],
-      sites: [],
-      status: "available",
-      currentUsers: [],
-      usageStats: []
-    },
-  ];
+
+  
+  
   
   
 
@@ -584,11 +568,12 @@ const employees = [
 ];
 
 const grades = [
-  {
-    _id: "664103b5d2fdd120d436b456",
-    name: "Technicien"
-  }
+    { name: "Apprentice", cap: 0, icon: "Trophy", color: "#CD7F32" },
+    { name: "Technician", cap: 100, icon: "Star", color: "#C0C0C0" },
+    { name: "Engineer", cap: 500, icon: "Award", color: "#FFD700" },
+    { name: "Manager", cap: 1000, icon: "Crown", color: "#E5E4E2" }
 ];
+  
 
 const users = [
   {
@@ -616,12 +601,28 @@ sensors.forEach(sensor => {
   sensorMap[sensor.designation] = sensor._id;
 });
 
-// Remplace les désignations par les vrais ObjectId
-machines.forEach(machine => {
-  machine.availableSensors = machine.availableSensors
-    .map(sensor => sensorMap[sensor.designation])
-    .filter(Boolean); // évite les undefined si la désignation n'existe pas
-});
+const machines = [
+    {
+      name: "Injecteur Cryogénique A1",
+      mainPole: "Bas de la fusée",
+      subPole: "Injection carburant",
+      pointsPerCycle: 20,
+      maxUsers: 2,
+      requiredGrade: "Technicien confirmé",
+      availableSensors: [
+        "Pression",
+        "Flux",
+        "Température"
+      ],
+        sites: [],
+      status: "available",
+      currentUsers: [],
+      usageStats: []
+    }
+  ];
+
+
+  
 
 
 

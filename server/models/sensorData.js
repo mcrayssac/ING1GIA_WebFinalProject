@@ -10,4 +10,4 @@ const sensorDataSchema= new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('sensorData', sensorSchema, process.env.MONGO_Collection_sensorData || 'sensorData');
+module.exports = mongoose.model('sensorData', sensorDataSchema, process.env.MONGO_Collection_sensorData || 'sensorData');

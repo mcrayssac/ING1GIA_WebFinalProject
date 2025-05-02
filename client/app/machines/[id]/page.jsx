@@ -1,96 +1,178 @@
 "use client";
 
-import { use } from "react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import Loading from "@/components/loading";
 import Alert from "@/components/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from "@/components/ui/select";
+import MultiSelect from "@/components/ui/multi-select";
 
-export default function MachineDetailsPage({ params }) {
-    const { id } = use(params);
-    const router = useRouter();
+/* ------------------------------------------------------------------ */
+/* Helper : ID stable ------------------------------------------------ */
+const normalizeId = (id) =>
+  typeof id === "object" && id !== null
+    ? id._id ?? JSON.stringify(id)
+    : id?.toString?.() ?? String(id);
+/* ------------------------------------------------------------------ */
+
+export default function MachineDetailPage() {
+  const { id: machineId } = useParams();
+  const router            = useRouter();
 
   const [machine, setMachine] = useState(null);
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({});
+  const [grades,  setGrades]  = useState([]);
+  const [sensors, setSensors] = useState([]);
+  const [sites,   setSites]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
+  /* --------------------------- fetch ----------------------------- */
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Machine not found");
-        return res.json();
-      })
-      .then(setMachine)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!machineId) return;
 
+    const fetchData = async () => {
+      try {
+        const [machineRes, gradesRes, sensorsRes, sitesRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`),
+        ]);
+        if (!machineRes.ok) throw new Error("Machine not found");
+
+        const [machineData, grades, sensors, sites] = await Promise.all([
+          machineRes.json(), gradesRes.json(), sensorsRes.json(), sitesRes.json(),
+        ]);
+
+        const formatted = {
+          ...machineData,
+          availableSensors: machineData.availableSensors.map(normalizeId),
+          sites:            machineData.sites.map(normalizeId),
+        };
+
+        setMachine(formatted);
+        setFormData({
+          name: formatted.name || "",
+          mainPole: formatted.mainPole || "",
+          subPole: formatted.subPole || "",
+          pointsPerCycle: formatted.pointsPerCycle || 0,
+          maxUsers: formatted.maxUsers || 1,
+          requiredGrade: formatted.requiredGrade || "",
+          status: formatted.status || "available",
+          availableSensors: formatted.availableSensors,
+          sites: formatted.sites,
+        });
+        setGrades(grades);
+        setSensors(sensors);
+        setSites(sites);
+      } catch (err) { setError(err.message); }
+      finally       { setLoading(false); }
+    };
+
+    fetchData();
+  }, [machineId]);
+
+  /* --------------------- handlers principaux -------------------- */
   const handleStartCycle = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${id}/start-cycle`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}/start-cycle`,
+        { method:"POST", headers:{ "Content-Type":"application/json" } }
+      );
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Erreur lors du démarrage du cycle");
+        const errData = await res.json();
+        throw new Error(errData.error || "Erreur lors du démarrage du cycle");
       }
-      const data = await res.json();
-      alert(data.message); // Affiche un message de succès
-  
-      // Recharge la machine pour refléter l'état mis à jour (status, currentUsers, etc.)
-      const updated = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${id}`);
-      const machineData = await updated.json();
-      setMachine(machineData);
-  
+      alert((await res.json()).message);
+
+      // rafraîchit la machine après démarrage
+      const updated = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`
+      ).then(r=>r.json());
+
+      setMachine({
+        ...updated,
+        availableSensors: updated.availableSensors.map(normalizeId),
+        sites:            updated.sites.map(normalizeId),
+      });
     } catch (err) {
       setError(err.message);
     }
   };
-  
 
-  if (loading) return <Loading />;
-  if (error) return <Alert type="error" message={error} onClose={() => router.push("/machines")} />;
-  if (!machine) return <p className="text-center text-gray-500">Machine introuvable.</p>;
-  if (!machine.availableSensors) return <p className="text-center text-gray-500">Aucun capteur disponible pour cette machine.</p>;
+  /* (handleSave, handleInputChange … inchangés si vous en avez besoin) */
+
+  /* --------------------------- render ---------------------------- */
+  if (loading) return <Loading/>;
+  if (error)
+    return <Alert type="error" message={error} onClose={()=>router.push("/machines")}/>;
+  if (!machine)
+    return <p className="text-center text-gray-500">Machine introuvable.</p>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">{machine.name}</h1>
+    <div className="container mx-auto px-6 py-12">
+      <h1 className="text-3xl font-bold mb-6 text-center">{machine.name}</h1>
 
-      <div className="text-sm text-gray-600 mb-4">
-        <p><strong>Status :</strong> {machine.status}</p>
-        <p><strong>Points par cycle :</strong> {machine.pointsPerCycle}</p>
-        <p><strong>Utilisateurs max :</strong> {machine.maxUsers}</p>
-        <p><strong>Niveau requis :</strong> {machine.requiredGrade}</p>
-        <p><strong>Pôle :</strong> {machine.mainPole} / {machine.subPole}</p>
-      </div>
+      {/* ------------------------------------------------------------ */}
+      {/* MODE LECTURE                                                */}
+      {/* ------------------------------------------------------------ */}
+      {!isEditing ? (
+        <div className="space-y-6">
+          <p><strong>Main Pole:</strong> {machine.mainPole}</p>
+          <p><strong>Sub Pole:</strong> {machine.subPole}</p>
+          <p><strong>Points Per Cycle:</strong> {machine.pointsPerCycle}</p>
+          <p><strong>Max Users:</strong> {machine.maxUsers}</p>
+          <p><strong>Required Grade:</strong> {machine.requiredGrade}</p>
+          <p><strong>Status:</strong> {machine.status}</p>
+          <p>
+            <strong>Installation Sites:</strong>{" "}
+            {machine.sites.map((siteId)=>{
+              const site = sites.find((s)=>normalizeId(s._id)===normalizeId(siteId));
+              return site?.name || siteId;
+            }).join(", ")}
+          </p>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">Capteurs disponibles</h2>
-        <div className="flex flex-wrap gap-2">
-        {machine.availableSensors?.length > 0 ? (
-            machine.availableSensors.map((sensor, index) => (
-                <Button
-                key={sensor._id || index} // fallback avec index si pas de _id
-                variant="outline"
-                onClick={() => console.log(`Capteur ${sensor.designation}`)}
-                >
-                {sensor.designation || "Capteur"}
-                </Button>
-            ))
-            ) : (
-            <p className="text-sm text-gray-500">Aucun capteur enregistré</p>
-        )}
+          {/* Capteurs disponibles ---------------------------------- */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Capteurs disponibles</h2>
+            <div className="flex flex-wrap gap-2">
+              {machine.availableSensors.map((rawId)=>{
+                const sensor = sensors.find((s)=>normalizeId(s._id)===normalizeId(rawId));
+                if (!sensor) return null;                        // par sûreté
+                return (
+                  <Button
+                    key={sensor._id}
+                    variant="outline"
+                    onClick={()=>router.push(`/machines/${machineId}/${sensor._id}`)}
+                  >
+                    {sensor.designation}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Actions machine -------------------------------------- */}
+          <Button onClick={handleStartCycle} className="mt-6">
+            Lancer un cycle
+          </Button>
+          <div className="flex space-x-4 mt-6">
+            <Button onClick={()=>setIsEditing(true)} className="w-full">Edit</Button>
+            <Link href="/machines"><Button className="w-full">Back to List</Button></Link>
+          </div>
         </div>
-      </div>
-
-      <Button className="mt-6" onClick={handleStartCycle}>
-        Lancer un cycle
-      </Button>
+      ) : (
+        /* -------------------------------------------------------- */
+        /* MODE ÉDITION – conservez votre bloc d’édition complet    */
+        /* -------------------------------------------------------- */
+        <div> {/* … formulaire d’édition ici … */}</div>
+      )}
     </div>
   );
 }

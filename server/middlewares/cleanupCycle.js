@@ -46,7 +46,7 @@ async function cleanupFinishedCycles() {
   console.log(`[${new Date().toISOString()}] Nettoyage des cycles terminé`);
 }
 
-setInterval(cleanupFinishedCycles, 500);
+setInterval(cleanupFinishedCycles, 1000);
 
 process.on('SIGINT', async () => {
   console.log("\nArrêt du script de nettoyage...");

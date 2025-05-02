@@ -43,7 +43,7 @@ async function simulateSensorData() {
   console.log(`[${new Date().toISOString()}] ➤ Données de capteurs simulées pour machines actives.`);
 }
 
-setInterval(simulateSensorData, 1000);
+setInterval(simulateSensorData, 10000); // toutes les 10 secondes
 
 // Arrêt propre
 process.on('SIGINT', async () => {
