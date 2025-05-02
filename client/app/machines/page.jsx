@@ -30,8 +30,11 @@ import { Button } from "@/components/ui/button";
 import Loading from "@/components/loading";
 import Alert from "@/components/alert";
 import NoData from "@/components/no-data";
+import { useUser } from "@/contexts/UserContext";
+import { Loader2 } from "lucide-react";
 
 export default function MachinesPage() {
+  
   const [machinesData, setMachinesData] = useState([]);
   const [sensorsData, setSensorsData] = useState([]);
   const [sitesData, setSitesData] = useState([]);
@@ -40,8 +43,11 @@ export default function MachinesPage() {
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
 
+  const { user } = useUser();
   const router = useRouter();
+  const isAdmin = user?.admin === true;
 
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -71,6 +77,8 @@ export default function MachinesPage() {
           availableSensors: machine.availableSensors.map(sensorId => 
             sensors.find(s => s._id === sensorId) || { _id: sensorId, designation: 'Unknown' }
           ),
+          //Map requiredGrade IDs to machince objects
+          
           // Map site IDs to site names
           sites: machine.sites.map(siteId => 
             sites.find(s => s._id === siteId)?.name || 'Unknown site'
@@ -94,6 +102,14 @@ export default function MachinesPage() {
 
     fetchData();
   }, []);
+  useEffect(() => {
+    if (user === false) {
+      
+        router.replace('/login')
+        return
+    }
+ 
+}, [user, router])
 
   const handleDelete = async (machineId) => {
     if (window.confirm("Are you sure you want to delete this machine?")) {
@@ -110,7 +126,6 @@ export default function MachinesPage() {
       }
     }
   }
-
 
   const columns = [
     {
@@ -155,29 +170,29 @@ export default function MachinesPage() {
             {status}
           </span>
         );
-      },
-    },
-    {
-      accessorKey: "pointsPerCycle",
-      header: "Points/Cycle",
-    },
-    {
-      accessorKey: "maxUsers",
-      header: "Max Users",
-    },
-    {
-      accessorKey: "requiredGrade",
-      header: "Required Grade",
-      cell: ({ row }) => (
+            },
+          },
+          {
+            accessorKey: "pointsPerCycle",
+            header: "Points/Cycle",
+          },
+          {
+            accessorKey: "maxUsers",
+            header: "Max Users",
+          },
+          {
+            accessorKey: "requiredGrade",
+            header: "Required Grade",
+            cell: ({ row }) => (
         <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
           {row.getValue("requiredGrade")}
         </span>
-      ),
-    },
-    {
-      accessorKey: "sites",
-      header: "Installation Sites",
-      cell: ({ row }) => (
+            ),
+          },
+          {
+            accessorKey: "sites",
+            header: "Installation Sites",
+            cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           {row.getValue("sites").split(', ').map((site, index) => (
             <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
@@ -185,12 +200,12 @@ export default function MachinesPage() {
             </span>
           ))}
         </div>
-      ),
-    },
-    {
-      accessorKey: "availableSensors",
-      header: "Sensors",
-      cell: ({ row }) => (
+            ),
+          },
+          {
+            accessorKey: "availableSensors",
+            header: "Sensors",
+            cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           {row.getValue("availableSensors").map((sensor) => (
             <span
@@ -201,47 +216,27 @@ export default function MachinesPage() {
             </span>
           ))}
         </div>
-      ),
-    },
-    {
+            ),
+          },
+          ...(isAdmin
+            ? [
+          {
             accessorKey: "actions",
             header: "Actions",
             cell: ({ row }) => (
               <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(row.original._id);
-                }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete(row.original._id);
+          }}
               >
-                Delete
+          Delete
               </Button>
             ),
           },
-    // {
-    //   accessorKey: "currentUsers",
-    //   header: "Active Users",
-    //   cell: ({ row }) => {
-    //     const currentUsers = row.getValue("currentUsers");
-    //     const maxUsers = row.original.maxUsers;
-        
-    //     return (
-    //       <div className="flex flex-col gap-1">
-    //         {currentUsers.length > 0 ? (
-    //           currentUsers.map((user, index) => (
-    //             <span key={index} className="text-green-600 text-xs">
-    //               {user}
-    //             </span>
-    //           ))
-    //         ) : (
-    //           <span className="text-gray-400 text-xs">No active users</span>
-    //         )}
-    //         <span className="text-xs text-gray-500">
-    //           {currentUsers.length}/{maxUsers}
-    //         </span>
-    //       </div>
-    //     );
-    //   },
-    // },
+        ]
+            : []),
+    
   ];
 
   const table = useReactTable({
@@ -260,7 +255,14 @@ export default function MachinesPage() {
   useEffect(() => {
     table.setGlobalFilter(globalFilter);
   }, [globalFilter, table]);
-
+  
+  if (user === undefined) {
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    )
+  }
   return (
     <div className="container mx-auto px-4 py-8">
       {error && <Alert type="error" message={error} onClose={() => setError("")} />}
@@ -372,12 +374,18 @@ export default function MachinesPage() {
               Next
             </Button>
           </div>
-
-          <div className="flex justify-end mt-4">
-            <Link href="/machinesForm">
-              <Button variant="primary">Add New Machine</Button>
-            </Link>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center justify-start space-x-2 py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/machinesForm")}
+              >
+                Add New Machine
+              </Button>
+            </div>
+          )}
+          
         </>
       )}
     </div>

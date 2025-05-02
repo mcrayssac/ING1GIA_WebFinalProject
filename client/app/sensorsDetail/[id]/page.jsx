@@ -4,8 +4,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useUser } from "@/contexts/UserContext";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function SensorDetailPage() {
+  const { user } = useUser();
+  const router = useRouter();
   const [sensor, setSensor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,8 +20,8 @@ export default function SensorDetailPage() {
     requiredGrade: "",
     supplier: "",
   });
-
   const { id } = useParams();
+  const isAdmin = user?.admin === true;
 
   useEffect(() => {
     if (!id) return;
@@ -40,7 +45,13 @@ export default function SensorDetailPage() {
     };
 
     fetchSensor();
-  }, [id]);
+
+    if (user === false) {
+      router.replace('/login')
+      return
+  }
+  }, [id, user, router]);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -66,7 +77,13 @@ export default function SensorDetailPage() {
       setError(err.message);
     }
   };
-
+  if (user === undefined) {
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    )
+}
   return (
     <div className="container mx-auto px-6 py-12">
       {loading ? (
@@ -138,9 +155,11 @@ export default function SensorDetailPage() {
                 {new Date(sensor?.CreatedAt).toLocaleDateString()}
               </p>
               <div className="flex space-x-4">
+              {isAdmin && (
                 <Button onClick={() => setIsEditing(true)} className="w-full">
                   Edit
                 </Button>
+                  )}
                 <Link href="/sensors">
                   <Button className="w-full">Back to List</Button>
                 </Link>

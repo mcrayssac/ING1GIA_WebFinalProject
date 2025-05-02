@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiSelect } from "@/components/ui/multi-select";
 
 import { useRouter } from "next/navigation";
-
+import { useUser } from "@/contexts/UserContext";
+import { Loader2 } from "lucide-react";
 export default function AddMachinePage() {
+  const { user } = useUser();
   const router = useRouter();
   const [machine, setMachine] = useState({
     name: "",
@@ -21,12 +23,12 @@ export default function AddMachinePage() {
     sites: [],
     availableSensors: [],
   });
-
   const [sites, setSites] = useState([]);
   const [Sensors, setSensors] = useState([]);
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,6 +61,21 @@ export default function AddMachinePage() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (user === false) {
+        router.replace('/login')
+        return
+    }
+    if (user && !user.admin) {
+        router.replace('/machines')
+        return
+    }
+
+}, [user, router]) 
+
+
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,6 +146,14 @@ export default function AddMachinePage() {
 
   if (loading) return <div className="text-center py-8">Loading...</div>;
 
+
+  if (user === undefined) {
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    )
+  }
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-center">Add New Machine</h1>

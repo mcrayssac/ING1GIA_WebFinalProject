@@ -313,13 +313,6 @@ const statistics = [
     },
 ];
 
-const grades = [
-  { name: "Apprentice", cap: 0, icon: "Trophy", color: "#CD7F32" },
-  { name: "Technician", cap: 100, icon: "Star", color: "#C0C0C0" },
-  { name: "Engineer", cap: 500, icon: "Award", color: "#FFD700" },
-  { name: "Manager", cap: 1000, icon: "Crown", color: "#E5E4E2" }
-];
-
 
 const historyEvents = [
     {
@@ -446,6 +439,11 @@ const navMain = {
             url: "/map",
             icon: "Map",
         },
+        {
+            title: "Satellites",
+            url: "/satellites",
+            icon: "Orbit",
+        },
     ],
 };
 
@@ -553,14 +551,13 @@ const news = [
 
 
 const sensors = [
-  { _id: new mongoose.Types.ObjectId(), designation: "Pression", requiredGrade: "Technicien" },
-  { _id: new mongoose.Types.ObjectId(), designation: "Flux", requiredGrade: "Technicien" },
-  { _id: new mongoose.Types.ObjectId(), designation: "Température", requiredGrade: "Technicien" },
-  { _id: new mongoose.Types.ObjectId(), designation: "Vibration", requiredGrade: "Technicien" },
-  { _id: new mongoose.Types.ObjectId(), designation: "Humidité", requiredGrade: "Technicien" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Pression", requiredGrade: "Technician" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Flux", requiredGrade: "Technician" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Température", requiredGrade: "Technician" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Vibration", requiredGrade: "Technician" },
+  { _id: new mongoose.Types.ObjectId(), designation: "Humidité", requiredGrade: "Technician" },
 ];
 
- 
 const machines = [
     {
       mainPole: "Bas de la fusée",
@@ -568,7 +565,7 @@ const machines = [
       name: "Injecteur Cryogénique A1",
       pointsPerCycle: 20,
       maxUsers: 2,
-      requiredGrade: "Technicien confirmé",
+      requiredGrade: "Technician",
       availableSensors: [
         { designation: "Pression" },
         { designation: "Température"}
@@ -602,7 +599,7 @@ const machines = [
       name: "Caméra Thermique X5",
       pointsPerCycle: 10,
       maxUsers: 1,
-      requiredGrade: "Technicien",
+      requiredGrade: "Technician",
       availableSensors: [
         { designation: "Température"}
       ],
@@ -628,7 +625,7 @@ const machines = [
       name: "Module d'Analyse Météo",
       pointsPerCycle: 30,
       maxUsers: 3,
-      requiredGrade: "Technicien confirmé",
+      requiredGrade: "Technician",
       availableSensors: [
         { designation: "Pression" },
         { designation: "Température"}
@@ -658,7 +655,7 @@ const machines = [
       name: "Valve d'Oxygène V2",
       pointsPerCycle: 15,
       maxUsers: 1,
-      requiredGrade: "Technicien confirmé",
+      requiredGrade: "Technician",
       availableSensors: [
         { designation: "Pression" }
       ],
@@ -684,7 +681,7 @@ const machines = [
       name: "Injecteur Cryogénique A2",
       pointsPerCycle: 20,
       maxUsers: 2,
-      requiredGrade: "Technicien confirmé",
+      requiredGrade: "Technician",
       availableSensors: [
         { designation: "Pression" },
         { designation: "Flux" },
@@ -718,7 +715,7 @@ const machines = [
       name: "Caméra Thermique X6",
       pointsPerCycle: 10,
       maxUsers: 1,
-      requiredGrade: "Technicien",
+      requiredGrade: "Technician",
       availableSensors: [
         { designation: "Température"}
       ],
@@ -745,6 +742,88 @@ machines.forEach(machine => {
     const matchedSensor = sensors.find(s => s.designation === sensor.designation);
     return matchedSensor ? matchedSensor._id : null;
   }).filter(sensorId => sensorId !== null); // Filter out unmatched sensors
-});         
+});
+
+const grades = [
+  {  _id: new mongoose.Types.ObjectId(),name: "Apprentice", cap: 0, icon: "Trophy", color: "#CD7F32" },
+  { _id: new mongoose.Types.ObjectId(), name: "Technician", cap: 100, icon: "Star", color: "#C0C0C0" },
+  { _id: new mongoose.Types.ObjectId(), name: "Engineer", cap: 500, icon: "Award", color: "#FFD700" },
+  {  _id: new mongoose.Types.ObjectId(),name: "Manager", cap: 1000, icon: "Crown", color: "#E5E4E2" }
+];
+
+
+// machines.forEach(machine => {
+//   machine.requiredGrade = grades.find(grade => grade.name === machine.requiredGrade)?._id || null;
+// });
+
+// sensors.forEach(sensor => {
+//   sensor.requiredGrade = grades.find(grade => grade.name === sensor.requiredGrade)?._id || null;
+// });
+
+
   
-export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, news, machines, sensors, grades };
+const employees = [
+    {
+        employeeId: 'EMP001',
+        email: 'alice.smith@example.com',
+        department: 'Engineering',
+        position: 'Software Engineer'
+    },
+    {
+        employeeId: 'EMP002',
+        email: 'bob.johnson@example.com',
+        department: 'Human Resources',
+        position: 'HR Manager'
+    },
+    {
+        employeeId: 'EMP003',
+        email: 'charlie.brown@example.com',
+        department: 'Marketing',
+        position: 'Content Strategist'
+    },
+    {
+        employeeId: 'EMP004',
+        email: 'forest.beryl8045@eagereverest.com',
+        department: 'Engineering',
+        position: 'Junior Data Scientist'
+    },
+];
+
+
+const adminUser = {
+    username: "admin",
+    email: "alice.smith@example.com",
+    password: "SpaceY2024!",
+    admin: true,
+    employee: null,
+    points: 0
+};
+
+const testUsers = [
+    {
+        username: "apprentice",
+        email: "forest.beryl8045@eagereverest.com", 
+        password: "SpaceY2024!",
+        admin: false,
+        points: 0,
+        employee: null
+    },
+    {
+        username: "technician",
+        email: "charlie.brown@example.com", 
+        password: "SpaceY2024!",
+        admin: false,
+        points: 125,
+        employee: null
+    },
+    {
+        username: "engineer",
+        email: "bob.johnson@example.com",
+        password: "SpaceY2024!",
+        admin: false,
+        points: 550,
+        employee: null
+    }
+];
+
+export { sites, products, statistics, historyEvents, nextTarget, navMain, themes, employees, grades, adminUser, testUsers, news, machines, sensors };

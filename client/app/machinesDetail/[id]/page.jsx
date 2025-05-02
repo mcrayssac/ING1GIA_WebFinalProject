@@ -6,8 +6,13 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import MultiSelect from "@/components/ui/multi-select";
+import { useUser } from "@/contexts/UserContext";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function MachineDetailPage() {
+    const { user } = useUser();
+    const router = useRouter();
     const [machine, setMachine] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -29,6 +34,7 @@ export default function MachineDetailPage() {
     const [sites, setSites] = useState([]);
 
     const { id } = useParams();
+    const isAdmin = user?.admin === true;
 
     useEffect(() => {
         if (!id) return;
@@ -80,8 +86,14 @@ export default function MachineDetailPage() {
 
         fetchMachine();
         fetchDropdownData();
-    }, [id]);
 
+        if (user === false) {
+            router.replace('/login')
+            return
+        }
+    }, [id, user, router]);
+
+    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -111,6 +123,14 @@ export default function MachineDetailPage() {
         }
     };
 
+
+    if (user === undefined) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    } 
     return (
         <div className="container mx-auto px-6 py-12">
             {loading ? (
@@ -302,9 +322,11 @@ export default function MachineDetailPage() {
                                 }).join(", ")}
                             </p>
                             <div className="flex space-x-4">
+                            {isAdmin && (
                                 <Button onClick={() => setIsEditing(true)} className="w-full">
                                     Edit
                                 </Button>
+                                  )}
                                 <Link href="/machines">
                                     <Button className="w-full">Back to List</Button>
                                 </Link>

@@ -18,8 +18,11 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
 
 export function NavMain({ object }) {
+    const router = useRouter();
+
     return (
         (<SidebarGroup>
             <SidebarGroupLabel>{object.title}</SidebarGroupLabel>
@@ -30,10 +33,10 @@ export function NavMain({ object }) {
                         <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild tooltip={item.title}>
-                                    <a href={item.url}>
+                                    <button onClick={() => { router.push(item.url) }}>
                                         {Icon && <Icon />}
                                         <span>{item.title}</span>
-                                    </a>
+                                    </button>
                                 </SidebarMenuButton>
                                 {item.items?.length ? (
                                     <>
@@ -50,10 +53,10 @@ export function NavMain({ object }) {
                                                     return (
                                                         <SidebarMenuSubItem key={subItem.title}>
                                                             <SidebarMenuSubButton asChild>
-                                                                <a href={subItem.url}>
+                                                                <button onClick={() => { router.push(subItem.url) }}>
                                                                     {SubIcon && <SubIcon style={{ color: "oklch(var(--p))" }} />}
                                                                     <span>{subItem.title}</span>
-                                                                </a>
+                                                                </button>
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
                                                     )

@@ -1,16 +1,52 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import L from "leaflet";
+import React, { useState, useEffect, useMemo, useRef, Fragment } from "react";
+import { GoogleMap, LoadScript, MarkerF, PolygonF, InfoWindowF } from "@react-google-maps/api";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Rocket, Home, Building2, Map, Search, MapPinned, MapPin, FlaskConical } from "lucide-react";
+import {
+    Rocket,
+    Home,
+    Building2,
+    Map,
+    Search,
+    MapPinned,
+    MapPin,
+    FlaskConical,
+    Eye,
+    EyeOff,
+    ChevronDown,
+    Filter,
+    X,
+    Layers,
+    Info,
+    Clock,
+    CheckCircle2,
+    XCircle,
+    ArrowUpRight,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarProvider,
+} from "@/components/ui/sidebar"
 
-import Alert from "@/components/alert";
 import NoData from "@/components/no-data";
 import Loading from "@/components/loading";
+import { useToastAlert } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
-// Marker icon mapping
+// Base marker mapping (for marker icon components)
 const markerMapping = {
     launch: { icon: Rocket, color: "oklch(var(--s))" },
     hq: { icon: Home, color: "oklch(var(--nc))" },
@@ -18,275 +54,611 @@ const markerMapping = {
     test: { icon: FlaskConical, color: "purple" },
 };
 
-// Custom icon for markers
-function createCustomIcon(IconComponent, color) {
-    const iconMarkup = renderToStaticMarkup(
-        <div style={{ color, fontSize: "24px" }}>
-            <IconComponent />
-        </div>
-    );
-    return L.divIcon({
-        html: iconMarkup,
-        className: "custom-marker",
-        iconSize: [30, 30],
-        iconAnchor: [15, 30],
-        popupAnchor: [0, -30],
-    });
-}
-
-// Dynamic imports for leaflet components
-const MapContainer = dynamic(
-    () => import("react-leaflet").then((mod) => mod.MapContainer),
-    { ssr: false }
-);
-const TileLayer = dynamic(
-    () => import("react-leaflet").then((mod) => mod.TileLayer),
-    { ssr: false }
-);
-const Marker = dynamic(
-    () => import("react-leaflet").then((mod) => mod.Marker),
-    { ssr: false }
-);
-const Popup = dynamic(
-    () => import("react-leaflet").then((mod) => mod.Popup),
-    { ssr: false }
-);
-const Polygon = dynamic(
-    () => import("react-leaflet").then((mod) => mod.Polygon),
-    { ssr: false }
-);
+const containerStyle = { width: "100%", height: "100%" };
+const defaultCenter = { lat: 40.7128, lng: -74.0060 };
 
 export default function MapPage() {
-    const mapRef = useRef(null);
-    const [sitesData, setSitesData] = useState([]);
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(true);
+    const { toastSuccess, toastError } = useToastAlert()
+    const [sites, setSites] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [legendQuery, setLegendQuery] = useState("")
+    const [activeFilters, setActiveFilters] = useState([])
+    const [visibleSiteIds, setVisibleSiteIds] = useState(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("visibleSiteIds")
+            if (stored) {
+                try {
+                    return JSON.parse(stored)
+                } catch (err) {
+                    toastError("Error parsing visibleSiteIds from localStorage.")
+                    console.error("Error parsing visibleSiteIds:", err)
+                }
+            }
+        }
+        return []
+    })
+    const [selectedSiteId, setSelectedSiteId] = useState(null)
+    const [mapsApi, setMapsApi] = useState(null)
+    // State for computed effective colors for CSS custom properties.
+    const [effectiveColors, setEffectiveColors] = useState({
+        launch: null,
+        hq: null,
+    })
+    const [expandedSites, setExpandedSites] = useState({})
+
+    const mapRef = useRef(null)
+
+    // Compute effective colors for "launch" and "hq" after mount.
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const dummy = document.createElement("div")
+            // Compute color for "launch"
+            dummy.style.color = "oklch(var(--s))"
+            document.body.appendChild(dummy)
+            const launchColor = getComputedStyle(dummy).color
+            // Compute color for "hq"
+            dummy.style.color = "oklch(var(--nc))"
+            const hqColor = getComputedStyle(dummy).color
+            document.body.removeChild(dummy)
+            setEffectiveColors({ launch: launchColor, hq: hqColor })
+        }
+    }, [])
 
     // Fetch sites data
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`, {
-            method: "GET",
-        })
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`)
             .then((res) => {
-                if (!res.ok) {
-                    throw new Error("Failed to fetch sites");
-                }
-                return res.json();
+                return res.json()
             })
             .then((data) => {
-                setSitesData(data);
-                setLoading(false);
+                setSites(data)
+                const safeSites = Array.isArray(data) && data.length > 0 ? data : []
+                // If none of the fetched sites are in visibleSiteIds, show them all.
+                const hasAny = safeSites.some((site) => visibleSiteIds.includes(site._id))
+                if (!hasAny) {
+                    setVisibleSiteIds(safeSites.map((s) => s._id))
+                }
+                setLoading(false)
             })
             .catch((err) => {
-                setError(err.message);
-                setLoading(false);
-            });
-    }, []);
+                toast.error("Error fetching sites data", { description: err.message })
+                console.error(err)
+                setLoading(false)
+            })
+    }, [])
 
-    // Check if sites data is available
-    const safeSites = Array.isArray(sitesData) && sitesData.length > 0 ? sitesData : [];
-
-    // Local state for visible site ids and legend search query
-    const [visibleSiteIds, setVisibleSiteIds] = useState(() => {
-        if (typeof window !== "undefined") {
-            const stored = localStorage.getItem("visibleSiteIds");
-            if (stored) {
-                try {
-                    return JSON.parse(stored);
-                } catch (err) {
-                    console.error("Error parsing visibleSiteIds:", err);
-                }
-            }
-        }
-        return [];
-    });
-    const [legendQuery, setLegendQuery] = useState("");
-
-    useEffect(() => {
-        if (safeSites.length > 0) {
-            // Check if at least one fetched site id is present in visibleSiteIds.
-            const hasAny =
-                safeSites.some((site) => visibleSiteIds.includes(site._id));
-            if (!hasAny) {
-                setVisibleSiteIds(safeSites.map((s) => s._id));
-            }
-        }
-    }, [safeSites, visibleSiteIds]);
-
-
-    // Save visibleSiteIds to localStorage whenever they change.
+    // Save visibleSiteIds to localStorage when they change.
     useEffect(() => {
         if (typeof window !== "undefined") {
-            localStorage.setItem("visibleSiteIds", JSON.stringify(visibleSiteIds));
+            localStorage.setItem("visibleSiteIds", JSON.stringify(visibleSiteIds))
         }
-    }, [visibleSiteIds]);
-
-    // Filter sites based on legend search query
-    const filteredLegendSites = safeSites.filter(
-        (site) =>
-            site.name.toLowerCase().includes(legendQuery.toLowerCase()) ||
-            site.description.toLowerCase().includes(legendQuery.toLowerCase()) ||
-            site.openHours.toLowerCase().includes(legendQuery.toLowerCase())
-    );
-
-    // Filter sites based on visible site ids
-    const mapSites = filteredLegendSites.filter((site) =>
-        visibleSiteIds.includes(site._id)
-    );
-
-    // Calculate initial center and bounds
-    const allCoords = mapSites.map((site) => site.coordinates);
-    const bounds = allCoords.length > 0 ? L.latLngBounds(allCoords) : L.latLngBounds([[40.7128, -74.0060]]);
-    const initialCenter = bounds.isValid() ? bounds.getCenter() : [40.7128, -74.0060];
-
-    // Fit map to markers when sites change
-    const fitMapToMarkers = () => {
-        if (!mapRef.current || mapSites.length === 0) return;
-        const map = mapRef.current;
-        const bounds = L.latLngBounds(mapSites.map((site) => site.coordinates));
-        map.fitBounds(bounds, { padding: [50, 50] });
-    };
-
-    // Center map on a given site
-    const centerMapOnSite = (site) => {
-        if (!mapRef.current) return;
-        const map = mapRef.current;
-        map.setView(site.coordinates, 15, { animate: true });
-    };
-
-    // Handle map ready event
-    const handleMapReady = ({ target: map }) => {
-        mapRef.current = map;
-        fitMapToMarkers();
-    };
+    }, [visibleSiteIds])
 
     // Toggle site visibility
-    const toggleSiteVisibility = (_id) => {
-        setVisibleSiteIds((prev) =>
-            prev.includes(_id) ? prev.filter((siteId) => siteId !== _id) : [...prev, _id]
-        );
-    };
+    const toggleSiteVisibility = (id) => {
+        setVisibleSiteIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
+    }
+
+    // Toggle site expansion
+    const toggleSiteExpansion = (id) => {
+        setExpandedSites((prev) => ({
+            ...prev,
+            [id]: !prev[id],
+        }))
+    }
+
+    // Helper to return the effective color for a marker type.
+    const getColorForMarkerType = (type) => {
+        if (type === "launch" || type === "hq") {
+            return effectiveColors[type] || markerMapping[type].color
+        }
+        return markerMapping[type]?.color || "gray"
+    }
+
+    // Get all available marker types from sites
+    const availableMarkerTypes = useMemo(() => {
+        const types = new Set()
+        sites.forEach((site) => {
+            if (site.markerType) types.add(site.markerType)
+        })
+        return Array.from(types)
+    }, [sites])
+
+    // Toggle filter for marker type
+    const toggleFilter = (type) => {
+        setActiveFilters((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
+    }
+
+    // Filter sites based on legend search query and active filters
+    const filteredLegendSites = useMemo(() => {
+        return sites.filter((site) => {
+            const matchesSearch =
+                site.name.toLowerCase().includes(legendQuery.toLowerCase()) ||
+                site.description.toLowerCase().includes(legendQuery.toLowerCase()) ||
+                site.openHours.toLowerCase().includes(legendQuery.toLowerCase())
+
+            const matchesFilter = activeFilters.length === 0 || activeFilters.includes(site.markerType)
+
+            return matchesSearch && matchesFilter
+        })
+    }, [sites, legendQuery, activeFilters])
+
+    // Sites to display on map
+    const mapSites = useMemo(() => {
+        return filteredLegendSites.filter((site) => visibleSiteIds.includes(site._id))
+    }, [filteredLegendSites, visibleSiteIds])
+
+    // Fit map to markers using Google Maps bounds.
+    const fitMapToMarkers = () => {
+        if (!mapRef.current || mapSites.length === 0 || !mapsApi) return
+        const bounds = new mapsApi.LatLngBounds()
+        mapSites.forEach((site) => {
+            const { lat, lng } = Array.isArray(site.coordinates)
+                ? { lat: site.coordinates[0], lng: site.coordinates[1] }
+                : site.coordinates
+            bounds.extend({ lat, lng })
+        })
+        mapRef.current.fitBounds(bounds)
+    }
+
+    // Center map on a specific site
+    const centerMapOnSite = (site) => {
+        if (!mapRef.current) return
+        const { lat, lng } = Array.isArray(site.coordinates)
+            ? { lat: site.coordinates[0], lng: site.coordinates[1] }
+            : site.coordinates
+        mapRef.current.panTo({ lat, lng })
+        mapRef.current.setZoom(15)
+        setSelectedSiteId(site._id)
+    }
+
+    // When the map loads, store the map instance and Google Maps API, then fit bounds.
+    const onMapLoad = (map) => {
+        mapRef.current = map
+        setMapsApi(window.google.maps)
+        if (mapSites.length > 0 && window.google && window.google.maps) {
+            const bounds = new window.google.maps.LatLngBounds()
+            mapSites.forEach((site) => {
+                const { lat, lng } = Array.isArray(site.coordinates)
+                    ? { lat: site.coordinates[0], lng: site.coordinates[1] }
+                    : site.coordinates
+                bounds.extend({ lat, lng })
+            })
+            map.fitBounds(bounds)
+        }
+    }
+
+    // Update map bounds when sites change
+    useEffect(() => {
+        if (mapRef.current && mapsApi && mapSites.length > 0) {
+            fitMapToMarkers()
+        }
+    }, [mapSites, mapsApi])
+
+    // Helper to create a custom icon for a marker.
+    const getMarkerIcon = (site) => {
+        if (!mapsApi) return null
+        const mapping = markerMapping[site.markerType] || { icon: Rocket, color: "gray" }
+        const color = getColorForMarkerType(site.markerType)
+        const svgMarkup = renderToStaticMarkup(<mapping.icon color={color} size={24} />)
+        return {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgMarkup)}`,
+            scaledSize: new mapsApi.Size(30, 30),
+            anchor: new mapsApi.Point(15, 30),
+        }
+    }
+
+    // Toggle all sites visibility
+    const toggleAllSites = () => {
+        if (visibleSiteIds.length === filteredLegendSites.length) {
+            setVisibleSiteIds([])
+        } else {
+            setVisibleSiteIds(filteredLegendSites.map((site) => site._id))
+        }
+    }
+
+    // Clear all filters
+    const clearFilters = () => {
+        setActiveFilters([])
+        setLegendQuery("")
+    }
+
+    const selectedSite = sites.find((s) => s._id === selectedSiteId)
 
     return (
         <>
-            {error && <Alert type="error" message={error} onClose={() => setError("")} />}
-            <div className={`container mt-8 mx-auto px-4 py-8`}>
+            <div className="container mt-8 mx-auto px-4 py-8">
+
 
                 <div className="flex items-center space-x-4">
                     <Map className="w-8 h-8" />
                     <h1 className="text-4xl font-black font-mono text-start">Sites Map</h1>
                 </div>
-                <div className="flex items-center justify-center mt-12 join">
-                    <label className="input input-bordered input-primary flex items-center gap-2 join-item w-full max-w-xs">
-                        <input type="text" className="grow placeholder-oklch-p" placeholder="Discover hidden space stations..." value={legendQuery} onChange={(e) => setLegendQuery(e.target.value)} style={{ color: "oklch(var(--p))" }} />
-                        <Search className="w-6 h-6" style={{ color: "oklch(var(--p))" }} />
-                    </label>
-                    <button className="btn btn-primary join-item" onClick={fitMapToMarkers}>
-                        <MapPinned className="w-6 h-6" />
-                        Center map
-                    </button>
-                </div>
+
                 <div className="flex h-screen mt-12 space-x-4">
                     {loading && <Loading />}
-                    {!loading && safeSites.length === 0 && <NoData message="No sites data available" />}
-                    {!loading && safeSites.length > 0 && (
+                    {!loading && sites.length === 0 && <NoData message="No sites data available" />}
+                    {!loading && sites.length > 0 && (
                         <>
-                            <div className="relative rounded-2xl overflow-hidden shadow-xl" style={{ width: "60%", zIndex: 0 }}>
-                                <MapContainer
-                                    center={[initialCenter.lat, initialCenter.lng]}
-                                    zoom={13}
-                                    style={{ height: "100%", width: "100%" }}
-                                    whenReady={handleMapReady}
-                                >
-                                    <TileLayer
-                                        attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    />
-                                    {mapSites.map((site) => {
-                                        const mapping = markerMapping[site.markerType] || { icon: Rocket, color: "gray" };
-                                        const customIcon = createCustomIcon(mapping.icon, mapping.color);
-                                        return (
-                                            <React.Fragment key={site._id}>
-                                                <Marker position={site.coordinates} icon={customIcon}>
-                                                    <Popup>
-                                                        <div className="flex items-center gap-2">
-                                                            <mapping.icon
-                                                                className="w-6 h-6"
-                                                                style={{ color: mapping.color }}
-                                                            />
-                                                            <h2
-                                                                className="text-lg font-bold font-mono"
-                                                                style={{ color: mapping.color }}
+                            {/* Map Section */}
+                            <div
+                                className="relative rounded-2xl overflow-hidden shadow-xl"
+                                style={{ width: "60%", height: "100%", zIndex: 0 }}
+                            >
+                                <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
+                                    <GoogleMap
+                                        mapContainerStyle={containerStyle}
+                                        center={defaultCenter}
+                                        zoom={10}
+                                        onLoad={onMapLoad}
+                                    >
+                                        {mapsApi &&
+                                            mapSites.map((site) => {
+                                                const { lat, lng } = Array.isArray(site.coordinates)
+                                                    ? { lat: site.coordinates[0], lng: site.coordinates[1] }
+                                                    : site.coordinates;
+                                                return (
+                                                    <Fragment key={site._id}>
+                                                        <MarkerF
+                                                            position={{ lat, lng }}
+                                                            onClick={() => setSelectedSiteId(site._id)}
+                                                            icon={getMarkerIcon(site)}
+                                                        />
+                                                        {selectedSiteId === site._id && (
+                                                            <InfoWindowF
+                                                                position={{ lat, lng }}
+                                                                onCloseClick={() => setSelectedSiteId(null)}
                                                             >
-                                                                {site.name}
-                                                            </h2>
-                                                        </div>
-                                                        <p>{site.description}</p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Open Hours: {site.openHours}
-                                                        </p>
-                                                    </Popup>
-                                                </Marker>
-                                                {site.geometry && (
-                                                    <Polygon
-                                                        positions={site.geometry}
-                                                        pathOptions={{
-                                                            color: mapping.color,
-                                                            weight: 2,
-                                                            fillOpacity: 0.2,
-                                                        }}
-                                                    />
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    })}
-                                </MapContainer>
+                                                                <div className="flex flex-col gap-2">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <div className="flex items-center gap-2">
+                                                                            {React.createElement(
+                                                                                markerMapping[site.markerType]?.icon || Rocket,
+                                                                                {
+                                                                                    className: "w-6 h-6",
+                                                                                    style: { color: getColorForMarkerType(site.markerType) },
+                                                                                }
+                                                                            )}
+                                                                            <h2
+                                                                                className="text-lg font-bold font-mono"
+                                                                                style={{ color: getColorForMarkerType(site.markerType) }}
+                                                                            >
+                                                                                {site.name}
+                                                                            </h2>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Body */}
+                                                                    <p className="text-sm font-mono">
+                                                                        {site.description}
+                                                                    </p>
+                                                                    <p className="text-sm text-gray-600">
+                                                                        Open Hours: {site.openHours}
+                                                                    </p>
+                                                                    <button
+                                                                        className="btn btn-primary btn-sm mt-2 font-mono text-accent-foreground"
+                                                                        onClick={() => centerMapOnSite(site)}
+                                                                    >
+                                                                        <MapPinned className="w-4 h-4" /> Center on this site
+                                                                    </button>
+                                                                </div>
+                                                            </InfoWindowF>
+
+                                                        )}
+                                                        {site.geometry && Array.isArray(site.geometry) && (
+                                                            <PolygonF
+                                                                paths={site.geometry.map((pt) =>
+                                                                    Array.isArray(pt) ? { lat: pt[0], lng: pt[1] } : pt
+                                                                )}
+                                                                options={{
+                                                                    strokeColor: getColorForMarkerType(site.markerType),
+                                                                    strokeOpacity: 0.8,
+                                                                    strokeWeight: 2,
+                                                                    fillColor: getColorForMarkerType(site.markerType),
+                                                                    fillOpacity: 0.2,
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </Fragment>
+                                                );
+                                            })}
+                                    </GoogleMap>
+                                </LoadScript>
                             </div>
 
-                            <div
-                                className="flex flex-col p-4 overflow-y-auto space-y-4 rounded-2xl shadow-xl"
-                                style={{ width: "40%", height: "100%" }}
-                            >
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="w-6 h-6" />
-                                        <h3 className="text-xl font-bold font-mono">Legend</h3>
-                                    </div>
-                                </div>
-
-                                {filteredLegendSites.map((site) => {
-                                    const mapping = markerMapping[site.markerType] || { icon: Rocket, color: "gray" };
-                                    const IconComponent = mapping.icon;
-                                    return (
-                                        <div className="card bg-primary shadow-xl" key={site._id}>
-                                            <div className="card-body">
-                                                <div className="card-title flex">
-                                                    <div className="tooltip tooltip-secondary tooltip-bottom" data-tip={site.name}>
-                                                        <div className="flex items-center gap-2">
-                                                            <IconComponent className="w-6 h-6 align-middle" style={{ color: mapping.color }} />
-                                                            <h2 className="text-lg font-bold font-mono text-accent-foreground line-clamp-1 text-left leading-none">{site.name}</h2>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center justify-center join ml-auto tooltip tooltip-secondary tooltip-left" data-tip="Toggle visibility or center map">
-                                                        <input type="checkbox" checked={visibleSiteIds.includes(site._id)}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                toggleSiteVisibility(site._id);
-                                                            }}
-                                                            className="checkbox checkbox-secondary checkbox-lg join-item"
-                                                        />
-                                                        <button className="btn btn-secondary btn-sm join-item" onClick={() => centerMapOnSite(site)}><MapPinned /></button>
-                                                    </div>
+                            {/* Legend Sidebar */}
+                            <div className="rounded-2xl shadow-xl overflow-hidden border" style={{ width: "40%", height: "100%" }}>
+                                <SidebarProvider>
+                                    <Sidebar
+                                        collapsible="none"
+                                        className="h-full border-none w-full !max-w-full"
+                                        style={{ "--sidebar-width": "100%" }}
+                                    >
+                                        <SidebarHeader className="border-b p-4 bg-primary/5 w-full">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Layers className="w-5 h-5" />
+                                                    <h3 className="text-xl font-bold">Legend</h3>
                                                 </div>
-                                                <div className="tooltip tooltip-secondary tooltip-bottom" data-tip={site.description}>
-                                                    <p className="text-sm text-primary-content line-clamp-2">{site.description}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="outline" size="sm" onClick={toggleAllSites} className="h-8">
+                                                                {visibleSiteIds.length === filteredLegendSites.length ? (
+                                                                    <EyeOff className="h-4 w-4 mr-1" />
+                                                                ) : (
+                                                                    <Eye className="h-4 w-4 mr-1" />
+                                                                )}
+                                                                {visibleSiteIds.length === filteredLegendSites.length ? "Hide All" : "Show All"}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {visibleSiteIds.length === filteredLegendSites.length
+                                                                ? "Hide all sites"
+                                                                : "Show all sites"}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="outline" size="sm" onClick={fitMapToMarkers} className="h-8">
+                                                                <MapPinned className="h-4 w-4 mr-1" />
+                                                                Fit Map
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Fit map to visible markers</TooltipContent>
+                                                    </Tooltip>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
 
-                                {filteredLegendSites.length === 0 && (<NoData message="No search results found" />)}
+                                            <div className="flex flex-col gap-3">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="Search sites..."
+                                                        value={legendQuery}
+                                                        onChange={(e) => setLegendQuery(e.target.value)}
+                                                        className="pl-8 pr-8"
+                                                    />
+                                                    {legendQuery && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                                                            onClick={() => setLegendQuery("")}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                            <span className="sr-only">Clear search</span>
+                                                        </Button>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Badge variant="outline" className="flex items-center gap-1">
+                                                        <Filter className="h-3 w-3" />
+                                                        Filters
+                                                        {(activeFilters.length > 0 || legendQuery) && (
+                                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={clearFilters}>
+                                                                <X className="h-3 w-3" />
+                                                                <span className="sr-only">Clear filters</span>
+                                                            </Button>
+                                                        )}
+                                                    </Badge>
+
+                                                    {availableMarkerTypes.map((type) => (
+                                                        <Badge
+                                                            key={type}
+                                                            variant={activeFilters.includes(type) ? "default" : "outline"}
+                                                            className="cursor-pointer"
+                                                            onClick={() => toggleFilter(type)}
+                                                            style={{
+                                                                backgroundColor: activeFilters.includes(type)
+                                                                    ? getColorForMarkerType(type)
+                                                                    : "transparent",
+                                                                borderColor: getColorForMarkerType(type),
+                                                                color: activeFilters.includes(type) ? "white" : getColorForMarkerType(type),
+                                                            }}
+                                                        >
+                                                            {React.createElement(markerMapping[type]?.icon || Rocket, {
+                                                                className: "h-3 w-3 mr-1",
+                                                            })}
+                                                            {markerMapping[type]?.label || type}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </SidebarHeader>
+
+                                        <SidebarContent className="p-0 w-full flex flex-col">
+                                            <SidebarGroup className="w-full flex-none">
+                                                <SidebarGroupContent className="w-full">
+                                                    <SidebarMenu className="w-full">
+                                                        {filteredLegendSites.length === 0 ? (
+                                                            <div className="flex flex-col items-center justify-center p-8 text-center">
+                                                                <Search className="h-12 w-12 text-muted-foreground mb-4" />
+                                                                <h3 className="text-lg font-medium">No sites found</h3>
+                                                                <p className="text-sm text-muted-foreground mt-1">
+                                                                    Try adjusting your search or filters
+                                                                </p>
+                                                                <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                                                                    Clear filters
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="divide-y w-full overflow-y-auto h-[calc(100vh-230px)]">
+                                                                {filteredLegendSites.map((site) => {
+                                                                    const mapping = markerMapping[site.markerType] || { icon: Rocket, color: "gray" }
+                                                                    const IconComponent = mapping.icon
+                                                                    const isVisible = visibleSiteIds.includes(site._id)
+                                                                    const isExpanded = expandedSites[site._id]
+
+                                                                    return (
+                                                                        <Collapsible
+                                                                            key={site._id}
+                                                                            open={isExpanded}
+                                                                            onOpenChange={() => toggleSiteExpansion(site._id)}
+                                                                            className="w-full"
+                                                                        >
+                                                                            <SidebarMenuItem className="px-0 w-full">
+                                                                                <div
+                                                                                    className={`flex items-center w-full p-3 ${isVisible ? "bg-primary/5" : "bg-transparent"} hover:bg-primary/10 transition-colors`}
+                                                                                >
+                                                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                                        <div
+                                                                                            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                                                                                            style={{ backgroundColor: `${getColorForMarkerType(site.markerType)}20` }}
+                                                                                        >
+                                                                                            <IconComponent
+                                                                                                className="w-4 h-4"
+                                                                                                style={{ color: getColorForMarkerType(site.markerType) }}
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        <div className="flex-1 min-w-0">
+                                                                                            <div className="flex items-center">
+                                                                                                <h4 className="text-sm font-medium truncate mr-1">{site.name}</h4>
+                                                                                                <Badge
+                                                                                                    variant="outline"
+                                                                                                    className="text-xs"
+                                                                                                    style={{
+                                                                                                        borderColor: getColorForMarkerType(site.markerType),
+                                                                                                        color: getColorForMarkerType(site.markerType),
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {markerMapping[site.markerType]?.label || site.markerType}
+                                                                                                </Badge>
+                                                                                            </div>
+                                                                                            <p className="text-xs text-muted-foreground truncate">
+                                                                                                {site.description}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div className="flex items-center gap-2 ml-2">
+                                                                                        <Tooltip>
+                                                                                            <TooltipTrigger asChild>
+                                                                                                <Button
+                                                                                                    variant="ghost"
+                                                                                                    size="icon"
+                                                                                                    className="h-8 w-8"
+                                                                                                    onClick={(e) => {
+                                                                                                        e.stopPropagation()
+                                                                                                        toggleSiteVisibility(site._id)
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {isVisible ? (
+                                                                                                        <Eye className="h-4 w-4" />
+                                                                                                    ) : (
+                                                                                                        <EyeOff className="h-4 w-4" />
+                                                                                                    )}
+                                                                                                </Button>
+                                                                                            </TooltipTrigger>
+                                                                                            <TooltipContent>
+                                                                                                {isVisible ? "Hide from map" : "Show on map"}
+                                                                                            </TooltipContent>
+                                                                                        </Tooltip>
+
+                                                                                        <Tooltip>
+                                                                                            <TooltipTrigger asChild>
+                                                                                                <Button
+                                                                                                    variant="ghost"
+                                                                                                    size="icon"
+                                                                                                    className="h-8 w-8"
+                                                                                                    onClick={(e) => {
+                                                                                                        e.stopPropagation()
+                                                                                                        centerMapOnSite(site)
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <MapPinned className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                            </TooltipTrigger>
+                                                                                            <TooltipContent>Center map on this site</TooltipContent>
+                                                                                        </Tooltip>
+
+                                                                                        <CollapsibleTrigger asChild>
+                                                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                                                <ChevronDown
+                                                                                                    className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                                                                                />
+                                                                                            </Button>
+                                                                                        </CollapsibleTrigger>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <CollapsibleContent>
+                                                                                    <div className="p-3 pt-0 pl-14 bg-muted/30">
+                                                                                        <div className="space-y-3">
+                                                                                            <div className="flex items-start gap-2">
+                                                                                                <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                                                                                <div className="flex-1">
+                                                                                                    <h5 className="text-xs font-medium">Description</h5>
+                                                                                                    <p className="text-sm">{site.description}</p>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div className="flex items-start gap-2">
+                                                                                                <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                                                                                <div className="flex-1">
+                                                                                                    <h5 className="text-xs font-medium">Open Hours</h5>
+                                                                                                    <p className="text-sm">{site.openHours}</p>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div className="flex items-start gap-2">
+                                                                                                <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                                                                                <div className="flex-1">
+                                                                                                    <h5 className="text-xs font-medium">Status</h5>
+                                                                                                    <div className="flex items-center gap-1 mt-1">
+                                                                                                        {isVisible ? (
+                                                                                                            <>
+                                                                                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                                                                                                                <span className="text-sm text-green-600">Visible on map</span>
+                                                                                                            </>
+                                                                                                        ) : (
+                                                                                                            <>
+                                                                                                                <XCircle className="w-3.5 h-3.5 text-red-500" />
+                                                                                                                <span className="text-sm text-red-600">Hidden from map</span>
+                                                                                                            </>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div className="flex justify-end gap-2 pt-2">
+                                                                                                <Button
+                                                                                                    variant="default"
+                                                                                                    size="sm"
+                                                                                                    className="h-8"
+                                                                                                    style={{
+                                                                                                        backgroundColor: getColorForMarkerType(site.markerType),
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+                                                                                                    View details
+                                                                                                </Button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </CollapsibleContent>
+                                                                            </SidebarMenuItem>
+                                                                        </Collapsible>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </SidebarMenu>
+                                                </SidebarGroupContent>
+                                            </SidebarGroup>
+                                        </SidebarContent>
+
+                                        <SidebarFooter className="p-4 border-t w-full">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-sm text-muted-foreground">{filteredLegendSites.length} sites found</div>
+                                                <div className="text-sm">{visibleSiteIds.length} visible on map</div>
+                                            </div>
+                                        </SidebarFooter>
+                                    </Sidebar>
+                                </SidebarProvider>
                             </div>
                         </>
                     )}

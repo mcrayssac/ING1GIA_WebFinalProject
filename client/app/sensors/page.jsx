@@ -23,7 +23,8 @@ import { Input } from "@/components/ui/input";
 import Loading from "@/components/loading";
 import Alert from "@/components/alert";
 import NoData from "@/components/no-data";
-
+import { useUser } from "@/contexts/UserContext";
+import { Loader2 } from "lucide-react";
 export default function SensorsPage() {
   const [sensors, setSensors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,8 @@ export default function SensorsPage() {
   const [globalFilter, setGlobalFilter] = useState("");
 
   const router = useRouter();
+  const { user } = useUser();
+  const isAdmin = user?.admin === true;
 
   useEffect(() => {
     const fetchSensors = async () => {
@@ -39,8 +42,16 @@ export default function SensorsPage() {
         if (!response.ok) throw new Error("Failed to fetch sensors");
         const data = await response.json();
         setSensors(data);
-      } catch (err) {
-        setError(err.message);
+        // Map the requiredGrade id to its name
+        const gradesMap = sensors.reduce((acc, sensor) => {
+          acc[sensor._id] = sensor.designation;
+          return acc;
+        }, {});
+        const updatedSensors = data.map(sensor => ({
+          ...sensor,
+          requiredGrade: sensor.requiredGrade.map(gradeId => gradesMap[gradeId] || 'Unknown grade'),
+        }));
+        setSensors(updatedSensors);
       } finally {
         setLoading(false);
       }
@@ -48,6 +59,12 @@ export default function SensorsPage() {
 
     fetchSensors();
   }, []);
+  useEffect(() => {
+    if (user === false) {
+        router.replace('/login')
+        return
+    }
+}, [user, router]) 
 
   const handleDelete = async (sensorId) => {
     if (window.confirm("Are you sure you want to delete this sensor?")) {
@@ -85,22 +102,26 @@ export default function SensorsPage() {
         header: "Created At",
         cell: ({ row }) => new Date(row.getValue("CreatedAt")).toLocaleDateString(),
       },
-      {
-        accessorKey: "actions",
-        header: "Actions",
-        cell: ({ row }) => (
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(row.original._id);
-            }}
-          >
-            Delete
-          </Button>
-        ),
-      },
+      ...(isAdmin
+        ? [
+            {
+              accessorKey: "actions",
+              header: "Actions",
+              cell: ({ row }) => (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(row.original._id);
+                  }}
+                >
+                  Delete
+                </Button>
+              ),
+            },
+          ]
+        : []),
     ],
-    [sensors]
+    [sensors, isAdmin]
   );
 
   const table = useReactTable({
@@ -120,6 +141,14 @@ export default function SensorsPage() {
     table.setGlobalFilter(globalFilter);
   }, [globalFilter, table]);
 
+  
+  if (user === undefined) {
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    )
+  }
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Sensors List</h1>
@@ -197,11 +226,13 @@ export default function SensorsPage() {
               Next
             </Button>
           </div>
-          <div className="flex justify-start mt-4">
-          <Link href="/sensorsForm">
-            <Button>Add a New Sensor</Button>
-          </Link>
-          </div>
+          {isAdmin && (
+            <div className="flex justify-start mt-4">
+              <Link href="/sensorsForm">
+                <Button>Add a New Sensor</Button>
+              </Link>
+            </div>
+          )}
         </>
       )}
     </div>

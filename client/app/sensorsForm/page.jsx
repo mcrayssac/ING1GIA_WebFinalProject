@@ -1,19 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/contexts/UserContext";
+
+import { Loader2 } from "lucide-react";
 
 export default function AddSensorPage() {
+  const { user } = useUser();
+  const router = useRouter();
   const [sensor, setSensor] = useState({
     designation: "",
     requiredGrade: "Technician",
     supplier: "",
     CreatedAt: new Date().toISOString().split("T")[0], // default to today's date
   });
+   useEffect(() => {
+      if (user === false) {
+          router.replace('/login')
+          return
+      }
+      if (user && !user.admin) {
+          router.replace('/sensors')
+          return
+      }
   
-  const router = useRouter();
+  }, [user, router]) 
+  if (user === undefined) {
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    )
+}
 
   const handleChange = (e) => {
     const { name, value } = e.target;

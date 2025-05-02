@@ -16,5 +16,8 @@ COPY . .
 # Expose Next.js dev port
 EXPOSE 3000
 
+RUN   chmod -R 777 ./app
+
+
 # Run Next.js in dev mode
 CMD ["npm", "run", "dev"]

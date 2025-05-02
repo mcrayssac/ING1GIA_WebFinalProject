@@ -2,13 +2,15 @@ const express = require('express');
 const chalk = require('chalk');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+require('dotenv').config();
 
 // Load environment variables
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 const PORT = process.env.PORT;
 const MONGO_URI = process.env.MONGO_URI;
-//console.log('Mongo URI:', MONGO_URI);
+console.log('Mongo URI:', MONGO_URI);
 
 // Chalk colors
 const error = chalk.bold.red;
@@ -23,8 +25,12 @@ const datetime = chalk.bold.yellow;
 app.use(cors({
     origin: [
         process.env.ORIGIN_LOCAL
-    ]
+    ],
+    credentials: true,
 }));
+
+// Middleware to parse cookies
+app.use(cookieParser());
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
@@ -32,6 +38,7 @@ mongoose.connect(MONGO_URI)
     .catch(err => console.error(error('Error connecting to MongoDB:', err)));
 
 // Load models
+require('./models/Employee');
 require('./models/User');
 require('./models/Site');
 require('./models/Product');
@@ -65,6 +72,10 @@ app.get('/', (req, res) => {
 });
 
 // Load routes
+const emailRoutes = require('./routes/emailRoutes');
+app.use('/api/send-email', emailRoutes);
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes); 
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
 const siteRoutes = require('./routes/siteRoutes');
@@ -85,8 +96,13 @@ app.use('/api/machines', machinesRoutes);
 // app.use('/api/machinesForm', addMachinesRoutes);
 const sensorsRoutes = require('./routes/sensorsRoutes');
 app.use('/api/sensors', sensorsRoutes);
+
+const satellitesRoutes = require('./routes/satellitesRoutes');
+app.use('/api/satellites', satellitesRoutes);
 const gradeRoutes = require('./routes/gradeRoutes');
 app.use('/api/grades', gradeRoutes);
+const ticketRoutes = require('./routes/ticketRoutes');
+app.use('/api/tickets', ticketRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
