@@ -44,6 +44,8 @@ require('./models/Site');
 require('./models/Product');
 require('./models/Statistic');
 require('./models/HistoryEvent');
+require('./models/News');
+require('./models/Machine'); 
 
 // Track all incoming requests
 app.use((req, res, next) => {
@@ -84,6 +86,15 @@ const statisticRoutes = require('./routes/statisticRoutes');
 app.use('/api/statistics', statisticRoutes);
 const historyEventRoutes = require('./routes/historyEventRoutes');
 app.use('/api/history-events', historyEventRoutes);
+const newsRoutes = require('./routes/newsRoutes');
+app.use('/api/news', newsRoutes);
+const machinesRoutes = require('./routes/machinesRoutes');
+app.use('/api/machines', machinesRoutes);
+// const addMachinesRoutes = require('./routes/addMachinesRoutes');
+// app.use('/api/machinesForm', addMachinesRoutes);
+const sensorsRoutes = require('./routes/sensorsRoutes');
+app.use('/api/sensors', sensorsRoutes);
+
 const satellitesRoutes = require('./routes/satellitesRoutes');
 app.use('/api/satellites', satellitesRoutes);
 const gradeRoutes = require('./routes/gradeRoutes');

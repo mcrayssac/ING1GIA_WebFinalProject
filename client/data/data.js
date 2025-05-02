@@ -10,6 +10,11 @@ const navGuest = {
             icon: "House",
         },
         {
+            title: "News",
+            url: "/news",
+            icon: "Newspaper",
+        },
+        {
             title: "Products",
             url: "/products",
             icon: "Box",
@@ -45,6 +50,16 @@ const navUser = {
     title: "User",
     items: [
         {
+            title: "Machines",
+            url: "/machines",
+            icon: "Cog",
+        },
+        {
+            title: "Sensors",
+            url: "/sensors",
+            icon: "Activity", 
+        },
+        {
             title: "Progress",
             url: "/progress",
             icon: "Trophy",
@@ -67,12 +82,38 @@ const navAdmin = {
     title: "Admin",
     items: [
         {
+            title: "Machines",
+            url: "/machines",
+            icon: "Cog",
+            items: [
+                {
+                    title: "Add Machine",
+                    url: "/machinesForm",
+                    icon: "Plus",
+                },
+            ],
+        },
+        {
+            title: "Sensors",
+            url: "/sensors",
+            icon: "Activity",
+            items: [
+                {
+                    title: "Add Sensor",
+                    url: "/sensorsForm",
+                    icon: "Plus",
+                },
+            ],
+        },
+        {
             title: "Tickets",
             url: "/tickets",
             icon: "Ticket",
         },
     ],
 };
+
+
 
 const navSecondary = [
     {

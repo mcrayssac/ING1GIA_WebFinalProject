@@ -21,6 +21,4 @@ const gradeSchema = new mongoose.Schema({
   }
 });
 
-const Grade = mongoose.model(process.env.MONGO_Collection_Grade, gradeSchema);
-
-module.exports = Grade;
+module.exports= mongoose.model( process.env.MONGO_Collection_Grade,gradeSchema);
