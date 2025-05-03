@@ -48,11 +48,11 @@ export function AppSidebar({ ...props }) {
                         <SidebarMenuButton size="lg" asChild>
                             <a>
                                 <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <img src="/pictures/spacey_logo.png" alt="SpaceX" className="rounded-lg" />
+                                    <img src="/pictures/spacey_logo.png" alt="SpaceY" className="rounded-lg" />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold">SpaceY</span>
-                                    <span className="truncate text-xs">Exploration company</span>
+                                    <span className="truncate font-semibold">Exploration company</span>
+                                    <span className="truncate text-xs">Universe is our playground</span>
                                 </div>
                             </a>
                         </SidebarMenuButton>

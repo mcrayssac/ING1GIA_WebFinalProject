@@ -12,10 +12,17 @@ import { Button } from "@/components/ui/button"
  * To bypass the loading overlay for specific buttons or links:
  * - Add data-action="close-overlay" attribute to the element
  * 
+ * To ensure the loading overlay appears for navigation buttons:
+ * - Add data-navigation="true" attribute to the element
+ * 
  * Example:
  * ```jsx
  * <Button data-action="close-overlay" onClick={() => {}}>
  *   No Loading Overlay
+ * </Button>
+ * 
+ * <Button data-navigation="true" onClick={() => router.push('/some-page')}>
+ *   Show Loading Overlay
  * </Button>
  * ```
  */

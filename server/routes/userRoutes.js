@@ -45,15 +45,13 @@ router.post('/login', authenticateUser, (req, res) => {
     res.cookie('token', accessToken, {
         httpOnly: true,
         sameSite: 'Lax',
-        secure: false,
-        maxAge: 15 * 60 * 1000
+        secure: false
     });
 
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         sameSite: 'Lax',
-        secure: false,
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        secure: false
     });
 
     res.status(200).json({ success: true });

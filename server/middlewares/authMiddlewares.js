@@ -49,7 +49,7 @@ const verifyToken = (req, res, next) => {
     if (!token) return res.status(401).send('Access token missing');
 
     jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
-        if (err && err.name === 'TokenExpiredError') {
+        if (err) {
             // Try refreshing token
             if (!refreshToken) return res.status(401).send('Refresh token missing');
 
@@ -68,8 +68,7 @@ const verifyToken = (req, res, next) => {
                     res.cookie('token', newAccessToken, {
                         httpOnly: true,
                         sameSite: 'Lax',
-                        secure: false,
-                        maxAge: 15 * 60 * 1000
+                        secure: false
                     });
 
                     console.log(success('Access token refreshed'));

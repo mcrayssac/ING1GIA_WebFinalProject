@@ -380,6 +380,7 @@ export default function MachinesPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => router.push("/machinesForm")}
+                                data-navigation="true"
                             >
                                 Add New Machine
                             </Button>
