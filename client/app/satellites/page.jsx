@@ -5,6 +5,7 @@ import * as Cesium from "cesium"
 import * as satellite from "satellite.js"
 import { Viewer, Entity } from "resium"
 import { Color, ClockRange, ClockStep, UrlTemplateImageryProvider } from "cesium"
+import { motion, AnimatePresence } from "framer-motion"
 import {
     Rocket,
     Satellite,
@@ -38,6 +39,101 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { useToastAlert } from "@/contexts/ToastContext"
+
+// Animation variants
+const fadeInVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { duration: 0.4 }
+    }
+}
+
+const slideInVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30
+        }
+    }
+}
+
+const slideFromTopVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30
+        }
+    }
+}
+
+const staggerContainerVariants = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.07,
+            delayChildren: 0.2
+        }
+    }
+}
+
+const pulseVariants = {
+    initial: { scale: 1 },
+    pulse: {
+        scale: [1, 1.05, 1],
+        transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            repeatType: "loop"
+        }
+    }
+}
+
+const iconAnimationVariants = {
+    initial: { rotate: 0 },
+    hover: {
+        rotate: [0, 15, -15, 0],
+        transition: {
+            duration: 0.6,
+            ease: "easeInOut"
+        }
+    },
+    tap: { 
+        scale: 0.9, 
+        transition: { 
+            type: "spring", 
+            stiffness: 400 
+        } 
+    },
+    rotating: {
+        rotate: 360,
+        transition: {
+            duration: 8,
+            repeat: Infinity,
+            ease: "linear"
+        }
+    }
+}
+
+const bounceVariants = {
+    initial: { y: 0 },
+    bounce: {
+        y: [0, -10, 0],
+        transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            repeatType: "loop"
+        }
+    }
+}
 
 // Helper: Load an SVG from a URL, override fill, width, and height, and return a data URL
 async function loadAndColorIcon(url, color, targetWidth, targetHeight) {
@@ -394,23 +490,44 @@ export default function SatellitesPage() {
 
     return (
         <TooltipProvider>
-            <div ref={containerRef} className={`relative flex h-100 ${fullscreen ? "w-screen" : "container mx-auto p-4"}`}>
+            <div ref={containerRef} className={`relative flex h-100 ${fullscreen && "w-screen"}`}>
                 {/* Loading overlay */}
                 {loading && (
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-                        <div className="w-full max-w-md flex flex-col items-center gap-4">
-                            <Globe className="h-16 w-16 animate-pulse text-primary" />
-                            <h2 className="text-2xl font-bold">Loading Satellite Data</h2>
-                            <Progress value={loadingProgress} className="w-full" />
-                            <p className="text-muted-foreground">Fetching orbital parameters...</p>
-                        </div>
-                    </div>
+                    <motion.div
+                        className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center"
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeInVariants}
+                    >
+                        <motion.div
+                            className="w-full max-w-md flex flex-col items-center gap-4"
+                            initial="hidden"
+                            animate="visible"
+                            variants={staggerContainerVariants}
+                        >
+                            <motion.div variants={pulseVariants}>
+                                <Globe className="h-16 w-16 animate-pulse text-primary" />
+                            </motion.div>
+                            <motion.h2 className="text-2xl font-bold" variants={slideFromTopVariants}>
+                                Loading Satellite Data
+                            </motion.h2>
+                            <motion.div className="w-full" variants={slideInVariants}>
+                                <Progress value={loadingProgress} className="w-full" />
+                            </motion.div>
+                            <motion.p className="text-muted-foreground" variants={slideInVariants}>
+                                Fetching orbital parameters...
+                            </motion.p>
+                        </motion.div>
+                    </motion.div>
                 )}
 
                 {/* Sidebar */}
-                <div
+                <motion.div
                     className={`border-r transition-all duration-300 flex flex-col ${sidebarCollapsed ? "w-16" : "w-80"
                         } ${fullscreen ? "h-screen" : "h-[800px]"}`}
+                    initial="hidden"
+                    animate="visible"
+                    variants={slideInVariants}
                 >
                     {/* Sidebar Header */}
                     <div className="p-4 border-b flex items-center justify-between">
@@ -509,16 +626,35 @@ export default function SatellitesPage() {
                                             <ScrollArea className="flex-1">
                                                 <div className="p-4 pt-0 space-y-2">
                                                     {filteredStarlink.map((sat, i) => (
-                                                        <div
+                                                        <motion.div
                                                             key={sat.name}
                                                             className={`flex items-center justify-between p-2 rounded-md ${displayStarlinkMap[i] ? "bg-primary/10" : "hover:bg-muted"
                                                                 }`}
+                                                            whileHover={{ 
+                                                                x: 4, 
+                                                                backgroundColor: displayStarlinkMap[i] ? "rgba(var(--primary), 0.15)" : "rgba(var(--muted), 0.7)" 
+                                                            }}
+                                                            initial="hidden"
+                                                            animate="visible"
+                                                            variants={slideInVariants}
+                                                            custom={i}
+                                                            transition={{ delay: i * 0.05 }}
                                                         >
                                                             <div className="flex items-center gap-2">
-                                                                <Satellite
-                                                                    className={`h-4 w-4 ${displayStarlinkMap[i] ? "text-primary" : "text-muted-foreground"}`}
-                                                                />
-                                                                <span className="text-sm truncate max-w-[140px]">{sat.name}</span>
+                                                                <motion.div 
+                                                                    animate={displayStarlinkMap[i] ? "pulse" : "initial"}
+                                                                    variants={pulseVariants}
+                                                                >
+                                                                    <Satellite
+                                                                        className={`h-4 w-4 ${displayStarlinkMap[i] ? "text-primary" : "text-muted-foreground"}`}
+                                                                    />
+                                                                </motion.div>
+                                                                <motion.span
+                                                                    className="text-sm truncate max-w-[140px]"
+                                                                    animate={displayStarlinkMap[i] ? { color: "oklch(var(--primary))" } : {}}
+                                                                >
+                                                                    {sat.name}
+                                                                </motion.span>
                                                             </div>
                                                             <div className="flex items-center gap-1">
                                                                 <Switch
@@ -527,17 +663,23 @@ export default function SatellitesPage() {
                                                                     onCheckedChange={() => toggleStarlink(i)}
                                                                     size="sm"
                                                                 />
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-7 w-7"
-                                                                    onClick={() => focusOnSatellite("starlink", i)}
-                                                                    disabled={!displayStarlinkMap[i]}
+                                                                <motion.div
+                                                                    whileHover="hover"
+                                                                    whileTap="tap"
+                                                                    variants={iconAnimationVariants}
                                                                 >
-                                                                    <Compass className="h-3.5 w-3.5" />
-                                                                </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-7 w-7"
+                                                                        onClick={() => focusOnSatellite("starlink", i)}
+                                                                        disabled={!displayStarlinkMap[i]}
+                                                                    >
+                                                                        <Compass className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </motion.div>
                                                             </div>
-                                                        </div>
+                                                        </motion.div>
                                                     ))}
                                                     {filteredStarlink.length === 0 && (
                                                         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -554,69 +696,134 @@ export default function SatellitesPage() {
                                     {activeTab === "info" && (
                                         <div className="p-4 h-full overflow-auto">
                                             {selectedSatellite ? (
-                                                <Card>
-                                                    <CardHeader>
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                {selectedSatellite.type === "iss" ? (
-                                                                    <Rocket className="h-5 w-5 text-orange-500" />
-                                                                ) : (
-                                                                    <Satellite className="h-5 w-5 text-cyan-500" />
-                                                                )}
-                                                                <CardTitle>{selectedSatellite.data.name}</CardTitle>
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                                >
+                                                    <Card>
+                                                        <CardHeader>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <motion.div
+                                                                        animate="rotating"
+                                                                        variants={iconAnimationVariants}
+                                                                    >
+                                                                        {selectedSatellite.type === "iss" ? (
+                                                                            <Rocket className="h-5 w-5 text-orange-500" />
+                                                                        ) : (
+                                                                            <Satellite className="h-5 w-5 text-cyan-500" />
+                                                                        )}
+                                                                    </motion.div>
+                                                                    <CardTitle>{selectedSatellite.data.name}</CardTitle>
+                                                                </div>
+                                                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                                                    <Badge variant="outline" className="text-accent-foreground">
+                                                                        {selectedSatellite.type === "iss" ? "ISS" : "Starlink"}
+                                                                    </Badge>
+                                                                </motion.div>
                                                             </div>
-                                                            <Badge variant="outline" className="text-accent-foreground">{selectedSatellite.type === "iss" ? "ISS" : "Starlink"}</Badge>
-                                                        </div>
-                                                        <CardDescription>NORAD ID: {selectedSatellite.data.noradId}</CardDescription>
-                                                    </CardHeader>
-                                                    <CardContent className="space-y-4">
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-1">
-                                                                <p className="text-xs text-muted-foreground">Inclination</p>
-                                                                <p className="text-sm font-medium">{selectedSatellite.data.inclination}°</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-xs text-muted-foreground">Orbital Period</p>
-                                                                <p className="text-sm font-medium">{selectedSatellite.data.periodMinutes} minutes</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-xs text-muted-foreground">Eccentricity</p>
-                                                                <p className="text-sm font-medium">{selectedSatellite.data.eccentricity}</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-xs text-muted-foreground">Status</p>
-                                                                <Badge variant="success" className="bg-green-500">
-                                                                    Active
-                                                                </Badge>
-                                                            </div>
-                                                        </div>
-                                                    </CardContent>
-                                                    <CardFooter>
-                                                        <Button
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            className="w-full"
-                                                            onClick={() =>
-                                                                focusOnSatellite(
-                                                                    selectedSatellite.type,
-                                                                    selectedSatellite.type === "starlink" ? selectedSatellite.index : 0,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Compass className="h-4 w-4 mr-2" />
-                                                            Focus Camera
-                                                        </Button>
-                                                    </CardFooter>
-                                                </Card>
+                                                            <CardDescription>NORAD ID: {selectedSatellite.data.noradId}</CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                            <motion.div 
+                                                                className="grid grid-cols-2 gap-4"
+                                                                variants={staggerContainerVariants}
+                                                                initial="hidden"
+                                                                animate="visible"
+                                                            >
+                                                                <motion.div className="space-y-1" variants={fadeInVariants}>
+                                                                    <p className="text-xs text-muted-foreground">Inclination</p>
+                                                                    <p className="text-sm font-medium">{selectedSatellite.data.inclination}°</p>
+                                                                </motion.div>
+                                                                <motion.div className="space-y-1" variants={fadeInVariants}>
+                                                                    <p className="text-xs text-muted-foreground">Orbital Period</p>
+                                                                    <p className="text-sm font-medium">{selectedSatellite.data.periodMinutes} minutes</p>
+                                                                </motion.div>
+                                                                <motion.div className="space-y-1" variants={fadeInVariants}>
+                                                                    <p className="text-xs text-muted-foreground">Eccentricity</p>
+                                                                    <p className="text-sm font-medium">{selectedSatellite.data.eccentricity}</p>
+                                                                </motion.div>
+                                                                <motion.div className="space-y-1" variants={fadeInVariants}>
+                                                                    <p className="text-xs text-muted-foreground">Status</p>
+                                                                    <motion.div
+                                                                        animate={{ 
+                                                                            scale: [1, 1.05, 1],
+                                                                        }}
+                                                                        transition={{ 
+                                                                            duration: 2, 
+                                                                            repeat: Infinity,
+                                                                            repeatType: "reverse" 
+                                                                        }}
+                                                                    >
+                                                                        <Badge variant="success" className="bg-green-500">
+                                                                            Active
+                                                                        </Badge>
+                                                                    </motion.div>
+                                                                </motion.div>
+                                                            </motion.div>
+                                                        </CardContent>
+                                                        <CardFooter>
+                                                            <motion.div
+                                                                className="w-full"
+                                                                whileHover={{ scale: 1.03 }}
+                                                                whileTap={{ scale: 0.97 }}
+                                                            >
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    className="w-full"
+                                                                    onClick={() =>
+                                                                        focusOnSatellite(
+                                                                            selectedSatellite.type,
+                                                                            selectedSatellite.type === "starlink" ? selectedSatellite.index : 0,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <motion.div 
+                                                                        className="mr-2"
+                                                                        animate={{ rotate: [0, 360] }} 
+                                                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                                                    >
+                                                                        <Compass className="h-4 w-4" />
+                                                                    </motion.div>
+                                                                    Focus Camera
+                                                                </Button>
+                                                            </motion.div>
+                                                        </CardFooter>
+                                                    </Card>
+                                                </motion.div>
                                             ) : (
-                                                <div className="flex flex-col items-center justify-center h-full text-center">
-                                                    <Info className="h-12 w-12 text-muted-foreground mb-4" />
-                                                    <h3 className="text-lg font-medium">No Satellite Selected</h3>
-                                                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                                                <motion.div 
+                                                    className="flex flex-col items-center justify-center h-full text-center"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ duration: 0.5 }}
+                                                >
+                                                    <motion.div
+                                                        animate={bounceVariants.bounce}
+                                                        transition={{ delay: 0.5 }}
+                                                    >
+                                                        <Info className="h-12 w-12 text-muted-foreground mb-4" />
+                                                    </motion.div>
+                                                    <motion.h3 
+                                                        className="text-lg font-medium"
+                                                        initial={{ y: 20, opacity: 0 }}
+                                                        animate={{ y: 0, opacity: 1 }}
+                                                        transition={{ delay: 0.2 }}
+                                                    >
+                                                        No Satellite Selected
+                                                    </motion.h3>
+                                                    <motion.p 
+                                                        className="text-sm text-muted-foreground mt-1 max-w-xs"
+                                                        initial={{ y: 20, opacity: 0 }}
+                                                        animate={{ y: 0, opacity: 1 }}
+                                                        transition={{ delay: 0.3 }}
+                                                    >
                                                         Click on a satellite in the 3D view or use the focus button in the satellites tab to view
                                                         detailed information.
-                                                    </p>
-                                                </div>
+                                                    </motion.p>
+                                                </motion.div>
                                             )}
                                         </div>
                                     )}
@@ -624,112 +831,208 @@ export default function SatellitesPage() {
                                     {/* Settings Tab */}
                                     {activeTab === "settings" && (
                                         <div className="p-4 space-y-6 h-full overflow-auto">
-                                            <div className="space-y-2">
+                                            <motion.div 
+                                                className="space-y-2"
+                                                initial="hidden"
+                                                animate="visible"
+                                                variants={fadeInVariants}
+                                            >
                                                 <h3 className="text-sm font-medium">Time Controls</h3>
                                                 <div className="flex items-center justify-between">
                                                     <Label htmlFor="time-multiplier">Simulation Speed</Label>
-                                                    <span className="text-sm">{timeMultiplier}x</span>
+                                                    <motion.span 
+                                                        className="text-sm"
+                                                        animate={{ 
+                                                            scale: [1, 1.1, 1], 
+                                                            color: timeMultiplier >= 10 ? 
+                                                                ["oklch(var(--foreground))", "oklch(var(--primary))", "oklch(var(--foreground))"] : 
+                                                                "oklch(var(--foreground))"
+                                                        }}
+                                                        transition={{ 
+                                                            duration: 0.5, 
+                                                            repeat: timeMultiplier >= 10 ? 2 : 0,
+                                                            repeatDelay: 2
+                                                        }}
+                                                    >
+                                                        {timeMultiplier}x
+                                                    </motion.span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTimeMultiplier(1)}
-                                                        className={timeMultiplier === 1 ? "bg-primary text-primary-foreground" : ""}
-                                                    >
-                                                        1x
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTimeMultiplier(5)}
-                                                        className={timeMultiplier === 5 ? "bg-primary text-primary-foreground" : ""}
-                                                    >
-                                                        5x
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTimeMultiplier(10)}
-                                                        className={timeMultiplier === 10 ? "bg-primary text-primary-foreground" : ""}
-                                                    >
-                                                        10x
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTimeMultiplier(60)}
-                                                        className={timeMultiplier === 60 ? "bg-primary text-primary-foreground" : ""}
-                                                    >
-                                                        60x
-                                                    </Button>
-                                                </div>
-                                            </div>
+                                                <motion.div 
+                                                    className="flex items-center gap-2"
+                                                    variants={staggerContainerVariants}
+                                                >
+                                                    {[1, 5, 10, 60].map((speed) => (
+                                                        <motion.div
+                                                            key={speed}
+                                                            variants={fadeInVariants}
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                        >
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setTimeMultiplier(speed)}
+                                                                className={timeMultiplier === speed ? "bg-primary text-primary-foreground" : ""}
+                                                            >
+                                                                {speed}x
+                                                            </Button>
+                                                        </motion.div>
+                                                    ))}
+                                                </motion.div>
+                                            </motion.div>
 
                                             <Separator />
 
-                                            <div className="space-y-3">
+                                            <motion.div 
+                                                className="space-y-3"
+                                                initial="hidden"
+                                                animate="visible"
+                                                variants={fadeInVariants}
+                                                transition={{ delay: 0.2 }}
+                                            >
                                                 <h3 className="text-sm font-medium">Display Options</h3>
 
-                                                <div className="flex items-center justify-between">
+                                                <motion.div 
+                                                    className="flex items-center justify-between"
+                                                    whileHover={{ x: 3, backgroundColor: "rgba(var(--muted), 0.3)" }}
+                                                    transition={{ duration: 0.2 }}
+                                                    initial={{ backgroundColor: "transparent" }}
+                                                    animate={{ backgroundColor: "transparent" }}
+                                                >
                                                     <div className="flex items-center gap-2">
-                                                        <Orbit className="h-4 w-4 text-muted-foreground" />
+                                                        <motion.div
+                                                            animate={{ rotate: showOrbits ? [0, 360] : 0 }}
+                                                            transition={{ 
+                                                                duration: 5, 
+                                                                repeat: showOrbits ? Infinity : 0,
+                                                                ease: "linear" 
+                                                            }}
+                                                        >
+                                                            <Orbit className="h-4 w-4 text-muted-foreground" />
+                                                        </motion.div>
                                                         <Label htmlFor="show-orbits">Show Orbital Paths</Label>
                                                     </div>
                                                     <Switch id="show-orbits" checked={showOrbits} onCheckedChange={setShowOrbits} />
-                                                </div>
+                                                </motion.div>
 
-                                                <div className="flex items-center justify-between">
+                                                <motion.div 
+                                                    className="flex items-center justify-between"
+                                                    whileHover={{ x: 3, backgroundColor: "rgba(var(--muted), 0.3)" }}
+                                                    transition={{ duration: 0.2 }}
+                                                    initial={{ backgroundColor: "transparent" }}
+                                                    animate={{ backgroundColor: "transparent" }}
+                                                >
                                                     <div className="flex items-center gap-2">
-                                                        <Zap className="h-4 w-4 text-muted-foreground" />
+                                                        <motion.div
+                                                            animate={showLabels ? {
+                                                                scale: [1, 1.2, 1],
+                                                                color: ["currentColor", "oklch(var(--primary))", "currentColor"]
+                                                            } : {}}
+                                                            transition={{ 
+                                                                duration: 1.5, 
+                                                                repeat: showLabels ? Infinity : 0,
+                                                                repeatDelay: 2
+                                                            }}
+                                                        >
+                                                            <Zap className="h-4 w-4 text-muted-foreground" />
+                                                        </motion.div>
                                                         <Label htmlFor="show-labels">Show Satellite Labels</Label>
                                                     </div>
                                                     <Switch id="show-labels" checked={showLabels} onCheckedChange={setShowLabels} />
-                                                </div>
-                                            </div>
+                                                </motion.div>
+                                            </motion.div>
 
                                             <Separator />
 
-                                            <div className="space-y-3">
+                                            <motion.div 
+                                                className="space-y-3"
+                                                initial="hidden"
+                                                animate="visible"
+                                                variants={fadeInVariants}
+                                                transition={{ delay: 0.4 }}
+                                            >
                                                 <h3 className="text-sm font-medium">Camera Controls</h3>
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <Button variant="outline" size="sm" onClick={resetView}>
-                                                        <RotateCcw className="h-4 w-4 mr-2" />
-                                                        Reset View
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" onClick={toggleFullscreen}>
-                                                        {fullscreen ? (
-                                                            <>
-                                                                <Minimize className="h-4 w-4 mr-2" />
-                                                                Exit Fullscreen
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Maximize className="h-4 w-4 mr-2" />
-                                                                Fullscreen
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                    >
+                                                        <Button variant="outline" size="sm" onClick={resetView} className="w-full">
+                                                            <motion.div 
+                                                                className="mr-2"
+                                                                whileHover={{ rotate: 360 }}
+                                                                transition={{ duration: 0.5 }}
+                                                            >
+                                                                <RotateCcw className="h-4 w-4" />
+                                                            </motion.div>
+                                                            Reset View
+                                                        </Button>
+                                                    </motion.div>
+                                                    
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                    >
+                                                        <Button variant="outline" size="sm" onClick={toggleFullscreen} className="w-full">
+                                                            {fullscreen ? (
+                                                                <>
+                                                                    <motion.div 
+                                                                        className="mr-2"
+                                                                        animate={{ scale: [1, 0.8, 1] }}
+                                                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                                                    >
+                                                                        <Minimize className="h-4 w-4" />
+                                                                    </motion.div>
+                                                                    Exit
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <motion.div 
+                                                                        className="mr-2"
+                                                                        animate={{ scale: [1, 1.2, 1] }}
+                                                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                                                    >
+                                                                        <Maximize className="h-4 w-4" />
+                                                                    </motion.div>
+                                                                    Fullscreen
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </motion.div>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     )}
                                 </div>
                             </Tabs>
                         </div>
                     )}
-                </div>
+                </motion.div>
 
                 {/* Main Content - Cesium Viewer */}
                 <div className={`relative flex-1 ${fullscreen ? "h-screen" : "h-[800px]"}`}>
                     {/* Loading UI */}
                     {!cesiumLoaded && (
-                        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-                            <div className="flex flex-col items-center gap-2">
-                                <Globe className="h-12 w-12 animate-spin text-primary" />
-                                <p className="text-lg font-medium">Loading 3D Globe...</p>
-                            </div>
-                        </div>
+                        <motion.div
+                            className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center"
+                            initial="hidden"
+                            animate="visible"
+                            variants={fadeInVariants}
+                        >
+                            <motion.div
+                                className="flex flex-col items-center gap-2"
+                                initial="hidden"
+                                animate="visible"
+                                variants={staggerContainerVariants}
+                            >
+                                <motion.div variants={iconAnimationVariants} animate="rotating">
+                                    <Globe className="h-12 w-12 text-primary" />
+                                </motion.div>
+                                <motion.p className="text-lg font-medium" variants={slideFromTopVariants}>
+                                    Loading 3D Globe...
+                                </motion.p>
+                            </motion.div>
+                        </motion.div>
                     )}
 
                     <Viewer

@@ -1,130 +1,34 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useUser } from "@/contexts/UserContext"
+import { useToastAlert } from "@/contexts/ToastContext"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MultiSelect } from "@/components/ui/multi-select"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+    Loader2,
+    PlusCircle,
+    Database,
+    Tag,
+    PenToolIcon as Tool,
+    Users,
+    Award,
+    Activity,
+    ListFilter,
+    BuildingIcon as Buildings,
+    Zap,
+    AlertCircle,
+} from "lucide-react"
 
-import { useRouter } from "next/navigation";
-import { useUser } from "@/contexts/UserContext";
-import { Loader2 } from "lucide-react";
 export default function AddMachinePage() {
-  const { user } = useUser();
-  const router = useRouter();
-  const [machine, setMachine] = useState({
-    name: "",
-    mainPole: "",
-    subPole: "",
-    pointsPerCycle: "",
-    maxUsers: "",
-    requiredGrade: "",
-    status: "available",
-    sites: [],
-    availableSensors: [],
-  });
-  const [sites, setSites] = useState([]);
-  const [Sensors, setSensors] = useState([]);
-  const [grades, setGrades] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch sites
-        const sitesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`);
-        if (!sitesRes.ok) throw new Error("Failed to fetch sites");
-        const sitesData = await sitesRes.json();
-        setSites(sitesData);
-
-        // Fetch sensors
-        const sensorsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`);
-        if (!sensorsRes.ok) throw new Error("Failed to fetch sensors");
-        const sensorsData = await sensorsRes.json();
-        setSensors(sensorsData);
-
-        // Fetch grades
-        const gradesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`);
-        if (!gradesRes.ok) throw new Error("Failed to fetch grades");
-        const gradesData = await gradesRes.json();
-        setGrades(gradesData);
-
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (user === false) {
-        router.replace('/login')
-        return
-    }
-    if (user && !user.admin) {
-        router.replace('/machines')
-        return
-    }
-
-}, [user, router]) 
-
-
-  
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setMachine((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name, value) => {
-    setMachine((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      console.log("Submitting form with machine data:", machine);
-
-      const machineData = {
-        name: machine.name,
-        mainPole: machine.mainPole,
-        subPole: machine.subPole,
-        pointsPerCycle: Number(machine.pointsPerCycle),
-        maxUsers: Number(machine.maxUsers),
-        requiredGrade: machine.requiredGrade,
-        status: machine.status,
-        availableSensors: machine.availableSensors,
-        sites: machine.sites,
-      };
-
-      console.log("Formatted machine data:", machineData);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(machineData),
-      });
-
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response data:", errorData);
-        throw new Error(errorData.error || "Failed to add machine");
-      }
-
-      console.log("Machine added successfully!");
-      alert("Machine added successfully!");
-      setMachine({
+    const { user } = useUser()
+    const router = useRouter()
+    const { toastError, toastSuccess } = useToastAlert()
+    const [machine, setMachine] = useState({
         name: "",
         mainPole: "",
         subPole: "",
@@ -134,191 +38,670 @@ export default function AddMachinePage() {
         status: "available",
         sites: [],
         availableSensors: [],
-      });
-      router.push("/machines")
-    } catch (err) {
-      console.error("Error adding machine:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    })
+    const [sites, setSites] = useState([])
+    const [sensors, setSensors] = useState([])
+    const [grades, setGrades] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
+    const [error, setError] = useState(null)
+    const [formTouched, setFormTouched] = useState(false)
+    const [formProgress, setFormProgress] = useState(0)
+    const [validationErrors, setValidationErrors] = useState({})
+    
+    // Calculate form completion progress
+    useEffect(() => {
+        const requiredFields = [
+            machine.name,
+            machine.mainPole,
+            machine.subPole,
+            machine.pointsPerCycle,
+            machine.maxUsers,
+            machine.requiredGrade,
+        ]
+
+        const filledFields = requiredFields.filter((field) => field).length
+        const progress = Math.round((filledFields / requiredFields.length) * 100)
+        setFormProgress(progress)
+    }, [machine])
+
+    // Field validation
+    useEffect(() => {
+        const errors = {}
+        
+        if (machine.name && machine.name.trim().length < 3) {
+            errors.name = "Name must be at least 3 characters"
+        }
+        
+        if (machine.pointsPerCycle && (isNaN(machine.pointsPerCycle) || Number(machine.pointsPerCycle) < 0)) {
+            errors.pointsPerCycle = "Points must be a positive number"
+        }
+        
+        if (machine.maxUsers && (isNaN(machine.maxUsers) || Number(machine.maxUsers) < 1)) {
+            errors.maxUsers = "Max users must be at least 1"
+        }
+        
+        setValidationErrors(errors)
+    }, [machine])
+
+    // Fetch data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch all data in parallel
+                const [sitesRes, sensorsRes, gradesRes] = await Promise.all([
+                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`),
+                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
+                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`),
+                ])
+
+                // Check for errors
+                if (!sitesRes.ok) throw new Error("Failed to fetch sites")
+                if (!sensorsRes.ok) throw new Error("Failed to fetch sensors")
+                if (!gradesRes.ok) throw new Error("Failed to fetch grades")
+
+                // Parse all responses
+                const [sitesData, sensorsData, gradesData] = await Promise.all([
+                    sitesRes.json(),
+                    sensorsRes.json(),
+                    gradesRes.json(),
+                ])
+
+                setSites(sitesData)
+                setSensors(sensorsData)
+                setGrades(gradesData)
+            } catch (err) {
+                console.error("Error fetching data:", err)
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    // Check user authorization
+    useEffect(() => {
+        if (user === false) {
+            router.replace("/login")
+            return
+        }
+        if (user && !user.admin) {
+            router.replace("/machines")
+            return
+        }
+    }, [user, router])
+
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        setMachine((prev) => ({ ...prev, [name]: value }))
+        setFormTouched(true)
     }
-  };
 
-  if (loading) return <div className="text-center py-8">Loading...</div>;
+    const handleSelectChange = (name, value) => {
+        setMachine((prev) => ({ ...prev, [name]: value }))
+        setFormTouched(true)
+    }
 
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        
+        // Check for validation errors
+        if (Object.keys(validationErrors).length > 0) {
+            toastError("Please fix form errors before submitting")
+            return
+        }
+        
+        setSubmitting(true)
+        setError(null)
 
-  if (user === undefined) {
-    return (
-        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-    )
-  }
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-center">Add New Machine</h1>
+        try {
+            const machineData = {
+                name: machine.name,
+                mainPole: machine.mainPole,
+                subPole: machine.subPole,
+                pointsPerCycle: Number(machine.pointsPerCycle),
+                maxUsers: Number(machine.maxUsers),
+                requiredGrade: machine.requiredGrade,
+                status: machine.status,
+                availableSensors: machine.availableSensors,
+                sites: machine.sites,
+            }
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
-      )}
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(machineData),
+                credentials: "include",
+            })
 
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6 border">
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Machine Name*</label>
-              <Input
-                name="name"
-                value={machine.name}
-                onChange={handleChange}
-                placeholder="Enter machine name"
-                required
-              />
-            </div>
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || "Failed to add machine")
+            }
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Main Pole*</label>
-              <Input
-                name="mainPole"
-                value={machine.mainPole}
-                onChange={handleChange}
-                placeholder="Enter main pole"
-                required
-              />
-            </div>
+            toastSuccess("Machine added successfully!")
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Sub Pole*</label>
-              <Input
-                name="subPole"
-                value={machine.subPole}
-                onChange={handleChange}
-                placeholder="Enter sub pole"
-                required
-              />
-            </div>
+            // Reset form
+            setMachine({
+                name: "",
+                mainPole: "",
+                subPole: "",
+                pointsPerCycle: "",
+                maxUsers: "",
+                requiredGrade: "",
+                status: "available",
+                sites: [],
+                availableSensors: [],
+            })
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Points Per Cycle*</label>
-              <Input
-                name="pointsPerCycle"
-                type="number"
-                value={machine.pointsPerCycle}
-                onChange={handleChange}
-                placeholder="Enter points per cycle"
-                min="0"
-                required
-              />
-            </div>
+            setFormTouched(false)
+            router.push("/machines")
+        } catch (err) {
+            console.error("Error adding machine:", err)
+            setError(err.message)
+            toastError(err.message || "Failed to add machine")
+        } finally {
+            setSubmitting(false)
+        }
+    }
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Max Users*</label>
-              <Input
-                name="maxUsers"
-                type="number"
-                value={machine.maxUsers}
-                onChange={handleChange}
-                placeholder="Enter max users"
-                min="1"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Required Grade*</label>
-              <Select
-                value={machine.requiredGrade}
-                onValueChange={(value) => handleSelectChange("requiredGrade", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {grades.map((grade) => (
-                    <SelectItem key={grade._id} value={grade.name}>
-                      {grade.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Status*</label>
-              <Select
-                value={machine.status}
-                onValueChange={(value) => handleSelectChange("status", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="in-use">In Use</SelectItem>
-                  <SelectItem value="blocked">Blocked</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Installation Sites</label>
-            <MultiSelect
-              options={sites.map(site => ({
-                value: site._id,
-                label: site.name
-              }))}
-              selected={machine.sites.map(siteId => {
-                const site = sites.find(s => s._id === siteId);
-                return {
-                  value: siteId,
-                  label: site?.name || siteId
-                };
-              })}
-              onChange={(selected) => setMachine(prev => ({
-                ...prev,
-                sites: selected.map(item => item.value)
-              }))}
-              placeholder="Select installation sites..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Available Sensors</label>
-            <MultiSelect
-              options={Sensors.map(sensor => ({
-                value: sensor._id,
-                label: sensor.designation
-              }))}
-              selected={machine.availableSensors.map(sensorId => {
-                const sensor = Sensors.find(s => s._id === sensorId);
-                return {
-                  value: sensorId,
-                  label: sensor?.designation || sensorId
-                };
-              })}
-              
-              onChange={(selected) => setMachine(prev => ({
-                ...prev,
-                availableSensors: selected.map(item => item.value)
-              }))}
-              placeholder="Select available sensors..."
-            />
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button
-              type="submit"
-              className="w-full md:w-auto"
-              disabled={loading}
+    // Loading skeleton with framer-motion
+    if (loading) {
+        return (
+            <motion.div 
+                className="container mx-auto px-4 py-8 max-w-4xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
             >
-              {loading ? "Saving..." : "Add Machine"}
-            </Button>
-          </div>
-        </div>
-      </form>
-    </div>
-  );
+                <div className="h-10 bg-muted/60 rounded-md w-1/3 mx-auto mb-6 animate-pulse"></div>
+                <motion.div 
+                    className="bg-background shadow-md rounded-lg p-6 border"
+                    initial={{ y: 20 }}
+                    animate={{ y: 0 }}
+                    transition={{ type: "spring", stiffness: 100 }}
+                >
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {[...Array(6)].map((_, i) => (
+                                <motion.div 
+                                    key={i} 
+                                    className="space-y-2"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                >
+                                    <div className="h-5 bg-muted/60 rounded w-1/3 animate-pulse"></div>
+                                    <div className="h-10 bg-muted/60 rounded-md animate-pulse"></div>
+                                </motion.div>
+                            ))}
+                        </div>
+                        <div className="space-y-2">
+                            <div className="h-5 bg-muted/60 rounded w-1/4 animate-pulse"></div>
+                            <div className="h-10 bg-muted/60 rounded-md animate-pulse"></div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="h-5 bg-muted/60 rounded w-1/4 animate-pulse"></div>
+                            <div className="h-10 bg-muted/60 rounded-md animate-pulse"></div>
+                        </div>
+                        <div className="flex justify-end pt-4">
+                            <div className="h-10 bg-muted/60 rounded-md w-32 animate-pulse"></div>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        )
+    }
+
+    if (user === undefined) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    // Animation variants
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2,
+            },
+        },
+    }
+
+    const item = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 200, damping: 20 } },
+    }
+
+    const sectionVariants = {
+        hidden: { opacity: 0, height: 0 },
+        visible: { 
+            opacity: 1, 
+            height: "auto", 
+            transition: { 
+                duration: 0.4, 
+                ease: "easeInOut"
+            } 
+        }
+    };
+
+    const progressVariants = {
+        initial: { width: 0 },
+        animate: { width: `${formProgress}%`, transition: { duration: 0.5 } },
+    }
+
+    return (
+        <motion.div
+            className="container mx-auto px-4 py-8 max-w-4xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+        >
+            <motion.div
+                className="flex items-center justify-center mb-6"
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+                <h1 className="text-3xl font-bold text-center inline-flex items-center gap-2">
+                    <PlusCircle className="h-8 w-8 text-primary" />
+                    <span>Add New Machine</span>
+                </h1>
+            </motion.div>
+
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        className="mb-4 p-3 bg-red-50 text-red-700 rounded-md border border-red-200 flex items-center"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <Activity className="h-5 w-5 mr-2 text-red-500" />
+                        {error}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <motion.div
+                className="bg-card text-card-foreground shadow-md rounded-lg overflow-hidden border"
+                variants={container}
+                initial="hidden"
+                animate="show"
+            >
+                {/* Form progress */}
+                <div className="w-full h-2 bg-muted/40 relative">
+                    <motion.div
+                        className="absolute top-0 left-0 h-full bg-primary"
+                        variants={progressVariants}
+                        initial="initial"
+                        animate="animate"
+                    />
+                </div>
+
+                <AnimatePresence>
+                    {formTouched && (
+                        <motion.div 
+                            className="bg-amber-50 px-4 py-2 text-sm text-amber-700 flex items-center border-b"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <Activity className="h-4 w-4 mr-2" />
+                            You have unsaved changes
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-8">
+                    {/* General Information */}
+                    <motion.section variants={item} className="space-y-4">
+                        <motion.div 
+                            className="flex items-center gap-2 text-xl font-semibold pb-2 border-b text-primary-foreground"
+                            whileHover={{ scale: 1.01 }}
+                        >
+                            <Database className="h-5 w-5 text-primary-foreground" />
+                            General Information
+                        </motion.div>
+                        <motion.div 
+                            variants={sectionVariants}
+                            initial="visible"
+                            animate="visible"
+                            className="overflow-hidden"
+                        >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 mb-4">
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="name" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Machine Name<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            id="name"
+                                            name="name"
+                                            value={machine.name}
+                                            onChange={handleChange}
+                                            placeholder="Enter machine name"
+                                            required
+                                            aria-required="true"
+                                            className={`transition-all duration-200 focus:ring-primary-foreground ${
+                                                validationErrors.name ? "border-red-500 focus:ring-red-500" : ""
+                                            }`}
+                                        />
+                                        <AnimatePresence>
+                                            {validationErrors.name && (
+                                                <motion.div 
+                                                    className="flex items-center mt-1 text-xs text-red-500"
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0 }}
+                                                >
+                                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                                    {validationErrors.name}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="mainPole" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Tool className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Main Pole<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <Input
+                                        id="mainPole"
+                                        name="mainPole"
+                                        value={machine.mainPole}
+                                        onChange={handleChange}
+                                        placeholder="Enter main pole"
+                                        required
+                                        aria-required="true"
+                                    />
+                                </motion.div>
+
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="subPole" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Tool className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Sub Pole<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <Input
+                                        id="subPole"
+                                        name="subPole"
+                                        value={machine.subPole}
+                                        onChange={handleChange}
+                                        placeholder="Enter sub pole"
+                                        required
+                                        aria-required="true"
+                                    />
+                                </motion.div>
+
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="pointsPerCycle" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Points Per Cycle<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            id="pointsPerCycle"
+                                            name="pointsPerCycle"
+                                            type="number"
+                                            value={machine.pointsPerCycle}
+                                            onChange={handleChange}
+                                            placeholder="Enter points per cycle"
+                                            min="0"
+                                            required
+                                            aria-required="true"
+                                            className={
+                                                validationErrors.pointsPerCycle
+                                                  ? "border-red-500 focus:ring-red-500"
+                                                  : ""
+                                            }
+                                        />
+                                        <AnimatePresence>
+                                            {validationErrors.pointsPerCycle && (
+                                                <motion.div 
+                                                    className="flex items-center mt-1 text-xs text-red-500"
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0 }}
+                                                >
+                                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                                    {validationErrors.pointsPerCycle}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="maxUsers" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Max Users<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            id="maxUsers"
+                                            name="maxUsers"
+                                            type="number"
+                                            value={machine.maxUsers}
+                                            onChange={handleChange}
+                                            placeholder="Enter max users"
+                                            min="1"
+                                            required
+                                            aria-required="true"
+                                            className={
+                                                validationErrors.maxUsers
+                                                  ? "border-red-500 focus:ring-red-500"
+                                                  : ""
+                                            }
+                                        />
+                                        <AnimatePresence>
+                                            {validationErrors.maxUsers && (
+                                                <motion.div 
+                                                    className="flex items-center mt-1 text-xs text-red-500"
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0 }}
+                                                >
+                                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                                    {validationErrors.maxUsers}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="requiredGrade" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Award className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Required Grade<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <Select
+                                        value={machine.requiredGrade}
+                                        onValueChange={(value) => handleSelectChange("requiredGrade", value)}
+                                        required
+                                    >
+                                        <SelectTrigger aria-required="true" id="requiredGrade">
+                                            <SelectValue placeholder="Select grade" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {grades.map((grade) => (
+                                                <SelectItem key={grade._id} value={grade.name}>
+                                                    {grade.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </motion.div>
+
+                                <motion.div variants={item} className="space-y-2">
+                                    <label htmlFor="status" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Activity className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        Status<span className="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <Select value={machine.status} onValueChange={(value) => handleSelectChange("status", value)} required>
+                                        <SelectTrigger aria-required="true" id="status">
+                                            <SelectValue placeholder="Select status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="available">Available</SelectItem>
+                                            <SelectItem value="in-use">In Use</SelectItem>
+                                            <SelectItem value="blocked">Blocked</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    </motion.section>
+
+                    {/* Installation Sites Section */}
+                    <motion.section variants={item} className="space-y-4">
+                        <motion.div 
+                            className="flex items-center gap-2 text-xl font-semibold pb-2 border-b text-primary-foreground"
+                            whileHover={{ scale: 1.01 }}
+                        >
+                            <Buildings className="h-5 w-5 text-primary-foreground" />
+                            Installation Sites
+                        </motion.div>
+                        <motion.div 
+                            variants={sectionVariants}
+                            initial="visible"
+                            animate="visible"
+                            className="overflow-hidden mb-4"
+                        >
+                            <div className="space-y-2 pt-4 relative z-20">
+                                <label htmlFor="sites" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <Buildings className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    Select Sites
+                                </label>
+                                <MultiSelect
+                                    options={sites.map((site) => ({
+                                        value: site._id,
+                                        label: site.name,
+                                    }))}
+                                    selected={machine.sites.map((siteId) => {
+                                        const site = sites.find((s) => s._id === siteId)
+                                        return {
+                                            value: siteId,
+                                            label: site?.name || siteId,
+                                        }
+                                    })}
+                                    onChange={(selected) => {
+                                        setMachine((prev) => ({
+                                            ...prev,
+                                            sites: selected.map((item) => item.value),
+                                        }))
+                                        setFormTouched(true)
+                                    }}
+                                    placeholder="Select installation sites..."
+                                    aria-label="Installation sites"
+                                    showSelectAll={true}
+                                />
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    {machine.sites.length} of {sites.length} sites selected
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.section>
+
+                    {/* Sensors Section */}
+                    <motion.section variants={item} className="space-y-4">
+                        <motion.div 
+                            className="flex items-center gap-2 text-xl font-semibold pb-2 border-b text-primary-foreground"
+                            whileHover={{ scale: 1.01 }}
+                        >
+                            <ListFilter className="h-5 w-5 text-primary-foreground" />
+                            Available Sensors
+                        </motion.div>
+                        <motion.div 
+                            variants={sectionVariants}
+                            initial="visible"
+                            animate="visible"
+                            className="overflow-hidden"
+                        >
+                            <div className="space-y-2 pt-4 relative z-10">
+                                <label htmlFor="sensors" className="flex items-center text-sm font-medium text-primary-foreground">
+                                        <ListFilter className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    Select Sensors
+                                </label>
+                                <MultiSelect
+                                    options={sensors.map((sensor) => ({
+                                        value: sensor._id,
+                                        label: sensor.designation,
+                                    }))}
+                                    selected={machine.availableSensors.map((sensorId) => {
+                                        const sensor = sensors.find((s) => s._id === sensorId)
+                                        return {
+                                            value: sensorId,
+                                            label: sensor?.designation || sensorId,
+                                        }
+                                    })}
+                                    onChange={(selected) => {
+                                        setMachine((prev) => ({
+                                            ...prev,
+                                            availableSensors: selected.map((item) => item.value),
+                                        }))
+                                        setFormTouched(true)
+                                    }}
+                                    placeholder="Select available sensors..."
+                                    aria-label="Available sensors"
+                                    showSelectAll={true}
+                                />
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    {machine.availableSensors.length} of {sensors.length} sensors selected
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.section>
+
+                    {/* Submit Button */}
+                    <motion.div
+                        className="flex justify-end pt-6"
+                        variants={item}
+                    >
+                        <Button 
+                            variant="secondary"
+                            type="submit" 
+                            data-action="close-overlay"
+                            disabled={submitting || (!formTouched && Object.keys(validationErrors).length > 0)}
+                            className="px-6 py-2 relative overflow-hidden group"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            {submitting ? (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex items-center"
+                                >
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <span>Processing...</span>
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <motion.span>Save Machine</motion.span>
+                                    <motion.span 
+                                        className="absolute bottom-0 left-0 w-0 h-0.5 bg-white" 
+                                        initial={{ width: "0%" }}
+                                        whileHover={{ width: "100%" }}
+                                        transition={{ duration: 0.3 }}
+                                    ></motion.span>
+                                </>
+                            )}
+                        </Button>
+                    </motion.div>
+                </form>
+            </motion.div>
+        </motion.div>
+    )
 }

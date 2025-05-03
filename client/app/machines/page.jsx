@@ -329,7 +329,7 @@ export default function MachinesPage() {
                                     table.getRowModel().rows.map((row) => (
                                         <TableRow
                                             key={row.id}
-                                            onClick={() => router.push(`/machinesDetail/${row.original._id}`)}
+                                            onClick={() => router.push(`/machines/${row.original._id}`)}
                                             className="cursor-pointer hover:bg-gray-50"
                                         >
                                             {row.getVisibleCells().map((cell) => (

@@ -5,6 +5,7 @@ import { useUser } from "@/contexts/UserContext"
 import { useToastAlert } from "@/contexts/ToastContext"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { motion, AnimatePresence } from "framer-motion"
 import {
     Ticket,
     CheckCircle,
@@ -18,6 +19,10 @@ import {
     Loader2,
     AlertCircle,
     Shield,
+    ClipboardCheck,
+    BarChart3,
+    CheckCheck,
+    XOctagon
 } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,6 +51,114 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import NoData from "@/components/no-data"
+
+// Animation variants
+const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { duration: 0.4 },
+    },
+}
+
+const slideUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+        },
+    },
+}
+
+const containerAnimation = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            when: "beforeChildren",
+            staggerChildren: 0.1,
+            duration: 0.3,
+        },
+    },
+}
+
+const cardAnimation = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+        },
+    },
+}
+
+const ticketAnimation = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+        },
+    },
+    exit: {
+        opacity: 0,
+        scale: 0.9,
+        transition: { duration: 0.2 },
+    },
+}
+
+const loadingAnimation = {
+    rotate: {
+        rotate: 360,
+        transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "linear",
+        },
+    },
+}
+
+const staggerAnimation = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.05,
+        },
+    },
+}
+
+const iconAnimation = {
+    initial: { scale: 1 },
+    hover: {
+        scale: 1.15,
+        rotate: [0, -5, 10, -5, 0],
+        transition: {
+            duration: 0.5,
+        },
+    },
+}
+
+const pulseAnimation = {
+    pulse: {
+        scale: [1, 1.05, 1],
+        opacity: [0.9, 1, 0.9],
+        transition: {
+            duration: 2,
+            repeat: Infinity,
+            repeatType: "reverse",
+        },
+    },
+}
 
 export default function TicketsPage() {
     const router = useRouter()
@@ -225,35 +338,86 @@ export default function TicketsPage() {
     // Show loading state while user context is initializing
     if (user === undefined) {
         return (
-            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <motion.div 
+                className="flex items-center justify-center h-[calc(100vh-200px)]"
+                initial="hidden"
+                animate="visible"
+                variants={fadeIn}
+            >
+                <motion.div animate={loadingAnimation.rotate}>
+                    <Loader2 className="h-8 w-8 text-muted-foreground" />
+                </motion.div>
+            </motion.div>
         )
     }
 
     // Show access denied if not authenticated
     if (user === false) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                <p className="text-muted-foreground text-center">
+            <motion.div 
+                className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4"
+                initial="hidden"
+                animate="visible"
+                variants={containerAnimation}
+            >
+                <motion.div 
+                    variants={slideUp}
+                    whileHover={{ 
+                        scale: 1.1, 
+                        rotate: [0, 10, -10, 0],
+                        transition: { duration: 0.5 }
+                    }}
+                >
+                    <Shield className="h-16 w-16 text-muted-foreground mb-4" />
+                </motion.div>
+                <motion.h2 
+                    className="text-2xl font-bold mb-2"
+                    variants={slideUp}
+                >
+                    Access Denied
+                </motion.h2>
+                <motion.p 
+                    className="text-muted-foreground text-center"
+                    variants={slideUp}
+                >
                     Please log in to access this page.
-                </p>
-            </div>
+                </motion.p>
+            </motion.div>
         )
     }
 
     // Show access denied if not admin
     if (!user.admin) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4">
-                <Shield className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                <p className="text-muted-foreground text-center">
+            <motion.div 
+                className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4"
+                initial="hidden"
+                animate="visible"
+                variants={containerAnimation}
+            >
+                <motion.div 
+                    variants={slideUp}
+                    whileHover={{ 
+                        scale: 1.1, 
+                        rotate: [0, 10, -10, 0],
+                        transition: { duration: 0.5 }
+                    }}
+                >
+                    <Shield className="h-16 w-16 text-muted-foreground mb-4" />
+                </motion.div>
+                <motion.h2 
+                    className="text-2xl font-bold mb-2"
+                    variants={slideUp}
+                >
+                    Access Denied
+                </motion.h2>
+                <motion.p 
+                    className="text-muted-foreground text-center"
+                    variants={slideUp}
+                >
                     You don't have permission to access this page. Please contact an administrator if you believe this is an error.
-                </p>
-            </div>
+                </motion.p>
+            </motion.div>
         )
     }
 
@@ -263,7 +427,12 @@ export default function TicketsPage() {
 
     return (
         <div className="p-4 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={fadeIn}
+                className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
                 <div>
                     <h1 className="text-3xl font-bold">Ticket Management</h1>
                     <p className="text-muted-foreground">Review and process grade upgrade requests</p>
@@ -272,39 +441,116 @@ export default function TicketsPage() {
                     {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                     Refresh
                 </Button>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg font-medium">Pending</CardTitle>
-                        <CardDescription>Tickets awaiting review</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">{isLoading ? "..." : pendingCount}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg font-medium">Approved</CardTitle>
-                        <CardDescription>Successfully processed tickets</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">{isLoading ? "..." : approvedCount}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg font-medium">Rejected</CardTitle>
-                        <CardDescription>Declined upgrade requests</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">{isLoading ? "..." : rejectedCount}</div>
-                    </CardContent>
-                </Card>
-            </div>
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={containerAnimation}
+                className="grid grid-cols-1 md:grid-cols-3 gap-4"
+            >
+                <motion.div variants={cardAnimation}>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                                <motion.div 
+                                    initial={{ rotate: 0 }}
+                                    animate={{ rotate: pendingCount > 0 ? [0, -10, 10, -10, 0] : 0 }}
+                                    transition={{ duration: 1.5, repeat: pendingCount > 0 ? Infinity : 0, repeatDelay: 3 }}
+                                >
+                                    <Clock className="h-5 w-5 text-yellow-500" />
+                                </motion.div>
+                                <div>
+                                    <CardTitle className="text-lg font-medium">Pending</CardTitle>
+                                    <CardDescription>Tickets awaiting review</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <motion.div 
+                                className="text-3xl font-bold"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ 
+                                    opacity: 1, 
+                                    y: 0,
+                                    color: pendingCount > 0 ? 
+                                        ["rgba(var(--foreground))", "#eab308", "rgba(var(--foreground))"] : 
+                                        "rgba(var(--foreground))"
+                                }}
+                                transition={{ 
+                                    duration: 0.7, 
+                                    color: { repeat: pendingCount > 0 ? Infinity : 0, repeatDelay: 2 }
+                                }}
+                            >
+                                {isLoading ? "..." : pendingCount}
+                            </motion.div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+                <motion.div variants={cardAnimation}>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                                <motion.div 
+                                    animate={approvedCount > 0 ? "pulse" : "initial"}
+                                    variants={pulseAnimation}
+                                >
+                                    <CheckCheck className="h-5 w-5 text-green-500" />
+                                </motion.div>
+                                <div>
+                                    <CardTitle className="text-lg font-medium">Approved</CardTitle>
+                                    <CardDescription>Successfully processed tickets</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <motion.div 
+                                className="text-3xl font-bold"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                            >
+                                {isLoading ? "..." : approvedCount}
+                            </motion.div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+                <motion.div variants={cardAnimation}>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                                <motion.div 
+                                    whileHover="hover"
+                                    variants={iconAnimation}
+                                >
+                                    <XOctagon className="h-5 w-5 text-red-500" />
+                                </motion.div>
+                                <div>
+                                    <CardTitle className="text-lg font-medium">Rejected</CardTitle>
+                                    <CardDescription>Declined upgrade requests</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <motion.div 
+                                className="text-3xl font-bold"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                            >
+                                {isLoading ? "..." : rejectedCount}
+                            </motion.div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            </motion.div>
 
-            <div className="flex flex-col md:flex-row gap-4">
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={slideUp}
+                className="flex flex-col md:flex-row gap-4"
+            >
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -353,124 +599,214 @@ export default function TicketsPage() {
                         </SelectContent>
                     </Select>
                 </div>
-            </div>
+            </motion.div>
 
-            <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid grid-cols-4 mb-4">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="pending" className="flex items-center gap-2">
-                        Pending
-                        {pendingCount > 0 && (
-                            <Badge variant="secondary" className="ml-1">
-                                {pendingCount}
-                            </Badge>
-                        )}
-                    </TabsTrigger>
-                    <TabsTrigger value="approved">Approved</TabsTrigger>
-                    <TabsTrigger value="rejected">Rejected</TabsTrigger>
-                </TabsList>
+            <motion.div 
+                initial="hidden"
+                animate="visible"
+                variants={slideUp}
+            >
+                <Tabs defaultValue="all" className="w-full">
+                    <TabsList className="grid grid-cols-4 mb-4">
+                        <TabsTrigger value="all">
+                            <motion.div className="flex items-center gap-1" whileHover={{ scale: 1.05 }}>
+                                <ClipboardCheck className="h-4 w-4 mr-1" /> All
+                            </motion.div>
+                        </TabsTrigger>
+                        <TabsTrigger value="pending" className="flex items-center gap-1">
+                            <motion.div 
+                                className="flex items-center" 
+                                whileHover={{ scale: 1.05 }}
+                                animate={pendingCount > 0 ? { 
+                                    scale: [1, 1.1, 1],
+                                    transition: { repeat: Infinity, repeatDelay: 3, duration: 0.5 }
+                                } : {}}
+                            >
+                                <Clock className="h-4 w-4 mr-1" /> Pending
+                                {pendingCount > 0 && (
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 500,
+                                            damping: 20
+                                        }}
+                                    >
+                                        <Badge variant="secondary" className="ml-1">
+                                            {pendingCount}
+                                        </Badge>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        </TabsTrigger>
+                        <TabsTrigger value="approved">
+                            <motion.div className="flex items-center gap-1" whileHover={{ scale: 1.05 }}>
+                                <CheckCheck className="h-4 w-4 mr-1" /> Approved
+                            </motion.div>
+                        </TabsTrigger>
+                        <TabsTrigger value="rejected">
+                            <motion.div className="flex items-center gap-1" whileHover={{ scale: 1.05 }}>
+                                <XOctagon className="h-4 w-4 mr-1" /> Rejected
+                            </motion.div>
+                        </TabsTrigger>
+                    </TabsList>
 
-                {["all", "pending", "approved", "rejected"].map((tab) => (
-                    <TabsContent key={tab} value={tab} className="mt-0">
-                        {isLoading ? (
-                            <div className="space-y-4">
-                                {[1, 2, 3].map((i) => (
-                                    <Card key={i}>
-                                        <CardContent className="p-6">
-                                            <div className="flex justify-between">
-                                                <div className="space-y-2">
-                                                    <Skeleton className="h-4 w-[250px]" />
-                                                    <Skeleton className="h-4 w-[200px]" />
-                                                    <Skeleton className="h-4 w-[150px]" />
-                                                </div>
-                                                <Skeleton className="h-6 w-24" />
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : (
-                            <ScrollArea className="h-[calc(100vh-450px)]">
-                                <div className="space-y-4">
-                                    {filteredTickets
-                                        .filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase())
-                                        .map((ticket) => (
-                                            <Card key={ticket._id} className="overflow-hidden">
+                    {["all", "pending", "approved", "rejected"].map((tab) => (
+                        <TabsContent key={tab} value={tab} className="mt-0">
+                            {isLoading ? (
+                                <motion.div 
+                                    className="space-y-4"
+                                    initial="hidden"
+                                    animate="visible"
+                                    variants={containerAnimation}
+                                >
+                                    {[1, 2, 3].map((i) => (
+                                        <motion.div key={i} variants={cardAnimation}>
+                                            <Card>
                                                 <CardContent className="p-6">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div className="flex justify-between">
                                                         <div className="space-y-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <Ticket className="h-5 w-5 text-muted-foreground" />
-                                                                <h3 className="font-medium text-lg">
-                                                                    Grade Upgrade Request - {ticket.userId?.username || "Unknown User"}
-                                                                </h3>
-                                                                {getStatusBadge(ticket.status)}
-                                                            </div>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                From <span className="font-medium">{ticket.currentGrade?.name || "Unknown Grade"}</span>{" "}
-                                                                to <span className="font-medium">{ticket.targetGrade?.name || "Unknown Grade"}</span>
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">Created: {formatDate(ticket.createdAt)}</p>
-                                                            {ticket.processedAt && (
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    Processed: {formatDate(ticket.processedAt)}
-                                                                    {ticket.processedBy?.username ? ` by ${ticket.processedBy.username}` : ""}
-                                                                </p>
-                                                            )}
-                                                            {ticket.reason && (
-                                                                <div className="flex items-start mt-2 p-2 bg-red-50 border border-red-100 rounded-md">
-                                                                    <AlertCircle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-                                                                    <p className="text-sm text-red-600">Reason: {ticket.reason}</p>
-                                                                </div>
-                                                            )}
+                                                            <Skeleton className="h-4 w-[250px]" />
+                                                            <Skeleton className="h-4 w-[200px]" />
+                                                            <Skeleton className="h-4 w-[150px]" />
                                                         </div>
-
-                                                        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-                                                            <Button
-                                                                variant="default"
-                                                                size="sm"
-                                                                onClick={() => openDetailsDialog(ticket)}
-                                                                className="bg-cyan-600 hover:bg-cyan-700 whitespace-nowrap"
-                                                            >
-                                                                View Details
-                                                            </Button>
-
-                                                            {ticket.status === "PENDING" && (
-                                                                <>
-                                                                    <Button
-                                                                        variant="default"
-                                                                        size="sm"
-                                                                        onClick={() => handleTicket(ticket._id, "APPROVED")}
-                                                                        className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                                                                    >
-                                                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                                                        Approve
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="default"
-                                                                        size="sm"
-                                                                        onClick={() => openRejectDialog(ticket)}
-                                                                        className="bg-red-600 hover:bg-red-700 whitespace-nowrap"
-                                                                    >
-                                                                        <XCircle className="h-4 w-4 mr-2" />
-                                                                        Reject
-                                                                    </Button>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        <Skeleton className="h-6 w-24" />
                                                     </div>
                                                 </CardContent>
                                             </Card>
-                                        ))}
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <ScrollArea className="h-[calc(100vh-450px)]">
+                                    <motion.div
+                                        initial="hidden"
+                                        animate="visible"
+                                        variants={staggerAnimation}
+                                        className="space-y-4"
+                                    >
+                                        <AnimatePresence mode="popLayout">
+                                            {filteredTickets
+                                                .filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase())
+                                                .map((ticket) => (
+                                                    <motion.div
+                                                        key={ticket._id}
+                                                        variants={ticketAnimation}
+                                                        initial="hidden"
+                                                        animate="visible"
+                                                        exit="exit"
+                                                        layout
+                                                        layoutId={ticket._id}
+                                                    >
+                                                        <Card className="overflow-hidden">
+                                                            <CardContent className="p-6">
+                                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <motion.div whileHover={{ rotate: 20 }}>
+                                                                                <Ticket className="h-5 w-5 text-muted-foreground" />
+                                                                            </motion.div>
+                                                                            <h3 className="font-medium text-lg">
+                                                                                Grade Upgrade Request - {ticket.userId?.username || "Unknown User"}
+                                                                            </h3>
+                                                                            <motion.div whileHover={{ scale: 1.1 }}>
+                                                                                {getStatusBadge(ticket.status)}
+                                                                            </motion.div>
+                                                                        </div>
+                                                                        <p className="text-sm text-muted-foreground">
+                                                                            From <span className="font-medium">{ticket.currentGrade?.name || "Unknown Grade"}</span>{" "}
+                                                                            to <span className="font-medium">{ticket.targetGrade?.name || "Unknown Grade"}</span>
+                                                                        </p>
+                                                                        <p className="text-sm text-muted-foreground">Created: {formatDate(ticket.createdAt)}</p>
+                                                                        {ticket.processedAt && (
+                                                                            <p className="text-sm text-muted-foreground">
+                                                                                Processed: {formatDate(ticket.processedAt)}
+                                                                                {ticket.processedBy?.username ? ` by ${ticket.processedBy.username}` : ""}
+                                                                            </p>
+                                                                        )}
+                                                                        {ticket.reason && (
+                                                                            <motion.div 
+                                                                                className="flex items-start mt-2 p-2 bg-red-50 border border-red-100 rounded-md"
+                                                                                initial={{ opacity: 0, height: 0 }}
+                                                                                animate={{ opacity: 1, height: "auto" }}
+                                                                                transition={{ duration: 0.3 }}
+                                                                            >
+                                                                                <motion.div
+                                                                                    animate={{ 
+                                                                                        rotate: [0, 10, -10, 0],
+                                                                                        transition: { repeat: Infinity, repeatDelay: 5 }
+                                                                                    }}
+                                                                                >
+                                                                                    <AlertCircle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                                                                                </motion.div>
+                                                                                <p className="text-sm text-red-600">Reason: {ticket.reason}</p>
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </div>
 
-                                    {filteredTickets.filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase()).length ===
-                                        0 && <NoData message={`No ${tab !== "all" ? tab : ""} tickets found`} />}
-                                </div>
-                            </ScrollArea>
-                        )}
-                    </TabsContent>
-                ))}
-            </Tabs>
+                                                                    <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
+                                                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                                            <Button
+                                                                                variant="default"
+                                                                                size="sm"
+                                                                                onClick={() => openDetailsDialog(ticket)}
+                                                                                className="bg-cyan-600 hover:bg-cyan-700 whitespace-nowrap"
+                                                                            >
+                                                                                View Details
+                                                                            </Button>
+                                                                        </motion.div>
+
+                                                                        {ticket.status === "PENDING" && (
+                                                                            <>
+                                                                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                                                    <Button
+                                                                                        variant="default"
+                                                                                        size="sm"
+                                                                                        onClick={() => handleTicket(ticket._id, "APPROVED")}
+                                                                                        className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                                                                                    >
+                                                                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                                                                        Approve
+                                                                                    </Button>
+                                                                                </motion.div>
+                                                                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                                                    <Button
+                                                                                        variant="default"
+                                                                                        size="sm"
+                                                                                        onClick={() => openRejectDialog(ticket)}
+                                                                                        className="bg-red-600 hover:bg-red-700 whitespace-nowrap"
+                                                                                    >
+                                                                                        <XCircle className="h-4 w-4 mr-2" />
+                                                                                        Reject
+                                                                                    </Button>
+                                                                                </motion.div>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    </motion.div>
+                                                ))}
+
+                                            {filteredTickets.filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase()).length === 0 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                >
+                                                    <NoData message={`No ${tab !== "all" ? tab : ""} tickets found`} />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+                                </ScrollArea>
+                            )}
+                        </TabsContent>
+                    ))}
+                </Tabs>
+            </motion.div>
 
             {/* Reject Dialog */}
             <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
@@ -481,8 +817,18 @@ export default function TicketsPage() {
                             Please provide a reason for rejecting this grade upgrade request. This will be visible to the user.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
+                    <motion.div 
+                        className="space-y-4 py-4"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                    >
+                        <motion.div 
+                            className="space-y-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3, delay: 0.3 }}
+                        >
                             <h4 className="font-medium">Request Details</h4>
                             <p className="text-sm">
                                 User: <span className="font-medium">{selectedTicket?.userId?.username}</span>
@@ -490,21 +836,43 @@ export default function TicketsPage() {
                             <p className="text-sm">
                                 From {selectedTicket?.currentGrade?.name} to {selectedTicket?.targetGrade?.name}
                             </p>
-                        </div>
-                        <Textarea
-                            placeholder="Enter rejection reason..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="min-h-[100px]"
-                        />
-                    </div>
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            transition={{ duration: 0.4, delay: 0.4 }}
+                        >
+                            <Textarea
+                                placeholder="Enter rejection reason..."
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                className="min-h-[100px]"
+                            />
+                        </motion.div>
+                    </motion.div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleReject}>
-                            Confirm Rejection
-                        </Button>
+                        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                        </motion.div>
+                        <motion.div 
+                            whileHover={{ scale: 1.03 }} 
+                            whileTap={{ scale: 0.97 }}
+                            animate={rejectionReason.trim() ? { 
+                                scale: [1, 1.05, 1],
+                                transition: { duration: 0.5, repeat: 2, repeatDelay: 5 }
+                            } : {}}
+                        >
+                            <Button 
+                                variant="destructive" 
+                                onClick={handleReject}
+                                disabled={!rejectionReason.trim()}
+                            >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Confirm Rejection
+                            </Button>
+                        </motion.div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -517,73 +885,121 @@ export default function TicketsPage() {
                         <DialogDescription>Complete information about this grade upgrade request.</DialogDescription>
                     </DialogHeader>
                     {selectedTicket && (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
+                        <motion.div 
+                            className="space-y-4"
+                            initial="hidden"
+                            animate="visible"
+                            variants={containerAnimation}
+                        >
+                            <motion.div className="flex justify-between items-center" variants={slideUp}>
                                 <h3 className="font-medium">Status</h3>
-                                {getStatusBadge(selectedTicket.status)}
-                            </div>
+                                <motion.div whileHover={{ scale: 1.05 }}>
+                                    {getStatusBadge(selectedTicket.status)}
+                                </motion.div>
+                            </motion.div>
 
-                            <div className="space-y-2">
+                            <motion.div className="space-y-2" variants={slideUp}>
                                 <h3 className="font-medium">User Information</h3>
-                                <div className="bg-muted p-3 rounded-md">
+                                <motion.div 
+                                    className="bg-muted p-3 rounded-md"
+                                    whileHover={{ 
+                                        backgroundColor: "rgba(var(--muted), 0.7)",
+                                        transition: { duration: 0.2 }
+                                    }}
+                                >
                                     <p className="text-sm">
                                         Username: <span className="font-medium">{selectedTicket.userId?.username || "Unknown"}</span>
                                     </p>
                                     <p className="text-sm">
                                         User ID: <span className="font-mono text-xs">{selectedTicket.userId?._id || "Unknown"}</span>
                                     </p>
-                                </div>
-                            </div>
+                                </motion.div>
+                            </motion.div>
 
-                            <div className="space-y-2">
+                            <motion.div className="space-y-2" variants={slideUp}>
                                 <h3 className="font-medium">Grade Information</h3>
-                                <div className="bg-muted p-3 rounded-md">
+                                <motion.div 
+                                    className="bg-muted p-3 rounded-md"
+                                    whileHover={{ 
+                                        backgroundColor: "rgba(var(--muted), 0.7)",
+                                        transition: { duration: 0.2 }
+                                    }}
+                                >
                                     <p className="text-sm">
                                         Current Grade: <span className="font-medium">{selectedTicket.currentGrade?.name || "Unknown"}</span>
                                     </p>
                                     <p className="text-sm">
                                         Target Grade: <span className="font-medium">{selectedTicket.targetGrade?.name || "Unknown"}</span>
                                     </p>
-                                </div>
-                            </div>
+                                </motion.div>
+                            </motion.div>
 
-                            <div className="space-y-2">
+                            <motion.div className="space-y-2" variants={slideUp}>
                                 <h3 className="font-medium">Timestamps</h3>
-                                <div className="bg-muted p-3 rounded-md space-y-1">
+                                <motion.div 
+                                    className="bg-muted p-3 rounded-md space-y-1"
+                                    whileHover={{ 
+                                        backgroundColor: "rgba(var(--muted), 0.7)",
+                                        transition: { duration: 0.2 }
+                                    }}
+                                >
                                     <p className="text-sm">
                                         Created: <span className="font-medium">{formatDate(selectedTicket.createdAt)}</span>
                                     </p>
                                     {selectedTicket.processedAt && (
-                                        <p className="text-sm">
+                                        <motion.p 
+                                            className="text-sm"
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                        >
                                             Processed: <span className="font-medium">{formatDate(selectedTicket.processedAt)}</span>
-                                        </p>
+                                        </motion.p>
                                     )}
-                                </div>
-                            </div>
+                                </motion.div>
+                            </motion.div>
 
                             {selectedTicket.processedBy && (
-                                <div className="space-y-2">
+                                <motion.div 
+                                    className="space-y-2" 
+                                    variants={slideUp}
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                >
                                     <h3 className="font-medium">Processed By</h3>
                                     <div className="bg-muted p-3 rounded-md">
                                         <p className="text-sm">
                                             Admin: <span className="font-medium">{selectedTicket.processedBy.username}</span>
                                         </p>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
                             {selectedTicket.reason && (
-                                <div className="space-y-2">
+                                <motion.div 
+                                    className="space-y-2" 
+                                    variants={slideUp}
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                >
                                     <h3 className="font-medium">Rejection Reason</h3>
-                                    <div className="bg-red-50 border border-red-100 p-3 rounded-md">
+                                    <motion.div 
+                                        className="bg-red-50 border border-red-100 p-3 rounded-md"
+                                        animate={{
+                                            boxShadow: ["0 0 0 rgba(220, 38, 38, 0)", "0 0 8px rgba(220, 38, 38, 0.3)", "0 0 0 rgba(220, 38, 38, 0)"]
+                                        }}
+                                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                                    >
                                         <p className="text-sm text-red-600">{selectedTicket.reason}</p>
-                                    </div>
-                                </div>
+                                    </motion.div>
+                                </motion.div>
                             )}
-                        </div>
+                        </motion.div>
                     )}
                     <DialogFooter>
-                        <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+                        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                            <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+                        </motion.div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
