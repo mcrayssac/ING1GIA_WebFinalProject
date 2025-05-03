@@ -228,9 +228,14 @@ export default function SensorsPage() {
           </div>
           {isAdmin && (
             <div className="flex justify-start mt-4">
-              <Link href="/sensorsForm">
-                <Button>Add a New Sensor</Button>
-              </Link>
+                <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => router.push("/sensorsForm")}
+                    data-navigation="true"
+                >
+                    Add a New Sensor
+                </Button>
             </div>
           )}
         </>

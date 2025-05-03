@@ -1138,6 +1138,7 @@ export default function UserSearchPage() {
                                                             setIsDrawerOpen(false);
                                                             router.push(`/users/${selectedUser._id}`);
                                                         }}
+                                                        data-navigation="true"
                                                     >
                                                         <Pencil className="h-3.5 w-3.5" />
                                                         Edit
