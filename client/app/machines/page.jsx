@@ -46,28 +46,27 @@ export default function MachinesPage() {
     const { user } = useUser();
     const router = useRouter();
     const isAdmin = user?.admin === true;
-
+    const gradeName = user?.grade?.name;
+    const canModifyMachines = user?.admin; 
+    
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [machinesRes, sensorsRes, sitesRes, usersRes] = await Promise.all([
+                const [machinesRes, sensorsRes, sitesRes] = await Promise.all([
                     fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`),
                     fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
                     fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`),
-                    // fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/users`)
                 ]);
 
                 if (!machinesRes.ok) throw new Error("Failed to fetch machines");
                 if (!sensorsRes.ok) throw new Error("Failed to fetch sensors");
                 if (!sitesRes.ok) throw new Error("Failed to fetch sites");
-                // if (!usersRes.ok) throw new Error("Failed to fetch users");
 
-                const [machines, sensors, sites, users] = await Promise.all([
+                const [machines, sensors, sites] = await Promise.all([
                     machinesRes.json(),
                     sensorsRes.json(),
                     sitesRes.json(),
-                    // usersRes.json()
                 ]);
 
                 // Enrich machine data with related entities
@@ -84,15 +83,12 @@ export default function MachinesPage() {
                         sites.find(s => s._id === siteId)?.name || 'Unknown site'
                     ).join(', '),
                     // Map user IDs to user names
-                    currentUsers: machine.currentUsers.map(userId =>
-                        users.find(u => u._id === userId)?.name || 'Unknown user'
-                    )
+                    currentUsers: machine.currentUsers
                 }));
 
                 setMachinesData(enrichedMachines);
                 setSensorsData(sensors);
                 setSitesData(sites);
-                // setUsersData(users);
                 setLoading(false);
             } catch (err) {
                 setError(err.message);
@@ -218,7 +214,7 @@ export default function MachinesPage() {
                 </div>
             ),
         },
-        ...(isAdmin
+        ...(canModifyMachines
             ? [
                 {
                     accessorKey: "actions",
@@ -328,9 +324,9 @@ export default function MachinesPage() {
                                 {table.getRowModel().rows?.length ? (
                                     table.getRowModel().rows.map((row) => (
                                         <TableRow
-                                            key={row.id}
-                                            onClick={() => router.push(`/machines/${row.original._id}`)}
-                                            className="cursor-pointer hover:bg-gray-50"
+                                        key={row.id}
+                                        onClick={() => router.push(`/machines/${row.original._id}`)}
+                                        className="cursor-pointer hover:bg-gray-50"
                                         >
                                             {row.getVisibleCells().map((cell) => (
                                                 <TableCell key={cell.id}>
@@ -374,7 +370,7 @@ export default function MachinesPage() {
                             Next
                         </Button>
                     </div>
-                    {isAdmin && (
+                    {canModifyMachines && (
                         <div className="flex items-center justify-start space-x-2 py-4">
                             <Button
                                 variant="outline"
