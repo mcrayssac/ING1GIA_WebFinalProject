@@ -7,7 +7,6 @@ import Loading from "@/components/loading";
 import Alert from "@/components/alert";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext"; // ✅ corriger l'import ici
-import { gradeOrder } from "@/utils/gradeUtils"; // contient { Apprentice: 0, Technician: 1, Engineer: 2, Manager: 3 }
 
 const normalizeId = (id) =>
   typeof id === "object" && id !== null
@@ -157,7 +156,7 @@ export default function MachineDetailPage() {
           </Button>
 
           <div className="flex space-x-4 mt-6">
-            <Button onClick={() => setIsEditing(true)} className="w-full">Edit</Button>
+            {/* <Button onClick={() => setIsEditing(true)} className="w-full">Edit</Button> */}
             <Link href="/machines"><Button className="w-full">Back to List</Button></Link>
           </div>
         </div>
