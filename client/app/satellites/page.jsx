@@ -39,6 +39,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { useToastAlert } from "@/contexts/ToastContext"
+import re from "@/public/cesium/Workers/decodeI3S"
 
 // Animation variants
 const fadeInVariants = {
@@ -106,12 +107,12 @@ const iconAnimationVariants = {
             ease: "easeInOut"
         }
     },
-    tap: { 
-        scale: 0.9, 
-        transition: { 
-            type: "spring", 
-            stiffness: 400 
-        } 
+    tap: {
+        scale: 0.9,
+        transition: {
+            type: "spring",
+            stiffness: 400
+        }
     },
     rotating: {
         rotate: 360,
@@ -142,7 +143,7 @@ async function loadAndColorIcon(url, color, targetWidth, targetHeight) {
 
     // Replace all fill attributes (case-insensitive) with the provided color
     svgText = svgText.replace(/fill="[^"]*"/gi, `fill="${color}"`)
-    
+
     // Replace width and height attributes if provided
     if (targetWidth) {
         svgText = svgText.replace(/width="[^"]*"/i, `width="${targetWidth}px"`)
@@ -172,7 +173,7 @@ export default function SatellitesPage() {
 
     // State for toggling ISS display
     const [displayISS, setDisplayISS] = useState(true)
-    
+
     // State for toggling individual Starlink satellites
     const [displayStarlinkMap, setDisplayStarlinkMap] = useState({})
 
@@ -238,10 +239,10 @@ export default function SatellitesPage() {
                         preSampleTrajectory(starlinkSatrecRefs.current[i], starlinkSampledPositions.current[i])
                     })
 
-                    // By default, only show the first Starlink satellite
+                    // By default, show the first 10 Starlink satellites
                     const initialDisplay = {}
                     data.starlink.forEach((_, i) => {
-                        initialDisplay[i] = i === 0
+                        initialDisplay[i] = i < 10
                     })
                     setDisplayStarlinkMap(initialDisplay)
                 }
@@ -392,33 +393,6 @@ export default function SatellitesPage() {
         }
     }, [timeMultiplier, cesiumLoaded])
 
-    // Center the camera on the user's location if geolocation is available
-    useEffect(() => {
-        if (cesiumLoaded && viewerRef.current && viewerRef.current.cesiumElement) {
-            const camera = viewerRef.current.cesiumElement.camera
-            const currentAltitude = camera.positionCartographic.height || 10000000
-            const setLocation = (longitude, latitude) => {
-                camera.setView({
-                    destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, currentAltitude),
-                })
-            }
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords
-                        setLocation(longitude, latitude)
-                    },
-                    (error) => {
-                        setLocation(2.3522, 48.8566) // Fallback to Paris if geolocation fails
-                    },
-                )
-            } else {
-                setLocation(2.3522, 48.8566) // Fallback to Paris if geolocation is not supported
-            }
-        }
-    }, [cesiumLoaded])
-
     // Handle fullscreen toggle
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -480,8 +454,34 @@ export default function SatellitesPage() {
         if (!cesiumLoaded || !viewerRef.current || !viewerRef.current.cesiumElement) return
 
         const viewer = viewerRef.current.cesiumElement
-        viewer.camera.flyHome()
+        const camera = viewer.camera
+        const currentAltitude = 12500000
+        const setLocation = (longitude, latitude) => {
+            camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, currentAltitude),
+                duration: 2
+            })
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords
+                    setLocation(longitude, latitude)
+                },
+                (error) => {
+                    setLocation(-97.1558, 25.9872) // Fallback to Boca Chica if geolocation fails
+                },
+            )
+        } else {
+            setLocation(-97.1558, 25.9872) // Fallback to Boca Chica if geolocation is not supported
+        }
     }
+
+    // Center the camera on the user's location if geolocation is available
+    useEffect(() => {
+        resetView()
+    }, [cesiumLoaded])
 
     // Handle tab change
     const handleTabChange = (value) => {
@@ -490,7 +490,7 @@ export default function SatellitesPage() {
 
     return (
         <TooltipProvider>
-            <div ref={containerRef} className={`relative flex h-100 ${fullscreen && "w-screen"}`}>
+            <div ref={containerRef} className={`relative flex h-[calc(100vh-4rem)] ${fullscreen && "w-screen"}`}>
                 {/* Loading overlay */}
                 {loading && (
                     <motion.div
@@ -524,7 +524,7 @@ export default function SatellitesPage() {
                 {/* Sidebar */}
                 <motion.div
                     className={`border-r transition-all duration-300 flex flex-col ${sidebarCollapsed ? "w-16" : "w-80"
-                        } ${fullscreen ? "h-screen" : "h-[800px]"}`}
+                        } ${fullscreen ? "h-screen" : "h-[calc(100vh-4rem)]"}`}
                     initial="hidden"
                     animate="visible"
                     variants={slideInVariants}
@@ -547,7 +547,7 @@ export default function SatellitesPage() {
 
                     {/* Sidebar Content */}
                     {!sidebarCollapsed && (
-                        <div className="flex-1 overflow-hidden flex flex-col">
+                        <div className="flex-1 overflow-hidden flex flex-col h-full">
                             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col">
                                 <TabsList className="grid grid-cols-3 mx-4 mt-4">
                                     <TabsTrigger value="satellites">Satellites</TabsTrigger>
@@ -558,7 +558,7 @@ export default function SatellitesPage() {
                                 <div className="flex-1 overflow-hidden">
                                     {/* Satellites Tab */}
                                     {activeTab === "satellites" && (
-                                        <div className="flex-1 overflow-hidden flex flex-col h-full">
+                                        <div className="flex-1 overflow-auto flex flex-col h-full">
                                             <div className="p-4 space-y-4">
                                                 <div className="relative">
                                                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -623,72 +623,70 @@ export default function SatellitesPage() {
                                                 </div>
                                             </div>
 
-                                            <ScrollArea className="flex-1">
-                                                <div className="p-4 pt-0 space-y-2">
-                                                    {filteredStarlink.map((sat, i) => (
-                                                        <motion.div
-                                                            key={sat.name}
-                                                            className={`flex items-center justify-between p-2 rounded-md ${displayStarlinkMap[i] ? "bg-primary/10" : "hover:bg-muted"
-                                                                }`}
-                                                            whileHover={{ 
-                                                                x: 4, 
-                                                                backgroundColor: displayStarlinkMap[i] ? "rgba(var(--primary), 0.15)" : "rgba(var(--muted), 0.7)" 
-                                                            }}
-                                                            initial="hidden"
-                                                            animate="visible"
-                                                            variants={slideInVariants}
-                                                            custom={i}
-                                                            transition={{ delay: i * 0.05 }}
-                                                        >
-                                                            <div className="flex items-center gap-2">
-                                                                <motion.div 
-                                                                    animate={displayStarlinkMap[i] ? "pulse" : "initial"}
-                                                                    variants={pulseVariants}
-                                                                >
-                                                                    <Satellite
-                                                                        className={`h-4 w-4 ${displayStarlinkMap[i] ? "text-primary" : "text-muted-foreground"}`}
-                                                                    />
-                                                                </motion.div>
-                                                                <motion.span
-                                                                    className="text-sm truncate max-w-[140px]"
-                                                                    animate={displayStarlinkMap[i] ? { color: "oklch(var(--primary))" } : {}}
-                                                                >
-                                                                    {sat.name}
-                                                                </motion.span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <Switch
-                                                                    id={`starlink-${i}`}
-                                                                    checked={displayStarlinkMap[i] || false}
-                                                                    onCheckedChange={() => toggleStarlink(i)}
-                                                                    size="sm"
+                                            <div className="p-4 pt-0 space-y-2 flex-1 overflow-auto">
+                                                {filteredStarlink.map((sat, i) => (
+                                                    <motion.div
+                                                        key={sat.name}
+                                                        className={`flex items-center justify-between p-2 rounded-md ${displayStarlinkMap[i] ? "bg-primary/10" : "hover:bg-muted"
+                                                            }`}
+                                                        whileHover={{
+                                                            x: 4,
+                                                            backgroundColor: displayStarlinkMap[i] ? "rgba(var(--primary), 0.15)" : "rgba(var(--muted), 0.7)"
+                                                        }}
+                                                        initial="hidden"
+                                                        animate="visible"
+                                                        variants={slideInVariants}
+                                                        custom={i}
+                                                        transition={{ delay: i * 0.05 }}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <motion.div
+                                                                animate={displayStarlinkMap[i] ? "pulse" : "initial"}
+                                                                variants={pulseVariants}
+                                                            >
+                                                                <Satellite
+                                                                    className={`h-4 w-4 ${displayStarlinkMap[i] ? "text-primary" : "text-muted-foreground"}`}
                                                                 />
-                                                                <motion.div
-                                                                    whileHover="hover"
-                                                                    whileTap="tap"
-                                                                    variants={iconAnimationVariants}
-                                                                >
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-7 w-7"
-                                                                        onClick={() => focusOnSatellite("starlink", i)}
-                                                                        disabled={!displayStarlinkMap[i]}
-                                                                    >
-                                                                        <Compass className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                </motion.div>
-                                                            </div>
-                                                        </motion.div>
-                                                    ))}
-                                                    {filteredStarlink.length === 0 && (
-                                                        <div className="flex flex-col items-center justify-center py-8 text-center">
-                                                            <Search className="h-8 w-8 text-muted-foreground mb-2" />
-                                                            <p className="text-sm text-muted-foreground">No satellites found</p>
+                                                            </motion.div>
+                                                            <motion.span
+                                                                className="text-sm truncate max-w-[140px]"
+                                                                animate={displayStarlinkMap[i] ? { color: "oklch(var(--primary))" } : {}}
+                                                            >
+                                                                {sat.name}
+                                                            </motion.span>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </ScrollArea>
+                                                        <div className="flex items-center gap-1">
+                                                            <Switch
+                                                                id={`starlink-${i}`}
+                                                                checked={displayStarlinkMap[i] || false}
+                                                                onCheckedChange={() => toggleStarlink(i)}
+                                                                size="sm"
+                                                            />
+                                                            <motion.div
+                                                                whileHover="hover"
+                                                                whileTap="tap"
+                                                                variants={iconAnimationVariants}
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7"
+                                                                    onClick={() => focusOnSatellite("starlink", i)}
+                                                                    disabled={!displayStarlinkMap[i]}
+                                                                >
+                                                                    <Compass className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </motion.div>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                                {filteredStarlink.length === 0 && (
+                                                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                        <Search className="h-8 w-8 text-muted-foreground mb-2" />
+                                                        <p className="text-sm text-muted-foreground">No satellites found</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
@@ -726,7 +724,7 @@ export default function SatellitesPage() {
                                                             <CardDescription>NORAD ID: {selectedSatellite.data.noradId}</CardDescription>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4">
-                                                            <motion.div 
+                                                            <motion.div
                                                                 className="grid grid-cols-2 gap-4"
                                                                 variants={staggerContainerVariants}
                                                                 initial="hidden"
@@ -747,13 +745,13 @@ export default function SatellitesPage() {
                                                                 <motion.div className="space-y-1" variants={fadeInVariants}>
                                                                     <p className="text-xs text-muted-foreground">Status</p>
                                                                     <motion.div
-                                                                        animate={{ 
+                                                                        animate={{
                                                                             scale: [1, 1.05, 1],
                                                                         }}
-                                                                        transition={{ 
-                                                                            duration: 2, 
+                                                                        transition={{
+                                                                            duration: 2,
                                                                             repeat: Infinity,
-                                                                            repeatType: "reverse" 
+                                                                            repeatType: "reverse"
                                                                         }}
                                                                     >
                                                                         <Badge variant="success" className="bg-green-500">
@@ -780,9 +778,9 @@ export default function SatellitesPage() {
                                                                         )
                                                                     }
                                                                 >
-                                                                    <motion.div 
+                                                                    <motion.div
                                                                         className="mr-2"
-                                                                        animate={{ rotate: [0, 360] }} 
+                                                                        animate={{ rotate: [0, 360] }}
                                                                         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                                                                     >
                                                                         <Compass className="h-4 w-4" />
@@ -794,7 +792,7 @@ export default function SatellitesPage() {
                                                     </Card>
                                                 </motion.div>
                                             ) : (
-                                                <motion.div 
+                                                <motion.div
                                                     className="flex flex-col items-center justify-center h-full text-center"
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
@@ -806,7 +804,7 @@ export default function SatellitesPage() {
                                                     >
                                                         <Info className="h-12 w-12 text-muted-foreground mb-4" />
                                                     </motion.div>
-                                                    <motion.h3 
+                                                    <motion.h3
                                                         className="text-lg font-medium"
                                                         initial={{ y: 20, opacity: 0 }}
                                                         animate={{ y: 0, opacity: 1 }}
@@ -814,7 +812,7 @@ export default function SatellitesPage() {
                                                     >
                                                         No Satellite Selected
                                                     </motion.h3>
-                                                    <motion.p 
+                                                    <motion.p
                                                         className="text-sm text-muted-foreground mt-1 max-w-xs"
                                                         initial={{ y: 20, opacity: 0 }}
                                                         animate={{ y: 0, opacity: 1 }}
@@ -831,7 +829,7 @@ export default function SatellitesPage() {
                                     {/* Settings Tab */}
                                     {activeTab === "settings" && (
                                         <div className="p-4 space-y-6 h-full overflow-auto">
-                                            <motion.div 
+                                            <motion.div
                                                 className="space-y-2"
                                                 initial="hidden"
                                                 animate="visible"
@@ -840,16 +838,16 @@ export default function SatellitesPage() {
                                                 <h3 className="text-sm font-medium">Time Controls</h3>
                                                 <div className="flex items-center justify-between">
                                                     <Label htmlFor="time-multiplier">Simulation Speed</Label>
-                                                    <motion.span 
+                                                    <motion.span
                                                         className="text-sm"
-                                                        animate={{ 
-                                                            scale: [1, 1.1, 1], 
-                                                            color: timeMultiplier >= 10 ? 
-                                                                ["oklch(var(--foreground))", "oklch(var(--primary))", "oklch(var(--foreground))"] : 
+                                                        animate={{
+                                                            scale: [1, 1.1, 1],
+                                                            color: timeMultiplier >= 10 ?
+                                                                ["oklch(var(--foreground))", "oklch(var(--primary))", "oklch(var(--foreground))"] :
                                                                 "oklch(var(--foreground))"
                                                         }}
-                                                        transition={{ 
-                                                            duration: 0.5, 
+                                                        transition={{
+                                                            duration: 0.5,
                                                             repeat: timeMultiplier >= 10 ? 2 : 0,
                                                             repeatDelay: 2
                                                         }}
@@ -857,7 +855,7 @@ export default function SatellitesPage() {
                                                         {timeMultiplier}x
                                                     </motion.span>
                                                 </div>
-                                                <motion.div 
+                                                <motion.div
                                                     className="flex items-center gap-2"
                                                     variants={staggerContainerVariants}
                                                 >
@@ -883,7 +881,7 @@ export default function SatellitesPage() {
 
                                             <Separator />
 
-                                            <motion.div 
+                                            <motion.div
                                                 className="space-y-3"
                                                 initial="hidden"
                                                 animate="visible"
@@ -892,7 +890,7 @@ export default function SatellitesPage() {
                                             >
                                                 <h3 className="text-sm font-medium">Display Options</h3>
 
-                                                <motion.div 
+                                                <motion.div
                                                     className="flex items-center justify-between"
                                                     whileHover={{ x: 3, backgroundColor: "rgba(var(--muted), 0.3)" }}
                                                     transition={{ duration: 0.2 }}
@@ -902,10 +900,10 @@ export default function SatellitesPage() {
                                                     <div className="flex items-center gap-2">
                                                         <motion.div
                                                             animate={{ rotate: showOrbits ? [0, 360] : 0 }}
-                                                            transition={{ 
-                                                                duration: 5, 
+                                                            transition={{
+                                                                duration: 5,
                                                                 repeat: showOrbits ? Infinity : 0,
-                                                                ease: "linear" 
+                                                                ease: "linear"
                                                             }}
                                                         >
                                                             <Orbit className="h-4 w-4 text-muted-foreground" />
@@ -915,7 +913,7 @@ export default function SatellitesPage() {
                                                     <Switch id="show-orbits" checked={showOrbits} onCheckedChange={setShowOrbits} />
                                                 </motion.div>
 
-                                                <motion.div 
+                                                <motion.div
                                                     className="flex items-center justify-between"
                                                     whileHover={{ x: 3, backgroundColor: "rgba(var(--muted), 0.3)" }}
                                                     transition={{ duration: 0.2 }}
@@ -928,8 +926,8 @@ export default function SatellitesPage() {
                                                                 scale: [1, 1.2, 1],
                                                                 color: ["currentColor", "oklch(var(--primary))", "currentColor"]
                                                             } : {}}
-                                                            transition={{ 
-                                                                duration: 1.5, 
+                                                            transition={{
+                                                                duration: 1.5,
                                                                 repeat: showLabels ? Infinity : 0,
                                                                 repeatDelay: 2
                                                             }}
@@ -944,7 +942,7 @@ export default function SatellitesPage() {
 
                                             <Separator />
 
-                                            <motion.div 
+                                            <motion.div
                                                 className="space-y-3"
                                                 initial="hidden"
                                                 animate="visible"
@@ -958,7 +956,7 @@ export default function SatellitesPage() {
                                                         whileTap={{ scale: 0.95 }}
                                                     >
                                                         <Button variant="outline" size="sm" onClick={resetView} className="w-full">
-                                                            <motion.div 
+                                                            <motion.div
                                                                 className="mr-2"
                                                                 whileHover={{ rotate: 360 }}
                                                                 transition={{ duration: 0.5 }}
@@ -968,7 +966,7 @@ export default function SatellitesPage() {
                                                             Reset View
                                                         </Button>
                                                     </motion.div>
-                                                    
+
                                                     <motion.div
                                                         whileHover={{ scale: 1.05 }}
                                                         whileTap={{ scale: 0.95 }}
@@ -976,7 +974,7 @@ export default function SatellitesPage() {
                                                         <Button variant="outline" size="sm" onClick={toggleFullscreen} className="w-full">
                                                             {fullscreen ? (
                                                                 <>
-                                                                    <motion.div 
+                                                                    <motion.div
                                                                         className="mr-2"
                                                                         animate={{ scale: [1, 0.8, 1] }}
                                                                         transition={{ duration: 1.5, repeat: Infinity }}
@@ -987,7 +985,7 @@ export default function SatellitesPage() {
                                                                 </>
                                                             ) : (
                                                                 <>
-                                                                    <motion.div 
+                                                                    <motion.div
                                                                         className="mr-2"
                                                                         animate={{ scale: [1, 1.2, 1] }}
                                                                         transition={{ duration: 1.5, repeat: Infinity }}
@@ -1010,7 +1008,7 @@ export default function SatellitesPage() {
                 </motion.div>
 
                 {/* Main Content - Cesium Viewer */}
-                <div className={`relative flex-1 ${fullscreen ? "h-screen" : "h-[800px]"}`}>
+                <div className={`relative flex-1 ${fullscreen ? "h-screen" : "h-[calc(100vh-4rem)]"}`}>
                     {/* Loading UI */}
                     {!cesiumLoaded && (
                         <motion.div
@@ -1037,7 +1035,7 @@ export default function SatellitesPage() {
 
                     <Viewer
                         ref={viewerRef}
-                        className="w-full h-full"
+                        className={`w-full h-full`}
                         imageryProvider={
                             new UrlTemplateImageryProvider({
                                 url: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -1164,4 +1162,3 @@ export default function SatellitesPage() {
         </TooltipProvider>
     )
 }
-

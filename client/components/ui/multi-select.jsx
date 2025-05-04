@@ -13,7 +13,7 @@ export function MultiSelect({
     placeholder = "Select items...",
     className,
     disabled = false,
-    variant = "primary", // Only support primary and secondary variants
+    variant = "primary", // Support dynamic variants based on project's theme
     showSelectAll = true, // Add showSelectAll prop with default true
 }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -23,24 +23,94 @@ export function MultiSelect({
     const searchInputRef = useRef(null)
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
     const [portalContainer, setPortalContainer] = useState(null)
+    const isMounted = useRef(true)
 
-    // Define color variants - only keep primary and secondary
+    // Enhanced color variants using theme tokens
     const colorVariants = {
         primary: {
-            badge: "bg-primary text-primary",
+            badge: "bg-primary text-primary-foreground",
             hover: "hover:border-primary",
             ring: "ring-primary",
             border: "border-primary",
-            selected: "bg-primary",
-            checkbox: "bg-primary border-primary",
+            selected: "bg-primary text-primary-foreground",
+            checkbox: "bg-primary text-primary-foreground border-primary",
+            text: "text-primary-foreground",
+            muted: "text-muted-foreground",
+            placeholder: "text-muted-foreground",
+            bg: "bg-background",
+            bgHover: "hover:bg-base-200",
+            bgHoverDark: "dark:hover:bg-primary",
+            borderColor: "border-border dark:border-primary",
+            focusRing: "focus:ring-primary",
+            icon: "text-muted-foreground",
         },
         secondary: {
-            badge: "bg-secondary text-secondary",
+            badge: "bg-secondary text-secondary-foreground",
             hover: "hover:border-secondary",
             ring: "ring-secondary",
             border: "border-secondary",
-            selected: "bg-secondary",
-            checkbox: "bg-secondary border-secondary",
+            selected: "bg-secondary text-secondary-foreground",
+            checkbox: "bg-secondary text-secondary-foreground border-secondary",
+            text: "text-secondary-foreground",
+            muted: "text-muted-foreground",
+            placeholder: "text-muted-foreground",
+            bg: "bg-background",
+            bgHover: "hover:bg-base-200",
+            bgHoverDark: "dark:hover:bg-secondary",
+            borderColor: "border-border dark:border-secondary",
+            focusRing: "focus:ring-secondary",
+            icon: "text-muted-foreground",
+        },
+        accent: {
+            badge: "bg-accent text-accent-foreground",
+            hover: "hover:border-accent",
+            ring: "ring-accent",
+            border: "border-accent",
+            selected: "bg-accent text-accent-foreground",
+            checkbox: "bg-accent text-accent-foreground border-accent",
+            text: "text-accent-foreground",
+            muted: "text-muted-foreground",
+            placeholder: "text-muted-foreground",
+            bg: "bg-background",
+            bgHover: "hover:bg-base-200",
+            bgHoverDark: "dark:hover:bg-accent",
+            borderColor: "border-border dark:border-accent",
+            focusRing: "focus:ring-accent",
+            icon: "text-muted-foreground",
+        },
+        destructive: {
+            badge: "bg-destructive text-destructive-foreground",
+            hover: "hover:border-destructive",
+            ring: "ring-destructive",
+            border: "border-destructive",
+            selected: "bg-destructive text-destructive-foreground",
+            checkbox: "bg-destructive text-destructive-foreground border-destructive",
+            text: "text-destructive-foreground",
+            muted: "text-muted-foreground",
+            placeholder: "text-muted-foreground",
+            bg: "bg-background",
+            bgHover: "hover:bg-base-200",
+            bgHoverDark: "dark:hover:bg-destructive",
+            borderColor: "border-border dark:border-destructive",
+            focusRing: "focus:ring-destructive",
+            icon: "text-muted-foreground",
+        },
+        muted: {
+            badge: "bg-muted text-muted-foreground",
+            hover: "hover:border-muted",
+            ring: "ring-muted",
+            border: "border-muted",
+            selected: "bg-muted text-muted-foreground",
+            checkbox: "bg-muted text-muted-foreground border-muted",
+            text: "text-muted-foreground",
+            muted: "text-muted-foreground",
+            placeholder: "text-muted-foreground",
+            bg: "bg-background",
+            bgHover: "hover:bg-base-200",
+            bgHoverDark: "dark:hover:bg-muted",
+            borderColor: "border-border dark:border-muted",
+            focusRing: "focus:ring-muted",
+            icon: "text-muted-foreground",
         }
     }
 
@@ -51,6 +121,12 @@ export function MultiSelect({
     const filteredOptions = options.filter((option) =>
         option.label.toLowerCase().includes(searchTerm.toLowerCase())
     )
+
+    useEffect(() => {
+        return () => {
+            isMounted.current = false
+        }
+    }, [])
 
     // Update dropdown position when it opens
     useEffect(() => {
@@ -95,6 +171,7 @@ export function MultiSelect({
         if (!disabled) {
             setIsOpen(!isOpen)
             if (!isOpen) {
+                // Clear search when opening
                 setSearchTerm("")
             }
         }
@@ -112,6 +189,7 @@ export function MultiSelect({
         }
 
         onChange(updatedSelection)
+        // We explicitly don't close the dropdown after selection
     }
 
     // Remove an option
@@ -202,9 +280,9 @@ export function MultiSelect({
                 tabIndex={disabled ? -1 : 0}
                 whileTap={{ scale: disabled ? 1 : 0.98 }}
                 className={cn(
-                    "flex flex-wrap gap-1.5 p-2 border rounded-md cursor-pointer min-h-[2.5rem] items-center transition-all duration-200",
+                    "flex flex-wrap gap-1.5 p-2 border rounded-md cursor-pointer min-h-[2.5rem] items-center transition-all duration-200 bg-background",
                     isOpen ? `ring-2 ${colors.ring} ${colors.border}` : colors.hover,
-                    disabled ? "opacity-50 cursor-not-allowed bg-gray-50" : "",
+                    disabled ? "opacity-50 cursor-not-allowed bg-muted" : "",
                     className
                 )}
                 onClick={toggleDropdown}
@@ -231,10 +309,10 @@ export function MultiSelect({
                                 {!disabled && (
                                     <motion.button
                                         type="button"
-                                        whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.2)" }}
+                                        whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
                                         onClick={(e) => removeOption(option.value, e)}
-                                        className="rounded-full h-4 w-4 flex items-center justify-center transition-colors"
+                                        className="rounded-full h-4 w-4 flex items-center justify-center transition-colors hover:bg-primary"
                                         aria-label={`Remove ${option.label}`}
                                     >
                                         <X className="h-3 w-3" />
@@ -243,7 +321,7 @@ export function MultiSelect({
                             </div>
                         ))
                     ) : (
-                        <span className="text-gray-400">{placeholder}</span>
+                        <span className={colors.placeholder}>{placeholder}</span>
                     )}
                 </div>
                 <motion.div
@@ -251,7 +329,7 @@ export function MultiSelect({
                     transition={{ duration: 0.2 }}
                     className="ml-auto flex-shrink-0"
                 >
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className={`h-4 w-4 ${colors.icon}`} />
                 </motion.div>
             </motion.div>
 
@@ -264,7 +342,7 @@ export function MultiSelect({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -5, scale: 0.95 }}
                         transition={{ duration: 0.2, type: "spring", stiffness: 500, damping: 25 }}
-                        className="bg-white border rounded-md shadow-lg max-h-60 overflow-hidden flex flex-col z-[9999]"
+                        className={`bg-background border ${colors.borderColor} rounded-md shadow-lg max-h-60 overflow-hidden flex flex-col z-[9999]`}
                         style={{ 
                             position: "absolute", 
                             top: `${dropdownPosition.top}px`,
@@ -274,9 +352,9 @@ export function MultiSelect({
                         }}
                     >
                         {/* Search input */}
-                        <div className="p-2 border-b sticky top-0 bg-white z-[101]">
+                        <div className={`p-2 border-b ${colors.borderColor} sticky top-0 bg-background z-[101]`}>
                             <div className="relative">
-                                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Search className={`absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 ${colors.icon}`} />
                                 <input
                                     ref={searchInputRef}
                                     type="text"
@@ -284,7 +362,7 @@ export function MultiSelect({
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Search..."
                                     className={cn(
-                                        "w-full pl-8 pr-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2",
+                                        `w-full pl-8 pr-2 py-1.5 text-sm border ${colors.borderColor} rounded-md focus:outline-none focus:ring-2 bg-background text-foreground placeholder:${colors.placeholder}`,
                                         `focus:${colors.ring}`
                                     )}
                                     aria-controls="multi-select-options"
@@ -294,10 +372,9 @@ export function MultiSelect({
 
                         {/* Select All option */}
                         {showSelectAll && filteredOptions.length > 0 && (
-                            <div className="border-b">
+                            <div className={`border-b ${colors.borderColor}`}>
                                 <motion.div
-                                    whileHover={{ backgroundColor: "rgba(0,0,0,0.03)" }}
-                                    className="p-2 cursor-pointer text-sm flex items-center justify-between"
+                                    className={`p-2 cursor-pointer text-sm flex items-center justify-between ${colors.bgHover} ${colors.bgHoverDark}`}
                                     onClick={handleSelectAll}
                                 >
                                     <div className="flex items-center">
@@ -309,8 +386,8 @@ export function MultiSelect({
                                                 filteredOptions.every((option) =>
                                                     selected.some((s) => s.value === option.value)
                                                 )
-                                                    ? `${colors.checkbox} text-white`
-                                                    : "border-gray-300"
+                                                    ? `${colors.checkbox}`
+                                                    : `${colors.borderColor}`
                                             )}
                                         >
                                             {filteredOptions.every((option) =>
@@ -325,7 +402,7 @@ export function MultiSelect({
                                                 : "Select All"}
                                         </span>
                                     </div>
-                                    <span className="text-xs text-gray-500">
+                                    <span className={colors.muted}>
                                         {selected.length} of {options.length} selected
                                     </span>
                                 </motion.div>
@@ -357,17 +434,20 @@ export function MultiSelect({
                                                     damping: 25,
                                                 }}
                                                 whileHover={{
-                                                    backgroundColor: "rgba(0,0,0,0.03)",
                                                     transition: { duration: 0.1 },
                                                 }}
                                                 role="option"
                                                 aria-selected={isItemSelected}
                                                 tabIndex={0}
                                                 className={cn(
-                                                    "p-2.5 cursor-pointer text-sm flex items-center transition-colors",
-                                                    isItemSelected ? colors.selected + " font-medium" : ""
+                                                    `p-2.5 cursor-pointer text-sm flex items-center transition-colors ${colors.bgHover} ${colors.bgHoverDark}`,
+                                                    isItemSelected ? " font-medium" : ""
                                                 )}
-                                                onClick={() => toggleOption(option)}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleOption(option);
+                                                }}
                                                 onKeyDown={(e) => handleKeyDown(e, option)}
                                             >
                                                 <motion.div
@@ -376,8 +456,8 @@ export function MultiSelect({
                                                     className={cn(
                                                         "w-4 h-4 mr-2 border rounded flex items-center justify-center transition-colors",
                                                         isItemSelected
-                                                            ? colors.checkbox + " text-white"
-                                                            : "border-gray-300"
+                                                            ? colors.checkbox
+                                                            : colors.borderColor
                                                     )}
                                                 >
                                                     {isItemSelected && <Check className="h-3 w-3" />}
@@ -388,7 +468,7 @@ export function MultiSelect({
                                     })}
                                 </AnimatePresence>
                             ) : (
-                                <div className="p-2 text-center text-sm text-gray-500">No options found</div>
+                                <div className={`p-2 text-center text-sm ${colors.muted}`}>No options found</div>
                             )}
                         </div>
                     </motion.div>
