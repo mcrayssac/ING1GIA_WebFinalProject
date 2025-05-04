@@ -16,29 +16,32 @@ async function cleanupFinishedCycles() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const usageToday = machine.usageStats.find(stat => stat.day.getTime() === today.getTime());
     if (!usageToday) continue;
-
+  
     const stillActiveUsers = [];
     const finishedUsers = [];
-
+  
     for (const userId of machine.currentUsers) {
-      const period = usageToday.usagePeriods.find(
-        p => p.user.toString() === userId.toString()
-      );
-
-      if (period && period.endTime < now) {
+      const periods = usageToday.usagePeriods
+        .filter(p => p.user.toString() === userId.toString())
+        .sort((a, b) => b.endTime - a.endTime); // plus récent d'abord
+    
+      const lastPeriod = periods[0];
+    
+      if (lastPeriod && lastPeriod.endTime < now) {
+        console.log(`✅ Terminé pour ${userId} (fin : ${lastPeriod.endTime.toISOString()})`);
         finishedUsers.push(userId);
         await User.findByIdAndUpdate(userId, { hasActiveCycle: false });
       } else {
+        console.log(`🕒 Toujours actif : ${userId}`);
         stillActiveUsers.push(userId);
       }
     }
-
+      
     if (finishedUsers.length > 0) {
-      await Machine.findByIdAndUpdate(machine._id, {
-        currentUsers: stillActiveUsers,
-        status: stillActiveUsers.length === 0 ? 'available' : 'in-use'
-      });
-
+      machine.currentUsers = stillActiveUsers;
+      machine.status = stillActiveUsers.length === 0 ? 'available' : 'in-use';
+      await machine.save();
+  
       console.log(`[${new Date().toISOString()}] Machine ${machine.name} mise à jour`);
     }
   }
