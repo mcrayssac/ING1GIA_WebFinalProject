@@ -45,6 +45,7 @@ export const UserProvider = ({ children }) => {
                 avatar: data.photo,
                 admin: data.admin,
                 points: data.points,
+                employeeId: data.employee._id,
                 grade: data.grade ? {
                     name: data.grade.name,
                     icon: data.grade.icon,

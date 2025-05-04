@@ -416,7 +416,7 @@ export default function EditUserPage() {
                             variant="default"
                             onClick={() => router.back()}
                             className="flex items-center gap-2"
-                            data-action="close-overlay"
+                            data-navigation="true"
                         >
                             <ArrowLeft className="h-4 w-4" />
                             Back to Users

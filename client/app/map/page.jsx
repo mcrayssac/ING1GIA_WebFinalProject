@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, Fragment } from "react"
 import { GoogleMap, MarkerF, PolygonF, InfoWindowF } from "@react-google-maps/api"
+import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { renderToStaticMarkup } from "react-dom/server"
 import { motion, AnimatePresence } from "framer-motion"
@@ -205,6 +206,7 @@ const DynamicPolygon = dynamic(
 )
 
 export default function MapPage() {
+    const router = useRouter()
     const { toastSuccess, toastError } = useToastAlert()
     const [sites, setSites] = useState([])
     const [loading, setLoading] = useState(true)
@@ -467,7 +469,7 @@ export default function MapPage() {
                                                 }
                                                 onCloseClick={() => setSelectedSiteId(null)}
                                             >
-                                                <div className="flex flex-col gap-4 bg-white p-4 w-[300px] shadow-sm rounded-sm relative">
+                                                <div className="flex flex-col gap-4 bg-background p-4 w-[300px] shadow-sm rounded-sm relative">
                                                     <div className="flex items-center gap-2 pb-2 border-b">
                                                         {React.createElement(
                                                             markerMapping[site.markerType]?.icon || Rocket,
@@ -489,15 +491,27 @@ export default function MapPage() {
                                                     <p className="text-sm text-gray-600 font-medium">
                                                         Open Hours: {site.openHours}
                                                     </p>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="mt-2"
-                                                        onClick={() => centerMapOnSite(site)}
-                                                    >
-                                                        <MapPinned className="w-4 h-4 mr-1" />
-                                                        Center Map
-                                                    </Button>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            className="mt-2 flex-1"
+                                                            onClick={() => centerMapOnSite(site)}
+                                                        >
+                                                            <MapPinned className="w-4 h-4 mr-1" />
+                                                            Center Map
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="mt-2 flex-1"
+                                                            onClick={() => router.push(`/map/${site._id}`)}
+                                                            data-navigation="true"
+                                                        >
+                                                            <Info className="w-4 h-4 mr-1" />
+                                                            View Details
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </DynamicInfoWindow>
                                         )}
