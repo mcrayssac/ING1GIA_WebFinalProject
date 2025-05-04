@@ -20,10 +20,13 @@ router.get('/', async (req, res) => {
             return res.status(404).json({ message: 'No satellites found' });
         }
 
+        // Get only 6 Starlink satellites
+        const starlinkSatellites = satellites.filter(satellite => satellite.name.startsWith('STARLINK')).slice(0, 18);
+
         // Filter for ISS and Starlink satellites
         res.json({ 
             iss: satellites.find(satellite => satellite.name === 'ISS (ZARYA)'),
-            starlink: satellites.filter(satellite => satellite.name.startsWith('STARLINK')) 
+            starlink: starlinkSatellites
         });
     } catch (error) {
         res.status(500).send(error.message);

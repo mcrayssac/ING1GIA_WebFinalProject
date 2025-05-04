@@ -11,7 +11,9 @@ const User = require('../models/User');
 const News = require('../models/News');
 const Machine = require('../models/Machine'); 
 const Sensor = require('../models/Sensor');
-const { sites, products, statistics, historyEvents, employees, grades, adminUser, testUsers, news, machines, sensors } = require('../data/data');
+const Ticket = require('../models/Ticket');
+const RewardAction = require('../models/RewardAction');
+const { sites, products, statistics, historyEvents, employees, grades, adminUser, testUsers, news, machines, sensors, rewardActions } = require('../data/data');
 const satellites = require('./satellites');
 
 const MONGO_URI = process.env.MONGO_URI;
@@ -35,7 +37,12 @@ async function seedDatabase() {
             HistoryEvent.deleteMany({}),
             Employee.deleteMany({}),
             Grade.deleteMany({}),
-            User.deleteMany({})
+            User.deleteMany({}),
+            Ticket.deleteMany({}),
+            News.deleteMany({}),
+            Machine.deleteMany({}),
+            Sensor.deleteMany({}),
+            RewardAction.deleteMany({})
         ]);
         console.log('Cleared existing data');
 
@@ -52,7 +59,8 @@ async function seedDatabase() {
             Grade.insertMany(grades),
             News.insertMany(news),
             Machine.insertMany(machines),
-            Sensor.insertMany(sensors)
+            Sensor.insertMany(sensors),
+            RewardAction.insertMany(rewardActions)
         ]);
         console.log('Seeded basic data');
 

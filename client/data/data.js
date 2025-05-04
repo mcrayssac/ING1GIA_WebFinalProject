@@ -110,6 +110,11 @@ const navAdmin = {
             url: "/tickets",
             icon: "Ticket",
         },
+        {
+            title: "Rewards",
+            url: "/rewards",
+            icon: "Medal",
+        },
     ],
 };
 
