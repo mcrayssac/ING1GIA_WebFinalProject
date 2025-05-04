@@ -52,21 +52,70 @@ async function seedDatabase() {
         console.log('Seeded satellites and sites');
 
         // Seed basic data
+        // Insert basic data except machines
         await Promise.all([
             Product.insertMany(products),
             Statistic.insertMany(statistics),
             HistoryEvent.insertMany(historyEvents),
             Grade.insertMany(grades),
             News.insertMany(news),
-            Machine.insertMany(machines),
             Sensor.insertMany(sensors),
             RewardAction.insertMany(rewardActions)
         ]);
         console.log('Seeded basic data');
 
-        // Prepare employee data with site references
-        const siteMap = new Map();
+        // Get all sites
         const allSites = await Site.find({});
+        const launchSites = allSites.filter(site => site.markerType === 'launch');
+        const testSites = allSites.filter(site => site.markerType === 'test');
+
+        // Prepare counters for even distribution
+        const siteCounters = new Map();
+        allSites.forEach(site => siteCounters.set(site._id.toString(), 0));
+
+        // Map machines to appropriate single site
+        const machinesWithSite = machines.map(machine => {
+            let availableSites = [];
+            
+            switch (machine.mainPole) {
+                case 'Bas de la fusée':
+                case 'Haut de la fusée':
+                    availableSites = launchSites;
+                    break;
+                case 'Extérieur':
+                    availableSites = allSites;
+                    break;
+                case 'Réservoir principal':
+                    availableSites = [...launchSites, ...testSites];
+                    break;
+            }
+
+            // Find site with least machines
+            let leastUsedSite = availableSites[0];
+            let minCount = Number.MAX_VALUE;
+
+            availableSites.forEach(site => {
+                const count = siteCounters.get(site._id.toString());
+                if (count < minCount) {
+                    minCount = count;
+                    leastUsedSite = site;
+                }
+            });
+
+            // Increment counter for selected site
+            siteCounters.set(leastUsedSite._id.toString(), minCount + 1);
+
+            return {
+                ...machine,
+                site: leastUsedSite._id
+            };
+        });
+
+        await Machine.insertMany(machinesWithSite);
+        console.log('Seeded machines with site references');
+
+        // Create site map for employees
+        const siteMap = new Map();
         allSites.forEach(site => siteMap.set(site.name, site._id));
 
         const employeesWithSites = employees.map(emp => {

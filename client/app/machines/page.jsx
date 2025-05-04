@@ -36,6 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Alert from "@/components/alert"
 import NoData from "@/components/no-data"
 import { useUser } from "@/contexts/UserContext"
+import { useToastAlert } from "@/contexts/ToastContext"
 
 // Animation variants
 const containerVariants = {
@@ -223,8 +224,6 @@ const Clock = ({ className }) => (
 
 export default function MachinesPage() {
     const [machinesData, setMachinesData] = useState([])
-    const [sensorsData, setSensorsData] = useState([])
-    const [sitesData, setSitesData] = useState([])
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(true)
     const [globalFilter, setGlobalFilter] = useState("")
@@ -233,43 +232,20 @@ export default function MachinesPage() {
     const [isRefreshing, setIsRefreshing] = useState(false)
 
     const { user } = useUser()
+    const { toastSuccess, toastError } = useToastAlert()
     const router = useRouter()
     const isAdmin = user?.admin === true
     const gradeName = user?.grade?.name
     const canModifyMachines = user?.admin
 
     const fetchData = async (showRefreshing = false) => {
-        if (showRefreshing) setIsRefreshing(true)
-
+        if (showRefreshing) setIsRefreshing(true);
         try {
-            const [machinesRes, sensorsRes, sitesRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`),
-                fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
-                fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`),
-            ])
+            const machinesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`);
+            if (!machinesRes.ok) throw new Error("Failed to fetch machines");
 
-            if (!machinesRes.ok) throw new Error("Failed to fetch machines")
-            if (!sensorsRes.ok) throw new Error("Failed to fetch sensors")
-            if (!sitesRes.ok) throw new Error("Failed to fetch sites")
-
-            const [machines, sensors, sites] = await Promise.all([machinesRes.json(), sensorsRes.json(), sitesRes.json()])
-
-            // Enrich machine data with related entities
-            const enrichedMachines = machines.map((machine) => ({
-                ...machine,
-                // Map sensor IDs to sensor objects
-                availableSensors: machine.availableSensors.map(
-                    (sensorId) => sensors.find((s) => s._id === sensorId) || { _id: sensorId, designation: "Unknown" },
-                ),
-                // Map site IDs to site names
-                sites: machine.sites.map((siteId) => sites.find((s) => s._id === siteId)?.name || "Unknown site").join(", "),
-                // Map user IDs to user names
-                currentUsers: machine.currentUsers,
-            }))
-
-            setMachinesData(enrichedMachines)
-            setSensorsData(sensors)
-            setSitesData(sites)
+            const machines = await machinesRes.json();
+            setMachinesData(machines);
         } catch (err) {
             setError(err.message)
         } finally {
@@ -294,13 +270,19 @@ export default function MachinesPage() {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`, {
                     method: "DELETE",
+                    credentials: "include"
                 })
 
-                if (!response.ok) throw new Error("Failed to delete machine")
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to delete machine");
+                }
 
-                setMachinesData(machinesData.filter((machine) => machine._id !== machineId))
+                setMachinesData(machinesData.filter((machine) => machine._id !== machineId));
+                toastSuccess("Machine deleted successfully");
             } catch (err) {
-                setError(err.message)
+                setError(err.message);
+                toastError(err.message);
             }
         }
     }
@@ -385,19 +367,12 @@ export default function MachinesPage() {
             cell: ({ row }) => <AnimatedBadge color="purple">{row.getValue("requiredGrade")}</AnimatedBadge>,
         },
         {
-            accessorKey: "sites",
-            header: "Installation Sites",
+            accessorKey: "site",
+            header: "Installation Site",
             cell: ({ row }) => (
-                <div className="flex flex-wrap gap-1">
-                    {row
-                        .getValue("sites")
-                        .split(", ")
-                        .map((site, index) => (
-                            <AnimatedBadge key={index} color="gray">
-                                {site}
-                            </AnimatedBadge>
-                        ))}
-                </div>
+                <AnimatedBadge color="gray">
+                    {row.original.site?.name || "Unknown site"}
+                </AnimatedBadge>
             ),
         },
         {
@@ -562,7 +537,7 @@ export default function MachinesPage() {
                         >
                             <Button
                                 className="flex items-center gap-2"
-                                onClick={() => router.push("/machinesForm")}
+                                onClick={() => router.push("/machines/formulaire")}
                                 data-navigation="true"
                             >
                                 <Plus className="h-4 w-4" />

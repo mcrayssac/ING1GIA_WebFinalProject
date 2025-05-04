@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const Machine = require("../models/Machine");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 const { verifyToken, isAdmin } = require("../middlewares/authMiddlewares");
 
 // Get all machines with filters
@@ -11,8 +12,18 @@ router.get("/", async (req, res) => {
         const { status, requiredGrade, search } = req.query;
         let query = {};
 
-        if (status && status !== "all") query.status = status;
-        if (requiredGrade && requiredGrade !== "all") query.requiredGrade = requiredGrade;
+        if (status && status !== "all") {
+            if (!['available', 'in-use', 'blocked'].includes(status)) {
+                return res.status(400).json({ error: "Invalid status value" });
+            }
+            query.status = status;
+        }
+        if (requiredGrade && requiredGrade !== "all") {
+            if (!['Apprentice', 'Technician', 'Engineer', 'Manager'].includes(requiredGrade)) {
+                return res.status(400).json({ error: "Invalid grade value" });
+            }
+            query.requiredGrade = requiredGrade;
+        }
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: "i" } },
@@ -21,7 +32,9 @@ router.get("/", async (req, res) => {
             ];
         }
 
-        const machines = await Machine.find(query);
+        const machines = await Machine.find(query)
+            .populate('site', 'name')
+            .populate('availableSensors', 'designation');
         res.json(machines);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -32,6 +45,10 @@ router.get("/", async (req, res) => {
 router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "Invalid machine ID format" });
+        }
+        
         const deletedMachine = await Machine.findByIdAndDelete(id);
         if (!deletedMachine) {
             return res.status(404).json({ error: "Machine not found" });
@@ -46,6 +63,32 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
 router.put("/:id", verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "Invalid machine ID format" });
+        }
+
+        // Validate required fields
+        const { mainPole, subPole, name, pointsPerCycle, maxUsers, requiredGrade } = req.body;
+        if (!mainPole || !subPole || !name || !pointsPerCycle || !maxUsers || !requiredGrade) {
+            return res.status(400).json({ 
+                error: "Missing required fields",
+                required: ["mainPole", "subPole", "name", "pointsPerCycle", "maxUsers", "requiredGrade"]
+            });
+        }
+
+        // Validate grade
+        if (!['Apprentice', 'Technician', 'Engineer', 'Manager'].includes(requiredGrade)) {
+            return res.status(400).json({ error: "Invalid grade value" });
+        }
+
+        // Validate numeric fields
+        if (typeof pointsPerCycle !== 'number' || pointsPerCycle < 0) {
+            return res.status(400).json({ error: "Points per cycle must be a positive number" });
+        }
+        if (typeof maxUsers !== 'number' || maxUsers < 1) {
+            return res.status(400).json({ error: "Max users must be a positive number" });
+        }
+
         const updatedMachine = await Machine.findByIdAndUpdate(id, req.body, {
             new: true,
             runValidators: true
@@ -55,6 +98,9 @@ router.put("/:id", verifyToken, async (req, res) => {
         }
         res.json(updatedMachine);
     } catch (err) {
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: err.message });
     }
 });
@@ -62,10 +108,40 @@ router.put("/:id", verifyToken, async (req, res) => {
 // POST to add a new machine
 router.post("/", verifyToken, async (req, res) => {
     try {
+        // Validate required fields
+        const { mainPole, subPole, name, pointsPerCycle, maxUsers, requiredGrade, site } = req.body;
+        if (!mainPole || !subPole || !name || !pointsPerCycle || !maxUsers || !requiredGrade || !site) {
+            return res.status(400).json({ 
+                error: "Missing required fields",
+                required: ["mainPole", "subPole", "name", "pointsPerCycle", "maxUsers", "requiredGrade", "site"]
+            });
+        }
+
+        // Validate grade
+        if (!['Apprentice', 'Technician', 'Engineer', 'Manager'].includes(requiredGrade)) {
+            return res.status(400).json({ error: "Invalid grade value" });
+        }
+
+        // Validate numeric fields
+        if (typeof pointsPerCycle !== 'number' || pointsPerCycle < 0) {
+            return res.status(400).json({ error: "Points per cycle must be a positive number" });
+        }
+        if (typeof maxUsers !== 'number' || maxUsers < 1) {
+            return res.status(400).json({ error: "Max users must be a positive number" });
+        }
+
+        // Validate site ID
+        if (!mongoose.Types.ObjectId.isValid(site)) {
+            return res.status(400).json({ error: "Invalid site ID format" });
+        }
+
         const newMachine = new Machine(req.body);
         await newMachine.save();
         res.status(201).json(newMachine);
     } catch (err) {
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: "Failed to add machine" });
     }
 });
@@ -74,10 +150,22 @@ router.post("/", verifyToken, async (req, res) => {
 router.get("/:id", verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const machine = await Machine.findById(id);
+        const machine = await Machine.findById(id)
+            .populate('site', 'name coordinates description')
+            .populate('availableSensors', 'designation requiredGrade')
+            .populate('currentUsers', 'username')
+            .lean();
+            
         if (!machine) {
             return res.status(404).json({ error: "Machine not found" });
         }
+
+        // Ensure all arrays exist even if empty
+        machine.availableSensors = machine.availableSensors || [];
+        machine.currentUsers = machine.currentUsers || [];
+        machine.usageStats = machine.usageStats || [];
+        machine.totalCycles = machine.totalCycles || 0;
+
         res.json(machine);
     } catch (err) {
         res.status(500).json({ error: err.message });
