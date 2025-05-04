@@ -47,26 +47,12 @@ require('./models/HistoryEvent');
 require('./models/News');
 require('./models/Machine');
 require('./models/RewardAction');
+require('./models/LogMetric');
 
-// Track all incoming requests
-app.use((req, res, next) => {
-    // Request infos
-    console.log("")
-    console.log(datetime('DateTime:', new Date().toLocaleString()));
-    console.log(routes(`[${req.method}] ${req.url}`));
-    console.log(info(`ip: ${req.ip}, origin: ${req.headers.origin}`));
+// Logging middleware for request metrics
+const loggingMiddleware = require('./middlewares/loggingMiddleware');
+app.use(loggingMiddleware);
 
-    if (process.env.DEBUG === 'true') {
-        console.log("");
-        console.log(debug(`Params: ${JSON.stringify(req.params)}`));
-        console.log(debug(`Query: ${JSON.stringify(req.query)}`));
-        console.log(debug(`Body: ${JSON.stringify(req.body)}`));
-        console.log(debug(`Headers: ${JSON.stringify(req.headers)}`));
-        console.log("");
-    }
-
-    next();
-});
 
 app.get('/', (req, res) => {
     res.send('Hello from SpaceY API');
@@ -104,6 +90,12 @@ const ticketRoutes = require('./routes/ticketRoutes');
 app.use('/api/tickets', ticketRoutes);
 const rewardActionRoutes = require('./routes/rewardActionRoutes');
 app.use('/api/rewards', rewardActionRoutes);
+
+const logMetricsRoutes = require('./routes/logMetricsRoutes');
+app.use('/api/metrics', logMetricsRoutes);
+
+const userActivityRoutes = require('./routes/userActivityRoutes');
+app.use('/api/users', userActivityRoutes); // Changed from '/api' to '/api/users' to match client-side paths
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
