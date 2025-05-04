@@ -121,7 +121,7 @@ router.post("/:id/start-cycle", verifyToken, async (req, res) => {
 
         // 4. Ajouter une période d'utilisation
         const now = new Date();
-        const end = new Date(now.getUTCTime() + 10 * 60 * 1000); // +10 minutes de cycle
+        const end = new Date(now.getTime() + 10 * 60 * 1000); // +10 minutes de cycle
 
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         let usageEntry = machine.usageStats.find(
