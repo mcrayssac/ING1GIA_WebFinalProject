@@ -1,124 +1,115 @@
 const mongoose = require('mongoose');
 
-// const sensorSchema = require('./Sensors');
-// const sensorDataSchema = require('./sensorData');
+// Schéma pour un relevé de capteur (sensor reading)
+const sensorReadingSchema = new mongoose.Schema({
+  timestamp: { type: Date, required: true },
+  value: { type: Number, required: true },
+  user: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_User,
+    required: true
+  }
+}, { _id: false });
 
 // Schéma pour une période d'utilisation (exemple : d'1h)
 const usagePeriodSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: process.env.MONGO_Collection_User,
-        required: true
-    },
-    startTime: { type: Date, required: true },
-    endTime: { type: Date, required: true }
+  user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: process.env.MONGO_Collection_User,
+    required: true 
+  },
+  startTime: { type: Date, required: true },
+  endTime: { type: Date, required: true }
 }, { _id: false });
 
-// Schéma pour les statistiques d'utilisation d'une journée
+// Statistiques journalières
 const dailyUsageSchema = new mongoose.Schema({
-    // La date du jour, tronquée à minuit
-    day: {
-        type: Date,
-        required: true,
-        default: function () {
-            const now = new Date();
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        }
-    },
-
-    // Périodes d'utilisation durant la journée
-    usagePeriods: { type: [usagePeriodSchema], default: [] }
+  day: { 
+    type: Date, 
+    required: true, 
+    default: function() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+  },
+  sensorData: {
+    type: Map,
+    of: [ sensorReadingSchema ],
+    default: {}
+  },
+  usagePeriods: { type: [ usagePeriodSchema ], default: [] }
 }, { _id: false });
 
 // Schéma principal de la machine
 const machineSchema = new mongoose.Schema({
-    // Pôle et Sous-pôle d'affectation de la machine
-    mainPole: { type: String, required: true },
-    subPole: { type: String, required: true },
+  mainPole: { type: String, required: true },
+  subPole: { type: String, required: true },
+  name: { type: String, required: true },
+  pointsPerCycle: { type: Number, required: true },
+  maxUsers: { type: Number, required: true },
+  requiredGrade: { type: String, required: true },
+  
+  availableSensors: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_Sensor
+  }],
 
-    // Informations générales sur la machine
-    name: { type: String, required: true },
-    pointsPerCycle: { type: Number, required: true },
-    maxUsers: { type: Number, required: true },
-    requiredGrade: { type: String, required: true },
+  sites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_Site
+  }],
 
-    // Capteurs disponibles avec accès conditionnel selon le grade
-    availableSensors: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: process.env.MONGO_Collection_Sensor
-    }],
+  sensorData: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_sensorData
+  }],
 
-    // Référence aux sites où la machine est physiquement installée
-    sites: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: process.env.MONGO_Collection_Site
-    }],
-    sensorData: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: process.env.MONGO_Collection_sensorData
-    }],
-    //gestion en temps réel
-    status: {
-        type: String,
-        enum: ['available', 'in-use', 'blocked'],
-        default: 'available'
-    },
-    currentUsers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: process.env.MONGO_Collection_User
-    }],
+  status: { 
+    type: String, 
+    enum: ['available', 'in-use', 'blocked'], 
+    default: 'available' 
+  },
 
-    // Statistiques d'utilisation, organisées par jour
-    usageStats: { type: [dailyUsageSchema], default: [] }
-}, {
-    timestamps: true
-});
+  currentUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: process.env.MONGO_Collection_User
+  }],
 
-/**
- * Méthode pour ajouter un relevé de capteur à la journée en cours.
- * Cette méthode vérifie que le capteur existe dans availableSensors et y ajoute le relevé
- * en incluant l'ID de l'utilisateur qui l'envoie.
- *
- * @param {String} designation - Nom du capteur.
- * @param {Number} value - La valeur mesurée.
- * @param {String} userId - L'ID de l'utilisateur qui envoie la lecture.
- * @param {Date} [timestamp=new Date()] - L'heure du relevé.
- * @returns {Promise} - Promesse résolue après sauvegarde.
- */
-machineSchema.methods.addSensorReading = async function (designation, value, userId, timestamp = new Date()) {
-    // Vérifier que le capteur est déclaré dans la machine
-    const sensorExists = this.availableSensors.some(s => s.designation === designation);
-    if (!sensorExists) {
-        throw new Error(`Sensor '${designation}' does not exist on this machine.`);
-    }
+  usageStats: { type: [ dailyUsageSchema ], default: [] },
 
-    // Calculer la date du jour tronquée à minuit
-    const day = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate());
+  // ✅ Champ ajouté
+  totalCycles: { type: Number, default: 0 }
 
-    // Chercher un enregistrement pour ce jour
-    let dailyRecord = this.usageStats.find(record => {
-        return record.day.getTime() === day.getTime();
-    });
+}, { timestamps: true });
 
-    // Si aucun enregistrement pour aujourd'hui n'existe, en créer un nouveau
-    if (!dailyRecord) {
-        dailyRecord = { day, sensorData: new Map(), usagePeriods: [] };
-        this.usageStats.push(dailyRecord);
-        dailyRecord = this.usageStats[this.usageStats.length - 1];
-    }
+machineSchema.methods.addSensorReading = async function(designation, value, userId, timestamp = new Date()) {
+  // Vérifie que les capteurs ont bien été peuplés avec .populate()
+  if (!this.populated('availableSensors')) {
+    throw new Error('availableSensors must be populated to add a sensor reading');
+  }
 
-    // Vérifier si la clé du capteur existe déjà dans sensorData, sinon l'initialiser avec un tableau vide
-    if (!dailyRecord.sensorData.has(designation)) {
-        dailyRecord.sensorData.set(designation, []);
-    }
+  const validSensor = this.availableSensors.find(s => s.designation === designation);
+  if (!validSensor) {
+    throw new Error(`Sensor '${designation}' not found on this machine`);
+  }
 
-    // Créer le relevé en incluant l'ID de l'utilisateur
-    const reading = { timestamp, value, user: userId };
+  const day = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate());
+  let dailyRecord = this.usageStats.find(record => record.day.getTime() === day.getTime());
 
-    // Ajouter le relevé au tableau correspondant au capteur
-    dailyRecord.sensorData.get(designation).push(reading);
+  if (!dailyRecord) {
+    dailyRecord = { day, sensorData: new Map(), usagePeriods: [] };
+    this.usageStats.push(dailyRecord);
+    dailyRecord = this.usageStats[this.usageStats.length - 1];
+  }
 
-    return this.save();
+  if (!dailyRecord.sensorData.has(designation)) {
+    dailyRecord.sensorData.set(designation, []);
+  }
+
+  const reading = { timestamp, value, user: userId };
+  dailyRecord.sensorData.get(designation).push(reading);
+
+  return this.save();
 };
 
 module.exports = mongoose.model(process.env.MONGO_Collection_Machine, machineSchema);

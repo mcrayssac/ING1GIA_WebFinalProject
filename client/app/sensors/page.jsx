@@ -41,22 +41,20 @@ export default function SensorsPage() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`);
         if (!response.ok) throw new Error("Failed to fetch sensors");
         const data = await response.json();
-        setSensors(data);
-        // Map the requiredGrade id to its name
-        const gradesMap = sensors.reduce((acc, sensor) => {
-          acc[sensor._id] = sensor.designation;
-          return acc;
-        }, {});
+  
         const updatedSensors = data.map(sensor => ({
           ...sensor,
-          requiredGrade: sensor.requiredGrade.map(gradeId => gradesMap[gradeId] || 'Unknown grade'),
+          requiredGrade: sensor.requiredGrade || 'Unknown grade',
         }));
+  
         setSensors(updatedSensors);
+      } catch (err) {
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchSensors();
   }, []);
   useEffect(() => {

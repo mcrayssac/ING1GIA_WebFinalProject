@@ -85,10 +85,10 @@ export default function AddSensorPage() {
             onChange={handleChange}
             className="w-full p-2 border rounded"
           >
-            <option value="Apprenti">Apprenti</option>
-            <option value="Technicien">Technicien</option>
-            <option value="Ingénieur">Ingénieur</option>
-            <option value="Responsable">Responsable</option>
+            <option value="Apprentice">Apprentice</option>
+            <option value="Technician">Technician</option>
+            <option value="Engineer">Engineer</option>
+            <option value="Manager">Manager</option>
           </select>
         </div>
 
