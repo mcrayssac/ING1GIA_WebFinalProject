@@ -24,12 +24,12 @@ export default function MachineDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
+  const isAdmin = user?.admin === true;
   const gradeOrder = {
     Apprentice: 0,
     Technician: 1,
     Engineer: 2,
-    Manager: 3
+    Manager: 3, 
   };
   
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function MachineDetailPage() {
                 if (!sensor) return null;
 
                 const requiredSensorLevel = gradeOrder[sensor.requiredGrade];
-                const hasAccess = userGradeLevel >= requiredSensorLevel;
+                const hasAccess = userGradeLevel >= requiredSensorLevel || isAdmin;
 
                 return (
                   <Button
@@ -149,10 +149,12 @@ export default function MachineDetailPage() {
           <Button
             onClick={handleStartCycle}
             className="mt-6"
-            disabled={userGradeLevel < requiredMachineLevel}
+            disabled={userGradeLevel < requiredMachineLevel && !isAdmin}
             variant="default"
           >
-            {userGradeLevel < requiredMachineLevel ? "Cycle non autorisé" : "Lancer un cycle"}
+            {userGradeLevel < requiredMachineLevel && !isAdmin
+              ? "Cycle non autorisé"
+              : "Lancer un cycle"}
           </Button>
 
           <div className="flex space-x-4 mt-6">
