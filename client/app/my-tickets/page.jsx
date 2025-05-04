@@ -16,14 +16,43 @@ import {
     RefreshCw,
     Loader2,
     AlertCircle,
-    CheckCircle,
-    XCircle,
     Shield,
-    ListTodo,
     ClipboardCheck,
     CheckCheck,
     XOctagon
 } from "lucide-react"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
+import NoData from "@/components/no-data"
+import {
+    getStatusBadge,
+    getTicketTitle,
+    getTicketDescription,
+    getDetailedContent
+} from "@/components/ticket-details"
 
 // Animation variants
 const fadeIn = {
@@ -36,10 +65,10 @@ const fadeIn = {
 
 const slideUp = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-        opacity: 1, 
+    visible: {
+        opacity: 1,
         y: 0,
-        transition: { 
+        transition: {
             type: "spring",
             stiffness: 300,
             damping: 30
@@ -49,7 +78,7 @@ const slideUp = {
 
 const containerAnimation = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
         opacity: 1,
         transition: {
             when: "beforeChildren",
@@ -61,8 +90,8 @@ const containerAnimation = {
 
 const cardAnimation = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-        opacity: 1, 
+    visible: {
+        opacity: 1,
         y: 0,
         transition: {
             type: "spring",
@@ -74,8 +103,8 @@ const cardAnimation = {
 
 const ticketAnimation = {
     hidden: { opacity: 0, scale: 0.95 },
-    visible: { 
-        opacity: 1, 
+    visible: {
+        opacity: 1,
         scale: 1,
         transition: {
             type: "spring",
@@ -83,7 +112,7 @@ const ticketAnimation = {
             damping: 30
         }
     },
-    exit: { 
+    exit: {
         opacity: 0,
         scale: 0.9,
         transition: { duration: 0.2 }
@@ -112,7 +141,7 @@ const staggerAnimation = {
 
 const iconAnimation = {
     initial: { scale: 1 },
-    hover: { 
+    hover: {
         scale: 1.15,
         rotate: [0, -5, 10, -5, 0],
         transition: {
@@ -133,32 +162,6 @@ const pulseAnimation = {
     }
 }
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import NoData from "@/components/no-data"
-
 export default function MyTicketsPage() {
     const router = useRouter()
     const { user } = useUser()
@@ -172,7 +175,7 @@ export default function MyTicketsPage() {
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
     const [selectedTicket, setSelectedTicket] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
-    
+
     const fetchTickets = useCallback(async () => {
         setIsLoading(true)
         try {
@@ -194,7 +197,7 @@ export default function MyTicketsPage() {
 
     const filterAndSortTickets = useCallback(() => {
         if (!tickets.length) return
-        
+
         let filtered = [...tickets]
 
         // Apply status filter
@@ -205,11 +208,24 @@ export default function MyTicketsPage() {
         // Apply search filter
         if (searchTerm) {
             const term = searchTerm.toLowerCase()
-            filtered = filtered.filter(
-                (ticket) =>
-                    (ticket.currentGrade?.name && ticket.currentGrade.name.toLowerCase().includes(term)) ||
-                    (ticket.targetGrade?.name && ticket.targetGrade.name.toLowerCase().includes(term))
-            )
+            filtered = filtered.filter((ticket) => {
+                // Handle different ticket types
+                switch (ticket.type) {
+                    case "GRADE_UPGRADE":
+                        return (
+                            ticket.currentGrade?.name?.toLowerCase().includes(term) ||
+                            ticket.targetGrade?.name?.toLowerCase().includes(term)
+                        )
+                    case "MACHINE_CREATION":
+                    case "MACHINE_DELETION":
+                        return (
+                            ticket.machineData?.name?.toLowerCase().includes(term) ||
+                            ticket.machineData?.mainPole?.toLowerCase().includes(term)
+                        )
+                    default:
+                        return false
+                }
+            })
         }
 
         // Apply sorting
@@ -243,10 +259,22 @@ export default function MyTicketsPage() {
         filterAndSortTickets()
     }, [filterAndSortTickets])
 
+    const formatDate = (dateString) => {
+        try {
+            return format(new Date(dateString), "PPP 'at' p")
+        } catch (error) {
+            return "Invalid date"
+        }
+    }
+
+    const pendingCount = tickets.filter((ticket) => ticket.status === "PENDING").length
+    const approvedCount = tickets.filter((ticket) => ticket.status === "APPROVED").length
+    const rejectedCount = tickets.filter((ticket) => ticket.status === "REJECTED").length
+
     // Show loading state while user context is initializing
     if (user === undefined) {
         return (
-            <motion.div 
+            <motion.div
                 className="flex items-center justify-center h-[calc(100vh-200px)]"
                 initial="hidden"
                 animate="visible"
@@ -262,29 +290,29 @@ export default function MyTicketsPage() {
     // Show access denied if not authenticated
     if (user === false) {
         return (
-            <motion.div 
+            <motion.div
                 className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4"
                 initial="hidden"
                 animate="visible"
                 variants={containerAnimation}
             >
-                <motion.div 
+                <motion.div
                     variants={slideUp}
-                    whileHover={{ 
-                        scale: 1.1, 
+                    whileHover={{
+                        scale: 1.1,
                         rotate: [0, 10, -10, 0],
                         transition: { duration: 0.5 }
                     }}
                 >
                     <Shield className="h-16 w-16 text-muted-foreground mb-4" />
                 </motion.div>
-                <motion.h2 
+                <motion.h2
                     className="text-2xl font-bold mb-2"
                     variants={slideUp}
                 >
                     Access Denied
                 </motion.h2>
-                <motion.p 
+                <motion.p
                     className="text-muted-foreground text-center"
                     variants={slideUp}
                 >
@@ -293,61 +321,6 @@ export default function MyTicketsPage() {
             </motion.div>
         )
     }
-
-    const refreshTickets = async () => {
-        setRefreshing(true)
-        await fetchTickets()
-        setRefreshing(false)
-    }
-
-    const openDetailsDialog = (ticket) => {
-        setSelectedTicket(ticket)
-        setDetailsDialogOpen(true)
-    }
-
-    const formatDate = (dateString) => {
-        try {
-            return format(new Date(dateString), "PPP 'at' p")
-        } catch (error) {
-            return "Invalid date"
-        }
-    }
-
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case "PENDING":
-                return (
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Pending
-                    </Badge>
-                )
-            case "APPROVED":
-                return (
-                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Approved
-                    </Badge>
-                )
-            case "REJECTED":
-                return (
-                    <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Rejected
-                    </Badge>
-                )
-            default:
-                return (
-                    <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
-                        Unknown
-                    </Badge>
-                )
-        }
-    }
-
-    const pendingCount = tickets.filter((ticket) => ticket.status === "PENDING").length
-    const approvedCount = tickets.filter((ticket) => ticket.status === "APPROVED").length
-    const rejectedCount = tickets.filter((ticket) => ticket.status === "REJECTED").length
 
     return (
         <div className="p-4 space-y-6">
@@ -360,10 +333,21 @@ export default function MyTicketsPage() {
             >
                 <div>
                     <h1 className="text-3xl font-bold">My Tickets</h1>
-                    <p className="text-muted-foreground">View and manage your grade upgrade requests</p>
+                    <p className="text-muted-foreground">View and track your requests</p>
                 </div>
-                <Button onClick={refreshTickets} variant="outline" disabled={refreshing}>
-                    {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                <Button
+                    onClick={() => {
+                        setRefreshing(true)
+                        fetchTickets().finally(() => setRefreshing(false))
+                    }}
+                    variant="outline"
+                    disabled={refreshing}
+                >
+                    {refreshing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
                     Refresh
                 </Button>
             </motion.div>
@@ -379,7 +363,7 @@ export default function MyTicketsPage() {
                     <Card>
                         <CardHeader className="pb-2">
                             <div className="flex items-center gap-2">
-                                <motion.div 
+                                <motion.div
                                     initial={{ rotate: 0 }}
                                     animate={{ rotate: pendingCount > 0 ? [0, -10, 10, -10, 0] : 0 }}
                                     transition={{ duration: 1.5, repeat: pendingCount > 0 ? Infinity : 0, repeatDelay: 3 }}
@@ -393,18 +377,18 @@ export default function MyTicketsPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <motion.div 
+                            <motion.div
                                 className="text-3xl font-bold"
                                 initial={{ opacity: 0, y: 10 }}
-                                animate={{ 
-                                    opacity: 1, 
+                                animate={{
+                                    opacity: 1,
                                     y: 0,
-                                    color: pendingCount > 0 ? 
-                                        ["rgba(var(--foreground))", "#eab308", "rgba(var(--foreground))"] : 
+                                    color: pendingCount > 0 ?
+                                        ["rgba(var(--foreground))", "#eab308", "rgba(var(--foreground))"] :
                                         "rgba(var(--foreground))"
                                 }}
-                                transition={{ 
-                                    duration: 0.7, 
+                                transition={{
+                                    duration: 0.7,
                                     color: { repeat: pendingCount > 0 ? Infinity : 0, repeatDelay: 2 }
                                 }}
                             >
@@ -413,11 +397,12 @@ export default function MyTicketsPage() {
                         </CardContent>
                     </Card>
                 </motion.div>
+
                 <motion.div variants={cardAnimation}>
                     <Card>
                         <CardHeader className="pb-2">
                             <div className="flex items-center gap-2">
-                                <motion.div 
+                                <motion.div
                                     animate={approvedCount > 0 ? "pulse" : "initial"}
                                     variants={pulseAnimation}
                                 >
@@ -425,12 +410,12 @@ export default function MyTicketsPage() {
                                 </motion.div>
                                 <div>
                                     <CardTitle className="text-lg font-medium">Approved</CardTitle>
-                                    <CardDescription>Successful upgrades</CardDescription>
+                                    <CardDescription>Successful requests</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <motion.div 
+                            <motion.div
                                 className="text-3xl font-bold"
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -441,11 +426,12 @@ export default function MyTicketsPage() {
                         </CardContent>
                     </Card>
                 </motion.div>
+
                 <motion.div variants={cardAnimation}>
                     <Card>
                         <CardHeader className="pb-2">
                             <div className="flex items-center gap-2">
-                                <motion.div 
+                                <motion.div
                                     whileHover="hover"
                                     variants={iconAnimation}
                                 >
@@ -458,7 +444,7 @@ export default function MyTicketsPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <motion.div 
+                            <motion.div
                                 className="text-3xl font-bold"
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -481,7 +467,7 @@ export default function MyTicketsPage() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search by grade..."
+                        placeholder="Search tickets..."
                         className="pl-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -541,11 +527,11 @@ export default function MyTicketsPage() {
                                 <ClipboardCheck className="h-4 w-4 mr-1" /> All
                             </motion.div>
                         </TabsTrigger>
-                        <TabsTrigger value="pending" className="flex items-center gap-1">
-                            <motion.div 
-                                className="flex items-center" 
+                        <TabsTrigger value="PENDING" className="flex items-center gap-1">
+                            <motion.div
+                                className="flex items-center"
                                 whileHover={{ scale: 1.05 }}
-                                animate={pendingCount > 0 ? { 
+                                animate={pendingCount > 0 ? {
                                     scale: [1, 1.1, 1],
                                     transition: { repeat: Infinity, repeatDelay: 3, duration: 0.5 }
                                 } : {}}
@@ -568,19 +554,19 @@ export default function MyTicketsPage() {
                                 )}
                             </motion.div>
                         </TabsTrigger>
-                        <TabsTrigger value="approved">
+                        <TabsTrigger value="APPROVED">
                             <motion.div className="flex items-center gap-1" whileHover={{ scale: 1.05 }}>
                                 <CheckCheck className="h-4 w-4 mr-1" /> Approved
                             </motion.div>
                         </TabsTrigger>
-                        <TabsTrigger value="rejected">
+                        <TabsTrigger value="REJECTED">
                             <motion.div className="flex items-center gap-1" whileHover={{ scale: 1.05 }}>
                                 <XOctagon className="h-4 w-4 mr-1" /> Rejected
                             </motion.div>
                         </TabsTrigger>
                     </TabsList>
 
-                    {["all", "pending", "approved", "rejected"].map((tab) => (
+                    {["all", "PENDING", "APPROVED", "REJECTED"].map((tab) => (
                         <TabsContent key={tab} value={tab} className="mt-0">
                             {isLoading ? (
                                 <motion.div
@@ -615,7 +601,7 @@ export default function MyTicketsPage() {
                                         className="space-y-4"
                                     >
                                         {filteredTickets
-                                            .filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase())
+                                            .filter((ticket) => tab === "all" || ticket.status === tab)
                                             .map((ticket) => (
                                                 <motion.div
                                                     key={ticket._id}
@@ -634,15 +620,14 @@ export default function MyTicketsPage() {
                                                                         <motion.div whileHover={{ rotate: 20 }}>
                                                                             <Ticket className="h-5 w-5 text-muted-foreground" />
                                                                         </motion.div>
-                                                                        <h3 className="font-medium text-lg">Grade Upgrade Request</h3>
+                                                                        <h3 className="font-medium text-lg">
+                                                                            {getTicketTitle(ticket)}
+                                                                        </h3>
                                                                         <motion.div whileHover={{ scale: 1.1 }}>
                                                                             {getStatusBadge(ticket.status)}
                                                                         </motion.div>
                                                                     </div>
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        From <span className="font-medium">{ticket.currentGrade?.name}</span>{" "}
-                                                                        to <span className="font-medium">{ticket.targetGrade?.name}</span>
-                                                                    </p>
+                                                                    {getTicketDescription(ticket)}
                                                                     <p className="text-sm text-muted-foreground">
                                                                         Created: {formatDate(ticket.createdAt)}
                                                                     </p>
@@ -652,14 +637,14 @@ export default function MyTicketsPage() {
                                                                         </p>
                                                                     )}
                                                                     {ticket.reason && (
-                                                                        <motion.div 
+                                                                        <motion.div
                                                                             className="flex items-start mt-2 p-2 bg-red-50 border border-red-100 rounded-md"
                                                                             initial={{ opacity: 0, height: 0 }}
                                                                             animate={{ opacity: 1, height: "auto" }}
                                                                             transition={{ duration: 0.3 }}
                                                                         >
                                                                             <motion.div
-                                                                                animate={{ 
+                                                                                animate={{
                                                                                     rotate: [0, 10, -10, 0],
                                                                                     transition: { repeat: Infinity, repeatDelay: 5 }
                                                                                 }}
@@ -672,14 +657,17 @@ export default function MyTicketsPage() {
                                                                         </motion.div>
                                                                     )}
                                                                 </div>
-                                                                <motion.div 
-                                                                    whileHover={{ scale: 1.05 }} 
+                                                                <motion.div
+                                                                    whileHover={{ scale: 1.05 }}
                                                                     whileTap={{ scale: 0.95 }}
                                                                 >
                                                                     <Button
                                                                         variant="default"
                                                                         size="sm"
-                                                                        onClick={() => openDetailsDialog(ticket)}
+                                                                        onClick={() => {
+                                                                            setSelectedTicket(ticket)
+                                                                            setDetailsDialogOpen(true)
+                                                                        }}
                                                                         className="bg-cyan-600 hover:bg-cyan-700 whitespace-nowrap"
                                                                     >
                                                                         View Details
@@ -691,8 +679,10 @@ export default function MyTicketsPage() {
                                                 </motion.div>
                                             ))}
 
-                                        {filteredTickets.filter((ticket) => tab === "all" || ticket.status === tab.toUpperCase())
-                                            .length === 0 && <NoData message={`No ${tab !== "all" ? tab : ""} tickets found`} />}
+                                        {filteredTickets.filter((ticket) => tab === "all" || ticket.status === tab)
+                                            .length === 0 && (
+                                                <NoData message={`No ${tab !== "all" ? tab.toLowerCase() : ""} tickets found`} />
+                                            )}
                                     </motion.div>
                                 </ScrollArea>
                             )}
@@ -705,11 +695,11 @@ export default function MyTicketsPage() {
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Request Details</DialogTitle>
-                        <DialogDescription>Complete information about your grade upgrade request.</DialogDescription>
+                        <DialogTitle>{selectedTicket && getTicketTitle(selectedTicket)}</DialogTitle>
+                        <DialogDescription>Complete information about your request</DialogDescription>
                     </DialogHeader>
                     {selectedTicket && (
-                        <motion.div 
+                        <motion.div
                             className="space-y-4"
                             initial="hidden"
                             animate="visible"
@@ -722,31 +712,15 @@ export default function MyTicketsPage() {
                                 </motion.div>
                             </motion.div>
 
-                            <motion.div className="space-y-2" variants={slideUp}>
-                                <h3 className="font-medium">Grade Information</h3>
-                                <motion.div 
-                                    className="bg-muted p-3 rounded-md"
-                                    whileHover={{ 
-                                        backgroundColor: "rgba(var(--muted), 0.7)",
-                                        transition: { duration: 0.2 }
-                                    }}
-                                >
-                                    <p className="text-sm">
-                                        Current Grade:{" "}
-                                        <span className="font-medium">{selectedTicket.currentGrade?.name}</span>
-                                    </p>
-                                    <p className="text-sm">
-                                        Target Grade:{" "}
-                                        <span className="font-medium">{selectedTicket.targetGrade?.name}</span>
-                                    </p>
-                                </motion.div>
+                            <motion.div className="flex justify-between items-center" variants={slideUp}>
+                                {getDetailedContent(selectedTicket)}
                             </motion.div>
 
                             <motion.div className="space-y-2" variants={slideUp}>
                                 <h3 className="font-medium">Timestamps</h3>
-                                <motion.div 
+                                <motion.div
                                     className="bg-muted p-3 rounded-md space-y-1"
-                                    whileHover={{ 
+                                    whileHover={{
                                         backgroundColor: "rgba(var(--muted), 0.7)",
                                         transition: { duration: 0.2 }
                                     }}
@@ -755,7 +729,7 @@ export default function MyTicketsPage() {
                                         Created: <span className="font-medium">{formatDate(selectedTicket.createdAt)}</span>
                                     </p>
                                     {selectedTicket.processedAt && (
-                                        <motion.p 
+                                        <motion.p
                                             className="text-sm"
                                             initial={{ opacity: 0, y: 5 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -769,17 +743,21 @@ export default function MyTicketsPage() {
                             </motion.div>
 
                             {selectedTicket.reason && (
-                                <motion.div 
-                                    className="space-y-2" 
+                                <motion.div
+                                    className="space-y-2"
                                     variants={slideUp}
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: "auto" }}
                                 >
                                     <h3 className="font-medium">Rejection Reason</h3>
-                                    <motion.div 
+                                    <motion.div
                                         className="bg-red-50 border border-red-100 p-3 rounded-md"
                                         animate={{
-                                            boxShadow: ["0 0 0 rgba(220, 38, 38, 0)", "0 0 8px rgba(220, 38, 38, 0.3)", "0 0 0 rgba(220, 38, 38, 0)"]
+                                            boxShadow: [
+                                                "0 0 0 rgba(220, 38, 38, 0)",
+                                                "0 0 8px rgba(220, 38, 38, 0.3)",
+                                                "0 0 0 rgba(220, 38, 38, 0)"
+                                            ]
                                         }}
                                         transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
                                     >
@@ -796,18 +774,6 @@ export default function MyTicketsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            {/* Empty state */}
-            {!isLoading && filteredTickets.length === 0 && (
-                <motion.div 
-                    className="my-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                >
-                    <NoData message="No tickets found matching your criteria" />
-                </motion.div>
-            )}
         </div>
     )
 }

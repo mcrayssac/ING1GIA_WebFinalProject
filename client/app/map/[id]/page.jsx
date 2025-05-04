@@ -123,10 +123,10 @@ const listItemVariants = {
 
 const slideUp = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-        opacity: 1, 
+    visible: {
+        opacity: 1,
         y: 0,
-        transition: { 
+        transition: {
             duration: 0.5,
             ease: "easeOut"
         }
@@ -182,7 +182,7 @@ export default function SitePage() {
                 }
 
                 setSite(data.site)
-                
+
                 // Only set employees and machines data if user is logged in
                 if (user) {
                     setEmployees(data.employees || [])
@@ -274,7 +274,7 @@ export default function SitePage() {
     // Show loading state while user context is initializing
     if (user === undefined || loading) {
         return (
-            <motion.div 
+            <motion.div
                 className="container mx-auto px-4 py-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -321,7 +321,7 @@ export default function SitePage() {
                     animate="visible"
                     exit="exit"
                 >
-                    <motion.div 
+                    <motion.div
                         className="flex flex-col items-center justify-center p-8 rounded-lg"
                         variants={cardVariants}
                     >
@@ -348,20 +348,20 @@ export default function SitePage() {
                         >
                             Please sign in to view complete site details and features.
                         </motion.p>
-                        
-                        <motion.div 
-                            className="flex gap-4 mt-2" 
+
+                        <motion.div
+                            className="flex gap-4 mt-2"
                             variants={itemVariants}
                         >
-                            <Button 
-                                variant="default" 
+                            <Button
+                                variant="default"
                                 onClick={() => router.push('/login')}
                                 className="flex items-center gap-2"
                             >
                                 Log In
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => router.push('/map')}
                                 className="flex items-center gap-2"
                             >
@@ -369,10 +369,10 @@ export default function SitePage() {
                                 Back to Map
                             </Button>
                         </motion.div>
-                        
+
                         {site && (
-                            <motion.div 
-                                className="w-full mt-8 p-4 border rounded-lg bg-background" 
+                            <motion.div
+                                className="w-full mt-8 p-4 border rounded-lg bg-background"
                                 variants={itemVariants}
                             >
                                 <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -520,7 +520,7 @@ export default function SitePage() {
                                                 Site Information
                                             </CardTitle>
                                         </CardHeader>
-                                        <CardContent className="flex-1 space-y-4">
+                                        <CardContent className="space-y-4">
                                             <motion.div
                                                 className="space-y-4"
                                                 initial="hidden"
@@ -791,11 +791,20 @@ export default function SitePage() {
                                                             animate="visible"
                                                             whileHover="hover"
                                                             exit="exit"
-                                                            className="flex items-start gap-3 p-4 rounded-lg border bg-background"
+                                                            className="flex items-start gap-3 p-4 rounded-lg border bg-background cursor-pointer hover:bg-accent"
+                                                            onClick={() => router.push(`/machines/${machine._id}`)}
+                                                            role="link"
+                                                            tabIndex={0}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                    e.preventDefault();
+                                                                    router.push(`/machines/${machine._id}`);
+                                                                }
+                                                            }}
                                                         >
                                                             <Cog className="w-5 h-5 mt-1 text-muted-foreground" />
                                                             <div>
-                                                                <p className="text-sm font-medium">{machine.name}</p>
+                                                                <p className="text-sm font-medium text-primary">{machine.name}</p>
                                                                 <p className="text-xs text-muted-foreground">
                                                                     {machine.mainPole} • {machine.subPole}
                                                                 </p>

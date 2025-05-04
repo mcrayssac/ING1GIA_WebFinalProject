@@ -41,6 +41,7 @@ export const UserProvider = ({ children }) => {
             
             const data = await response.json()
             setUser({
+                _id: data._id,
                 name: data.username,
                 avatar: data.photo,
                 admin: data.admin,

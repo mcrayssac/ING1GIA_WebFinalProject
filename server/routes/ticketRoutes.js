@@ -8,7 +8,7 @@ const { verifyToken, isAdmin } = require("../middlewares/authMiddlewares");
 // Create a new ticket
 router.post("/", verifyToken, async (req, res) => {
     try {
-        const { type, targetGrade } = req.body;
+        const { type, targetGrade, machineId, machineData } = req.body;
         const userId = req.user._id;
 
         // Get current user's grade
@@ -21,6 +21,7 @@ router.post("/", verifyToken, async (req, res) => {
         const existingTicket = await Ticket.findOne({
             userId,
             type,
+            ...(type === 'MACHINE_DELETION' ? { machineId } : {}),
             status: { $nin: ['APPROVED', 'REJECTED'] } // Exclude completed tickets
         });
 
@@ -36,18 +37,30 @@ router.post("/", verifyToken, async (req, res) => {
             return res.status(400).json({ message: "User has no current grade" });
         }
 
-        // Find target grade document
-        const targetGradeDoc = await Grade.findOne({ name: targetGrade });
-        if (!targetGradeDoc) {
-            return res.status(400).json({ message: "Invalid target grade" });
-        }
-
-        const ticket = new Ticket({
+        // Handle different ticket types
+        let ticketData = {
             userId,
             type,
-            currentGrade: user.grade, // Already an ObjectId
-            targetGrade: targetGradeDoc._id
-        });
+            currentGrade: user.grade
+        };
+
+        if (type === 'GRADE_UPGRADE') {
+            // Find target grade document
+            const targetGradeDoc = await Grade.findOne({ name: targetGrade });
+            if (!targetGradeDoc) {
+                return res.status(400).json({ message: "Invalid target grade" });
+            }
+            ticketData.targetGrade = targetGradeDoc._id;
+        } else if (type === 'MACHINE_DELETION' || type === 'MACHINE_CREATION') {
+            ticketData.targetGrade = user.grade; // Same as current grade for machine operations
+            if (type === 'MACHINE_DELETION') {
+                ticketData.machineId = machineId;
+            } else {
+                ticketData.machineData = machineData;
+            }
+        }
+
+        const ticket = new Ticket(ticketData);
 
         await ticket.save();
         
@@ -110,12 +123,23 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
         ticket.processedBy = req.user._id;
         if (reason) ticket.reason = reason;
 
-        // If approved, update user's grade
-        if (status === "APPROVED" && ticket.type === "GRADE_UPGRADE") {
-            const user = await User.findById(ticket.userId);
-            if (user) {
-                user.grade = ticket.targetGrade; // Already an ObjectId
-                await user.save();
+        // Process the ticket based on type
+        if (status === "APPROVED") {
+            if (ticket.type === "GRADE_UPGRADE") {
+                const user = await User.findById(ticket.userId);
+                if (user) {
+                    user.grade = ticket.targetGrade;
+                    await user.save();
+                }
+            } else if (ticket.type === "MACHINE_DELETION") {
+                // Delete the machine using direct model call
+                const Machine = require("../models/Machine");
+                await Machine.findByIdAndDelete(ticket.machineId);
+            } else if (ticket.type === "MACHINE_CREATION") {
+                // Create the machine using direct model call
+                const Machine = require("../models/Machine");
+                const newMachine = new Machine(ticket.machineData);
+                await newMachine.save();
             }
         }
 

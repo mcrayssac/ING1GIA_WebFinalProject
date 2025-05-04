@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Alert from "@/components/alert"
 import NoData from "@/components/no-data"
 import { useUser } from "@/contexts/UserContext"
+import { useToastAlert } from "@/contexts/ToastContext"
 
 // Animation variants
 const containerVariants = {
@@ -142,11 +143,15 @@ export default function SensorsPage() {
     const { user } = useUser()
     const isAdmin = user?.admin === true
 
+    const { toastSuccess, toastError } = useToastAlert()
+
     const fetchSensors = async (showRefreshing = false) => {
         if (showRefreshing) setIsRefreshing(true)
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`)
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`, {
+                credentials: 'include'
+            })
             if (!response.ok) throw new Error("Failed to fetch sensors")
             const data = await response.json()
 
@@ -164,7 +169,11 @@ export default function SensorsPage() {
             }))
 
             setSensors(updatedSensors)
+            if (showRefreshing) {
+                toastSuccess("Sensor list has been updated")
+            }
         } catch (err) {
+            toastError(err.message)
             setError(err.message)
         } finally {
             setLoading(false)
@@ -188,12 +197,15 @@ export default function SensorsPage() {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors/${sensorId}`, {
                     method: "DELETE",
+                    credentials: 'include'
                 })
 
                 if (!response.ok) throw new Error("Failed to delete sensor")
 
                 setSensors(sensors.filter((sensor) => sensor._id !== sensorId))
+                toastSuccess("Sensor has been deleted")
             } catch (err) {
+                toastError(err.message)
                 setError(err.message)
             }
         }

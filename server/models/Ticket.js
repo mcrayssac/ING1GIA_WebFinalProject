@@ -8,8 +8,16 @@ const ticketSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['GRADE_UPGRADE'],
+        enum: ['GRADE_UPGRADE', 'MACHINE_DELETION', 'MACHINE_CREATION'],
         required: true
+    },
+    machineData: {
+        type: Object,
+        required: function() { return this.type === 'MACHINE_CREATION'; }
+    },
+    machineId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: process.env.MONGO_Collection_Machine
     },
     status: {
         type: String,

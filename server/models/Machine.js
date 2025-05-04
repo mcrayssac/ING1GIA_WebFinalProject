@@ -78,7 +78,6 @@ const machineSchema = new mongoose.Schema({
 
     usageStats: { type: [dailyUsageSchema], default: [] },
 
-    // ✅ Champ ajouté
     totalCycles: { type: Number, default: 0 }
 
 }, { timestamps: true });
