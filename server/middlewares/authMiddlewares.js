@@ -2,9 +2,36 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const chalk = require('chalk');
+const RewardAction = require('../models/RewardAction');
 
 const warning = chalk.keyword('orange');
 const success = chalk.bold.green;
+
+// Process reward points asynchronously
+const processReward = async (userId, path) => {
+    try {
+        const user = await User.findById(userId).populate('grade');
+        if (!user || !user.grade || user.grade.name !== 'Apprentice') {
+            return;
+        }
+
+        const rewardAction = await RewardAction.findOne({
+            path,
+            isActive: true
+        });
+
+        if (!rewardAction) {
+            return;
+        }
+
+        // Add points to user
+        user.points += rewardAction.points;
+        await user.save();
+        console.log(`Reward processed for user ${userId}: +${rewardAction.points} points`);
+    } catch (error) {
+        console.error('Error processing reward:', error);
+    }
+};
 
 // Basic Authentication Middleware
 const authenticateUser = async (req, res, next) => {
@@ -27,6 +54,11 @@ const authenticateUser = async (req, res, next) => {
 
         // Check if user exists and password is correct
         if (user && await bcrypt.compare(password, user.password)) {
+            setImmediate(() => {
+                // Process reward after successful authentication
+                processReward(user._id, "login");
+            });
+
             console.log(success('Authentication successful'));
             req.user = user;
             next();
@@ -43,8 +75,6 @@ const authenticateUser = async (req, res, next) => {
 const verifyToken = (req, res, next) => {
     const token = req.cookies.token;
     const refreshToken = req.cookies.refreshToken;
-    // console.log('Token:', token);
-    // console.log('Refresh Token:', refreshToken);
 
     if (!token) return res.status(401).send('Access token missing');
 
@@ -73,6 +103,12 @@ const verifyToken = (req, res, next) => {
 
                     console.log(success('Access token refreshed'));
                     req.user = userFromDb;
+                    
+                    // Process reward after successful token refresh
+                    setImmediate(() => {
+                        processReward(userFromDb._id, req.originalUrl.split('/')[2]);
+                    });
+                    
                     next();
                 } catch (err) {
                     res.status(500).send('Token refresh failed');
@@ -86,6 +122,12 @@ const verifyToken = (req, res, next) => {
                 const userFromDb = await User.findById(user._id);
                 if (!userFromDb) return res.status(403).send('User not found');
                 req.user = userFromDb;
+                
+                // Process reward after successful token verification
+                setImmediate(() => {
+                    processReward(userFromDb._id, req.originalUrl.split('/')[2]);
+                });
+                
                 next();
             } catch (err) {
                 res.status(500).send('Error fetching user data');
@@ -100,7 +142,7 @@ const isAdmin = async (req, res, next) => {
     const user = await User.findById(req.user._id);
     if (user.admin) next();
     else res.status(403).send('Admin access required');
-}
+};
 
 module.exports = {
     authenticateUser,

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 const UserContext = createContext()
 
@@ -64,9 +64,24 @@ export const UserProvider = ({ children }) => {
         }
     }
 
+    const pathname = usePathname()
+
+    // Initial fetch and update on path change
     useEffect(() => {
-        fetchUser()
-    }, [])
+        const updateUserInfo = () => {
+            if (user !== undefined && user !== false) {
+                fetchUser()
+            }
+        }
+        
+        if (pathname !== '/login' && pathname !== '/signup') {
+            if (!user) {
+                fetchUser()
+            } else {
+                updateUserInfo()
+            }
+        }
+    }, [pathname])
 
     return (
         <UserContext.Provider value={{ user, setUser, fetchUser, logout }}>

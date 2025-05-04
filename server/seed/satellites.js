@@ -32,7 +32,7 @@ const satellites = (async () => {
 
         // Extract Starlink satellites TLE
         const starlinkLines = starlinkText.trim().split(/[\r\n]+/);
-        for (let i = 0; i < /*starlinkLines.length*/ 4; i += 3) {
+        for (let i = 0; i < starlinkLines.length; i += 3) {
             if (i + 2 < starlinkLines.length) {
                 const name = starlinkLines[i].trim();
                 const tle1 = starlinkLines[i + 1].trim();
