@@ -49,9 +49,24 @@ router.get('/:id', verifyToken, async (req, res) => {
         const employees = await Employee.find({ site: req.params.id })
             .select('_id employeeId department position contractType office hireDate');
 
-        // Get machines at this site
-        const machines = await Machine.find({ sites: req.params.id })
-            .select('name mainPole subPole requiredGrade status');
+        // Get machines at this site with grade filtering
+        let machines = await Machine.find({ site: req.params.id })
+            .select('name mainPole subPole requiredGrade status')
+            .populate('requiredGrade', 'level name');
+
+        // Filter machines based on user's grade if not admin
+        if (!req.user.admin) {
+            // Get user with populated grade
+            const user = await User.findById(req.user._id).populate('grade', 'level name');
+            if (user && user.grade) {
+                machines = machines.filter(machine => 
+                    machine.requiredGrade && 
+                    machine.requiredGrade.level <= user.grade.level
+                );
+            } else {
+                machines = []; // If user has no grade, they can't see any machines
+            }
+        }
 
         // Combine all data
         const response = {

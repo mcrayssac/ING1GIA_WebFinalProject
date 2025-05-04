@@ -143,7 +143,7 @@ export default function AddMachinePage() {
             router.replace("/login")
             return
         }
-        if (user && !user.admin) {
+        if (user && !(user.admin || ['Engineer', 'Manager'].includes(user?.grade?.name))) {
             router.replace("/machines")
             return
         }
@@ -195,19 +195,45 @@ export default function AddMachinePage() {
                 site: machine.site,
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(machineData),
-                credentials: "include",
-            })
+        if (user.admin) {
+            // Direct creation for admin users only
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(machineData),
+                    credentials: "include",
+                })
 
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || "Failed to add machine")
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    throw new Error(errorData.error || "Failed to add machine")
+                }
+
+                toastSuccess("Machine added successfully!")
+            } else if (['Engineer', 'Manager'].includes(user?.grade?.name)) {
+                // Create a creation request ticket for engineers/managers
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        type: "MACHINE_CREATION",
+                        machineData
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to create machine request");
+                }
+
+                toastSuccess("Machine creation request submitted for admin approval");
+            } else {
+                toastError("You do not have permission to add machines")
+                return
             }
-
-            toastSuccess("Machine added successfully!")
 
             // Reset form
             setMachine({
@@ -334,10 +360,17 @@ export default function AddMachinePage() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-                <h1 className="text-3xl font-bold text-center inline-flex items-center gap-2">
-                    <PlusCircle className="h-8 w-8 text-primary" />
-                    <span>Add New Machine</span>
-                </h1>
+                <div className="flex flex-col items-center gap-2">
+                    <h1 className="text-3xl font-bold text-center inline-flex items-center gap-2">
+                        <PlusCircle className="h-8 w-8 text-primary" />
+                        <span>Add New Machine</span>
+                    </h1>
+                    {['Engineer', 'Manager'].includes(user?.grade?.name) && (
+                        <p className="text-sm text-muted-foreground text-center">
+                            As an {user?.grade?.name}, your machine creation request will need admin approval.
+                        </p>
+                    )}
+                </div>
             </motion.div>
 
             <AnimatePresence>
@@ -716,7 +749,9 @@ export default function AddMachinePage() {
                                 </motion.div>
                             ) : (
                                 <>
-                                    <motion.span>Save Machine</motion.span>
+                                    <motion.span>
+                                        {user?.admin ? "Save Machine" : "Submit for Approval"}
+                                    </motion.span>
                                     <motion.span 
                                         className="absolute bottom-0 left-0 w-0 h-0.5 bg-white" 
                                         initial={{ width: "0%" }}

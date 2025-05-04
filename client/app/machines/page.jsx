@@ -13,7 +13,6 @@ import {
     AlertCircle,
     Info,
     RefreshCw,
-    SlidersHorizontal,
     Cpu,
     ArrowUpDown,
     Eye,
@@ -33,7 +32,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
-import Alert from "@/components/alert"
 import NoData from "@/components/no-data"
 import { useUser } from "@/contexts/UserContext"
 import { useToastAlert } from "@/contexts/ToastContext"
@@ -224,7 +222,6 @@ const Clock = ({ className }) => (
 
 export default function MachinesPage() {
     const [machinesData, setMachinesData] = useState([])
-    const [error, setError] = useState("")
     const [loading, setLoading] = useState(true)
     const [globalFilter, setGlobalFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
@@ -234,20 +231,21 @@ export default function MachinesPage() {
     const { user } = useUser()
     const { toastSuccess, toastError } = useToastAlert()
     const router = useRouter()
-    const isAdmin = user?.admin === true
-    const gradeName = user?.grade?.name
-    const canModifyMachines = user?.admin
+    const canSeeMachineActions = user?.admin || ['Engineer', 'Manager'].includes(user?.grade?.name)
 
     const fetchData = async (showRefreshing = false) => {
         if (showRefreshing) setIsRefreshing(true);
         try {
-            const machinesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`);
+            const machinesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
+                credentials: "include",
+            });
             if (!machinesRes.ok) throw new Error("Failed to fetch machines");
 
             const machines = await machinesRes.json();
             setMachinesData(machines);
         } catch (err) {
-            setError(err.message)
+            console.error(err);
+            toastError("Failed to fetch machines");
         } finally {
             setLoading(false)
             if (showRefreshing) setIsRefreshing(false)
@@ -268,20 +266,46 @@ export default function MachinesPage() {
     const handleDelete = async (machineId) => {
         if (window.confirm("Are you sure you want to delete this machine?")) {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`, {
-                    method: "DELETE",
-                    credentials: "include"
-                })
+                if (user?.admin) {
+                    // Direct deletion for admin users and engineers/managers
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`, {
+                        method: "DELETE",
+                        credentials: "include"
+                    });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Failed to delete machine");
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to delete machine");
+                    }
+
+                    setMachinesData(machinesData.filter((machine) => machine._id !== machineId));
+                    toastSuccess("Machine deleted successfully");
+                } else if (canSeeMachineActions) {
+                    // Create a deletion request for non-admin users
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/tickets`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        credentials: "include",
+                        body: JSON.stringify({
+                            type: "MACHINE_DELETION",
+                            machineId
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to create deletion request");
+                    }
+
+                    toastSuccess("Deletion request submitted for admin approval");
+                } else {
+                    // Show a message to the user
+                    toastError("You do not have permission to delete this machine.");
                 }
-
-                setMachinesData(machinesData.filter((machine) => machine._id !== machineId));
-                toastSuccess("Machine deleted successfully");
             } catch (err) {
-                setError(err.message);
+                console.error(err)
                 toastError(err.message);
             }
         }
@@ -388,7 +412,7 @@ export default function MachinesPage() {
                 </div>
             ),
         },
-        ...(canModifyMachines
+        ...(canSeeMachineActions
             ? [
                 {
                     accessorKey: "actions",
@@ -490,20 +514,6 @@ export default function MachinesPage() {
 
     return (
         <motion.div className="container mx-auto px-4 py-8 h-full" initial="hidden" animate="visible" variants={containerVariants}>
-            <AnimatePresence>
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="mb-6"
-                    >
-                        <Alert type="error" message={error} onClose={() => setError("")} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
             <motion.div className="flex items-center justify-between mb-8" variants={itemVariants}>
                 <div className="flex items-center space-x-4">
                     <motion.div
@@ -530,7 +540,7 @@ export default function MachinesPage() {
                         </Button>
                     </motion.div>
 
-                    {canModifyMachines && (
+                    {canSeeMachineActions && (
                         <motion.div
                             variants={fadeInVariants}
                             whileHover={{ scale: 1.01 }}
