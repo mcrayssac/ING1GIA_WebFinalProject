@@ -563,6 +563,12 @@ const rewardActions = [
         isActive: true,
         description: 'Take a look at user tickets'
     },
+    {
+        path: 'sites',
+        points: 5,
+        isActive: true,
+        description: 'Take a look at sites'
+    },
 ];
 
 const sensors = [
@@ -585,7 +591,7 @@ const machines = [
             { designation: "Pression" },
             { designation: "Température" }
         ],
-        sites: [], status: "in-use",
+        site: null,
         currentUsers: [],
         usageStats: [
             {
@@ -618,7 +624,7 @@ const machines = [
         availableSensors: [
             { designation: "Température" }
         ],
-        sites: [], status: "blocked",
+        site: null,
         currentUsers: [],
         usageStats: [
             {
@@ -645,7 +651,7 @@ const machines = [
             { designation: "Pression" },
             { designation: "Température" }
         ],
-        sites: [], status: "in-use",
+        site: null,
         currentUsers: [],
         usageStats: [
             {
@@ -674,7 +680,7 @@ const machines = [
         availableSensors: [
             { designation: "Pression" }
         ],
-        sites: [], status: "available",
+        site: null,
         currentUsers: [],
         usageStats: [
             {
@@ -702,7 +708,7 @@ const machines = [
             { designation: "Flux" },
             { designation: "Température" }
         ],
-        sites: [], status: "blocked",
+        site: null,
         currentUsers: [],
         usageStats: [
             {
@@ -734,8 +740,7 @@ const machines = [
         availableSensors: [
             { designation: "Température" }
         ],
-        sites: [],
-        status: "in-use",
+        site: null,
         currentUsers: [],
         usageStats: [
             {

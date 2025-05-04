@@ -36,7 +36,7 @@ export default function AddMachinePage() {
         maxUsers: "",
         requiredGrade: "",
         status: "available",
-        sites: [],
+        site: null,
         availableSensors: [],
     })
     const [sites, setSites] = useState([])
@@ -58,9 +58,11 @@ export default function AddMachinePage() {
             machine.pointsPerCycle,
             machine.maxUsers,
             machine.requiredGrade,
+            machine.site,
+            machine.availableSensors.length > 0
         ]
 
-        const filledFields = requiredFields.filter((field) => field).length
+        const filledFields = requiredFields.filter(Boolean).length
         const progress = Math.round((filledFields / requiredFields.length) * 100)
         setFormProgress(progress)
     }, [machine])
@@ -81,6 +83,14 @@ export default function AddMachinePage() {
             errors.maxUsers = "Max users must be at least 1"
         }
         
+        if (!machine.site) {
+            errors.site = "Site selection is required"
+        }
+
+        if (!machine.availableSensors.length) {
+            errors.sensors = "At least one sensor must be selected"
+        }
+        
         setValidationErrors(errors)
     }, [machine])
 
@@ -90,9 +100,15 @@ export default function AddMachinePage() {
             try {
                 // Fetch all data in parallel
                 const [sitesRes, sensorsRes, gradesRes] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`),
-                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`),
-                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`),
+                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sites`, {
+                        credentials: "include",
+                    }),
+                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`, {
+                        credentials: "include",
+                    }),
+                    fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/grades`, {
+                        credentials: "include",
+                    }),
                 ])
 
                 // Check for errors
@@ -153,6 +169,16 @@ export default function AddMachinePage() {
             return
         }
         
+        if (!machine.site) {
+            toastError("Please select a site for the machine")
+            return
+        }
+
+        if (!machine.availableSensors.length) {
+            toastError("Please select at least one sensor")
+            return
+        }
+        
         setSubmitting(true)
         setError(null)
 
@@ -166,7 +192,7 @@ export default function AddMachinePage() {
                 requiredGrade: machine.requiredGrade,
                 status: machine.status,
                 availableSensors: machine.availableSensors,
-                sites: machine.sites,
+                site: machine.site,
             }
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines`, {
@@ -192,7 +218,7 @@ export default function AddMachinePage() {
                 maxUsers: "",
                 requiredGrade: "",
                 status: "available",
-                sites: [],
+                site: null,
                 availableSensors: [],
             })
 
@@ -207,7 +233,6 @@ export default function AddMachinePage() {
         }
     }
 
-    // Loading skeleton with framer-motion
     if (loading) {
         return (
             <motion.div 
@@ -263,7 +288,6 @@ export default function AddMachinePage() {
         )
     }
 
-    // Animation variants
     const container = {
         hidden: { opacity: 0 },
         show: {
@@ -290,7 +314,7 @@ export default function AddMachinePage() {
                 ease: "easeInOut"
             } 
         }
-    };
+    }
 
     const progressVariants = {
         initial: { width: 0 },
@@ -340,7 +364,7 @@ export default function AddMachinePage() {
                 {/* Form progress */}
                 <div className="w-full h-2 bg-muted/40 relative">
                     <motion.div
-                        className="absolute top-0 left-0 h-full bg-primary"
+                        className="absolute top-0 left-0 h-full bg-secondary"
                         variants={progressVariants}
                         initial="initial"
                         animate="animate"
@@ -543,35 +567,18 @@ export default function AddMachinePage() {
                                         </SelectContent>
                                     </Select>
                                 </motion.div>
-
-                                <motion.div variants={item} className="space-y-2">
-                                    <label htmlFor="status" className="flex items-center text-sm font-medium text-primary-foreground">
-                                        <Activity className="h-4 w-4 mr-2 text-muted-foreground" />
-                                        Status<span className="text-red-500 ml-1">*</span>
-                                    </label>
-                                    <Select value={machine.status} onValueChange={(value) => handleSelectChange("status", value)} required>
-                                        <SelectTrigger aria-required="true" id="status">
-                                            <SelectValue placeholder="Select status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="available">Available</SelectItem>
-                                            <SelectItem value="in-use">In Use</SelectItem>
-                                            <SelectItem value="blocked">Blocked</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </motion.div>
                             </div>
                         </motion.div>
                     </motion.section>
 
-                    {/* Installation Sites Section */}
+                    {/* Installation Site Section */}
                     <motion.section variants={item} className="space-y-4">
                         <motion.div 
                             className="flex items-center gap-2 text-xl font-semibold pb-2 border-b text-primary-foreground"
                             whileHover={{ scale: 1.01 }}
                         >
                             <Buildings className="h-5 w-5 text-primary-foreground" />
-                            Installation Sites
+                            Installation Site
                         </motion.div>
                         <motion.div 
                             variants={sectionVariants}
@@ -580,36 +587,41 @@ export default function AddMachinePage() {
                             className="overflow-hidden mb-4"
                         >
                             <div className="space-y-2 pt-4 relative z-20">
-                                <label htmlFor="sites" className="flex items-center text-sm font-medium text-primary-foreground">
-                                        <Buildings className="h-4 w-4 mr-2 text-muted-foreground" />
-                                    Select Sites
+                                <label htmlFor="site" className="flex items-center text-sm font-medium text-primary-foreground">
+                                    <Buildings className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    Select Site<span className="text-red-500 ml-1">*</span>
                                 </label>
-                                <MultiSelect
-                                    options={sites.map((site) => ({
-                                        value: site._id,
-                                        label: site.name,
-                                    }))}
-                                    selected={machine.sites.map((siteId) => {
-                                        const site = sites.find((s) => s._id === siteId)
-                                        return {
-                                            value: siteId,
-                                            label: site?.name || siteId,
-                                        }
-                                    })}
-                                    onChange={(selected) => {
-                                        setMachine((prev) => ({
-                                            ...prev,
-                                            sites: selected.map((item) => item.value),
-                                        }))
-                                        setFormTouched(true)
-                                    }}
-                                    placeholder="Select installation sites..."
-                                    aria-label="Installation sites"
-                                    showSelectAll={true}
-                                />
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    {machine.sites.length} of {sites.length} sites selected
-                                </div>
+                                <Select
+                                    value={machine.site}
+                                    onValueChange={(value) => handleSelectChange("site", value)}
+                                    required
+                                >
+                                    <SelectTrigger className={`${validationErrors.site ? "border-red-500" : ""}`}
+                                                aria-required="true" 
+                                                id="site">
+                                        <SelectValue placeholder="Select installation site" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {sites.map((site) => (
+                                            <SelectItem key={site._id} value={site._id}>
+                                                {site.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <AnimatePresence>
+                                    {validationErrors.site && (
+                                        <motion.div 
+                                            className="flex items-center mt-1 text-xs text-red-500"
+                                            initial={{ opacity: 0, y: -5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                        >
+                                            <AlertCircle className="h-3 w-3 mr-1" />
+                                            {validationErrors.site}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </motion.div>
                     </motion.section>
@@ -631,10 +643,11 @@ export default function AddMachinePage() {
                         >
                             <div className="space-y-2 pt-4 relative z-10">
                                 <label htmlFor="sensors" className="flex items-center text-sm font-medium text-primary-foreground">
-                                        <ListFilter className="h-4 w-4 mr-2 text-muted-foreground" />
-                                    Select Sensors
+                                    <ListFilter className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    Select Sensors<span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <MultiSelect
+                                    className={validationErrors.sensors ? "border-red-500" : ""}
                                     options={sensors.map((sensor) => ({
                                         value: sensor._id,
                                         label: sensor.designation,
@@ -656,7 +669,21 @@ export default function AddMachinePage() {
                                     placeholder="Select available sensors..."
                                     aria-label="Available sensors"
                                     showSelectAll={true}
+                                    required
                                 />
+                                <AnimatePresence>
+                                    {validationErrors.sensors && (
+                                        <motion.div 
+                                            className="flex items-center mt-1 text-xs text-red-500"
+                                            initial={{ opacity: 0, y: -5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                        >
+                                            <AlertCircle className="h-3 w-3 mr-1" />
+                                            {validationErrors.sensors}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                                 <div className="text-xs text-muted-foreground mt-1">
                                     {machine.availableSensors.length} of {sensors.length} sensors selected
                                 </div>
