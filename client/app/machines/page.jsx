@@ -231,7 +231,7 @@ export default function MachinesPage() {
     const { user } = useUser()
     const { toastSuccess, toastError } = useToastAlert()
     const router = useRouter()
-    const canSeeMachineActions = user?.admin || ['Engineer', 'Manager'].includes(user?.grade?.name)
+    const canSeeMachineActions = user?.admin || ['Engineer', 'Manager', 'Technician'].includes(user?.grade?.name)
 
     const fetchData = async (showRefreshing = false) => {
         if (showRefreshing) setIsRefreshing(true);

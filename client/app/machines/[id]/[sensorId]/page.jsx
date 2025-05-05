@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useToastAlert } from "@/contexts/ToastContext"
 import { useParams, useRouter } from "next/navigation"
 import {
     LineChart,
@@ -61,6 +62,7 @@ export default function SensorGraphPage() {
     const [sensors, setSensors] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+    const { toastError, toastInfo } = useToastAlert()
     const [selectedDate, setSelectedDate] = useState(new Date())
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [chartView, setChartView] = useState("line")
@@ -78,14 +80,20 @@ export default function SensorGraphPage() {
                 fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/machines/${machineId}`, {
                     credentials: "include"
                 }),
-                fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`)
+                fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/sensors`, {
+                    credentials: "include"
+                })
             ])
-            if (!mRes.ok) throw new Error("Machine not found")
+            if (!mRes.ok || !sRes.ok) {
+                const error = !mRes.ok ? "Machine not found" : "Failed to fetch sensors";
+                throw new Error(error);
+            }
             const [mData, sData] = await Promise.all([mRes.json(), sRes.json()])
             setMachine(mData)
             setSensors(sData)
         } catch (e) {
             setError(e.message)
+            toastError(e.message)
         } finally {
             setLoading(false)
             setIsRefreshing(false)
@@ -101,7 +109,9 @@ export default function SensorGraphPage() {
 
         const sensor = sensors.find((s) => s._id.toString() === sensorId)
         if (!sensor) {
-            setError("Sensor not found")
+            const errorMsg = "Sensor not found"
+            setError(errorMsg)
+            toastError(errorMsg)
             return
         }
 
@@ -110,6 +120,7 @@ export default function SensorGraphPage() {
         const dayRec = machine.usageStats?.find((d) => new Date(d.day).getTime() === dayStartUTC)
         if (!dayRec || !dayRec.sensorData) {
             setChartData([])
+            toastInfo("No data available for selected date")
             return
         }
 
@@ -257,6 +268,7 @@ export default function SensorGraphPage() {
                             size="icon"
                             onClick={() => router.push(`/machines/${machineId}`)}
                             className="h-8 w-8"
+                            data-navigation="true"
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>

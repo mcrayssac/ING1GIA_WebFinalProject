@@ -216,6 +216,9 @@ export default function MachineDetailPage() {
                 setCycleProgress(0);
                 initializeCycleTracking(endTime, startTime);
             }
+
+            // Force refresh of page
+            window.location.reload();
         } catch (err) {
             toastError(err.message)
         }
@@ -306,7 +309,7 @@ export default function MachineDetailPage() {
             <motion.div className="flex flex-col md:flex-row items-center justify-between mb-8" variants={itemVariants}>
                 <div className="flex items-center space-x-4 mb-4 md:mb-0">
                     <motion.div
-                        className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg"
+                        className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center shadow-lg"
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         whileTap={{ scale: 0.95 }}
                         animate={{
@@ -342,7 +345,7 @@ export default function MachineDetailPage() {
                                         ? "bg-emerald-500"
                                         : machine.status === "in-use"
                                             ? "bg-amber-500"
-                                            : "bg-destructive"
+                                            : "bg-red-500"
                                 }
                             />
                             <StatusBadge status={machine.status} />
