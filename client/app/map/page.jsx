@@ -46,7 +46,9 @@ import {
 import NoData from "@/components/no-data"
 import Loading from "@/components/loading"
 import { useToastAlert } from "@/contexts/ToastContext"
+import { useUser } from "@/contexts/UserContext"
 import { toast } from "sonner"
+import { Lock } from "lucide-react"
 
 const markerMapping = {
     launch: { icon: Rocket, color: "oklch(var(--s))", label: "Launch Site" },
@@ -208,6 +210,7 @@ const DynamicPolygon = dynamic(
 export default function MapPage() {
     const router = useRouter()
     const { toastSuccess, toastError } = useToastAlert()
+    const { user } = useUser()
     const [sites, setSites] = useState([])
     const [loading, setLoading] = useState(true)
     const [legendQuery, setLegendQuery] = useState("")
@@ -501,16 +504,29 @@ export default function MapPage() {
                                                             <MapPinned className="w-4 h-4 mr-1" />
                                                             Center Map
                                                         </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="mt-2 flex-1"
-                                                            onClick={() => router.push(`/map/${site._id}`)}
-                                                            data-navigation="true"
-                                                        >
-                                                            <Info className="w-4 h-4 mr-1" />
-                                                            View Details
-                                                        </Button>
+                                                        {user ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="mt-2 flex-1"
+                                                                onClick={() => router.push(`/map/${site._id}`)}
+                                                                data-navigation="true"
+                                                            >
+                                                                <Info className="w-4 h-4 mr-1" />
+                                                                View Details
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="mt-2 flex-1"
+                                                                onClick={() => router.push('/login')}
+                                                                data-navigation="true"
+                                                            >
+                                                                <Lock className="w-4 h-4 mr-1" />
+                                                                Sign in to view
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </DynamicInfoWindow>
