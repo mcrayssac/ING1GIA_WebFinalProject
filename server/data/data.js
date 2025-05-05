@@ -646,7 +646,7 @@ const machines = [
         name: "Module d'Analyse Météo",
         pointsPerCycle: 30,
         maxUsers: 3,
-        requiredGrade: "Technician",
+        requiredGrade: "Manager",
         availableSensors: [
             { designation: "Pression" },
             { designation: "Température" }
@@ -676,7 +676,7 @@ const machines = [
         name: "Valve d'Oxygène V2",
         pointsPerCycle: 15,
         maxUsers: 1,
-        requiredGrade: "Technician",
+        requiredGrade: "Manager",
         availableSensors: [
             { designation: "Pression" }
         ],
@@ -702,7 +702,7 @@ const machines = [
         name: "Injecteur Cryogénique A2",
         pointsPerCycle: 20,
         maxUsers: 2,
-        requiredGrade: "Technician",
+        requiredGrade: "Engineer",
         availableSensors: [
             { designation: "Pression" },
             { designation: "Flux" },
@@ -736,7 +736,7 @@ const machines = [
         name: "Caméra Thermique X6",
         pointsPerCycle: 10,
         maxUsers: 1,
-        requiredGrade: "Technician",
+        requiredGrade: "Engineer",
         availableSensors: [
             { designation: "Température" }
         ],
@@ -811,7 +811,17 @@ const employees = [
         hireDate: new Date('2024-01-05'),
         contractType: 'Intern',
         site: null
-    }
+    },
+    {
+        employeeId: 'EMP005',
+        email: 'risk.opal5894@eagereverest.com',
+        department: 'Marketing',
+        position: 'Marketing Manager',
+        office: 'SpaceY Pacific Office',
+        hireDate: new Date('2022-08-20'),
+        contractType: 'Full-time',
+        site: null
+    },
 ];
 
 

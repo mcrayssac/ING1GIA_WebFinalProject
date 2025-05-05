@@ -1,4 +1,4 @@
-const nextTarget = new Date("2025-05-05T00:00:00Z");
+const nextTarget = new Date("2025-06-05T00:00:00Z");
 
 // Navigation for guests (not logged in)
 const navGuest = {

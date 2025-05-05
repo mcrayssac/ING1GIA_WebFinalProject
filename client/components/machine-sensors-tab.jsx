@@ -91,6 +91,7 @@ export const MachineSensorsTab = ({ machine, sensorData, sensorLabels, userGrade
                                                                     size="icon"
                                                                     onClick={() => onSensorClick(sensor._id)}
                                                                     className="h-8 w-8 relative text-primary hover:text-primary"
+                                                                    data-navigation="true"
                                                                 >
                                                                     <ChevronRight className="h-4 w-4" />
                                                                     <motion.div

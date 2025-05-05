@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
-import Alert from "@/components/alert"
 import NoData from "@/components/no-data"
 import { useUser } from "@/contexts/UserContext"
 import { useToastAlert } from "@/contexts/ToastContext"
@@ -134,7 +133,6 @@ const TableSkeleton = ({ columns }) => (
 export default function SensorsPage() {
     const [sensors, setSensors] = useState([])
     const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
     const [globalFilter, setGlobalFilter] = useState("")
     const [sorting, setSorting] = useState([])
     const [isRefreshing, setIsRefreshing] = useState(false)
@@ -173,8 +171,7 @@ export default function SensorsPage() {
                 toastSuccess("Sensor list has been updated")
             }
         } catch (err) {
-            toastError(err.message)
-            setError(err.message)
+            toastError(err.message || "Failed to fetch sensors")
         } finally {
             setLoading(false)
             if (showRefreshing) setIsRefreshing(false)
@@ -200,13 +197,19 @@ export default function SensorsPage() {
                     credentials: 'include'
                 })
 
-                if (!response.ok) throw new Error("Failed to delete sensor")
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 400 && data.linkedMachinesCount) {
+                        throw new Error(`Cannot delete sensor that is linked to ${data.linkedMachinesCount} machine${data.linkedMachinesCount > 1 ? 's' : ''}. Remove it from all machines first.`);
+                    }
+                    throw new Error(data.error || "Failed to delete sensor");
+                }
 
                 setSensors(sensors.filter((sensor) => sensor._id !== sensorId))
                 toastSuccess("Sensor has been deleted")
             } catch (err) {
-                toastError(err.message)
-                setError(err.message)
+                toastError(err.message || "Failed to delete sensor")
             }
         }
     }
@@ -380,19 +383,6 @@ export default function SensorsPage() {
             animate="visible"
             variants={containerVariants}
         >
-            <AnimatePresence>
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="mb-6"
-                    >
-                        <Alert type="error" message={error} onClose={() => setError(null)} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <motion.div className="flex items-center justify-between mb-8" variants={itemVariants}>
                 <div className="flex items-center space-x-4">

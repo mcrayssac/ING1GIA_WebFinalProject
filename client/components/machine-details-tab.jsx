@@ -181,6 +181,7 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                     variant="default"
                                     className="w-full flex items-center justify-center gap-2 border border-primary-foreground"
                                     onClick={() => router.push(`/map/${machine.sites[0]._id}`)}
+                                    data-navigation="true"
                                 >
                                     <MapPin className="h-4 w-4" />
                                     <span>View in Site Map</span>
@@ -240,6 +241,7 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                                 variant="secondary"
                                                 className="h-8 w-8"
                                                 onClick={() => router.push(`/users`)}
+                                                data-navigation="true"
                                             >
                                                 <ExternalLink className="h-4 w-4" />
                                             </Button>
@@ -319,7 +321,7 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                         ? "bg-emerald-500"
                                         : machine.status === "in-use"
                                             ? "bg-amber-500"
-                                            : "bg-destructive"
+                                            : "bg-red-500"
                                 }
                                 size="h-4 w-4"
                             />
@@ -369,7 +371,7 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                             <Button
                                                 onClick={onStartCycle}
                                                 className="w-full flex items-center justify-center gap-2 h-12 relative overflow-hidden"
-                                                disabled={!canStartCycle || machine.status !== "available"}
+                                                disabled={!canStartCycle || (machine.status !== "available" && machine.status !== "in-use") || machine.currentUsers.length >= machine.maxUsers}
                                                 variant="default"
                                             >
                                                 <motion.div
@@ -390,15 +392,17 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                                 <span className="font-medium">
                                                     {!canStartCycle
                                                         ? "Cycle not authorized"
-                                                        : machine.status !== "available"
+                                                        : machine.status !== "available" && machine.status !== "in-use"
                                                             ? "Machine unavailable"
-                                                            : "Start cycle"}
+                                                            : machine.currentUsers.length >= machine.maxUsers
+                                                                ? "Machine at capacity"
+                                                                : "Start cycle"}
                                                 </span>
                                             </Button>
                                         </motion.div>
 
                                         {/* Animated glow effect for the button */}
-                                        {canStartCycle && machine.status === "available" && (
+                                        {canStartCycle && (machine.status === "available" || machine.status === "in-use") && machine.currentUsers.length < machine.maxUsers && (
                                             <motion.div
                                                 className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-lg blur-md -z-10"
                                                 animate={{
@@ -415,9 +419,11 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                 <TooltipContent className="bg-popover border-border text-popover-foreground">
                                     {!canStartCycle
                                         ? `You need ${machine.requiredGrade} grade or higher to use this machine`
-                                        : machine.status !== "available"
+                                        : machine.status !== "available" && machine.status !== "in-use" 
                                             ? "Machine must be available to start a cycle"
-                                            : "Start a new machine cycle"}
+                                            : machine.currentUsers.length >= machine.maxUsers
+                                                ? "Machine has reached maximum user capacity"
+                                                : "Start a new machine cycle"}
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -432,7 +438,7 @@ export const MachineDetailsTab = ({ machine, canStartCycle, isAdmin, user, showS
                                         <Unlock className="h-3 w-3 text-emerald-500" />
                                     </motion.div>
                                 ) : (
-                                    <Lock className="h-3 w-3 text-destructive" />
+                                    <Lock className="h-3 w-3 text-red-500" />
                                 )}
                                 <span>Access level: {user?.grade?.name || "Unknown"}</span>
                             </div>
